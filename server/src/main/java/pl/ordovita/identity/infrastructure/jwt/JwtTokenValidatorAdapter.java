@@ -32,7 +32,7 @@ public class JwtTokenValidatorAdapter implements TokenValidator {
     @Override
     public TokenMetadata validateAccessToken(AccessToken accessToken) {
         try {
-            Claims claims = parseToken(accessToken.toString());
+            Claims claims = parseToken(accessToken.value());
 
             String userIdStr = claims.get("userId", String.class);
             String email = claims.get("email", String.class);

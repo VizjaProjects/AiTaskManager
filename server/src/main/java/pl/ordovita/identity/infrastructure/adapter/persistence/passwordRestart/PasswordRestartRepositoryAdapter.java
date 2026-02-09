@@ -38,4 +38,9 @@ public class PasswordRestartRepositoryAdapter implements PasswordRestartReposito
     public Optional<PasswordRestart> findById(PasswordRestartId passwordRestartId) {
         return repository.findById(passwordRestartId.value()).map(PasswordRestartEntityMapper::toDomain);
     }
+
+    @Override
+    public Optional<PasswordRestart> findByToken(UUID token) {
+        return repository.findByToken(token).map(PasswordRestartEntityMapper::toDomain);
+    }
 }

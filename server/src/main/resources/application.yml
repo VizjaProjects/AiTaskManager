@@ -30,18 +30,10 @@ spring:
     show-sql: true
 
 cors:
-  allowed-origins: "*"
+  allowed-origins: http://localhost:5173, http://localhost
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
-
-cookie:
-  secure: false
-  http-only: true
-  same-site: Strict
-  domain: .ordovita.pl
-  path: /
-  max-age: 604800
 
 jwt:
   secret: ${JWT_SECRET}

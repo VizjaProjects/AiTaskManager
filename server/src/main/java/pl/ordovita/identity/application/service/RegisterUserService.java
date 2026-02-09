@@ -8,9 +8,11 @@ import pl.ordovita.identity.application.exception.RegisterException;
 import pl.ordovita.identity.application.port.in.RegisterUserUseCase;
 import pl.ordovita.identity.application.port.out.PasswordHasher;
 import pl.ordovita.identity.domain.event.UserRegisteredEvent;
+import pl.ordovita.identity.domain.model.passwordRestart.PasswordRestart;
 import pl.ordovita.identity.domain.model.user.Email;
 import pl.ordovita.identity.domain.model.user.RawPassword;
 import pl.ordovita.identity.domain.model.user.User;
+import pl.ordovita.identity.domain.port.PasswordRestartRepository;
 import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.shared.domain.event.DomainEventPublisher;
 

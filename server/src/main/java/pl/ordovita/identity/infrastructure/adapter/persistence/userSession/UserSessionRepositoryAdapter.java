@@ -7,6 +7,7 @@ import pl.ordovita.identity.domain.port.UserSessionRepository;
 import pl.ordovita.identity.infrastructure.jpa.userSesion.UserSessionEntity;
 import pl.ordovita.identity.infrastructure.jpa.userSesion.UserSessionJpaRepository;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -45,5 +46,10 @@ public class UserSessionRepositoryAdapter implements UserSessionRepository {
     @Override
     public void delete(UserSession session) {
         repository.delete(UserSessionMapper.from(session));
+    }
+
+    @Override
+    public boolean existsByDeviceNameAndUserSessionIpAndExpiresAtAfter(String deviceName, String userSessionIp, Instant now) {
+        return repository.existsByDeviceNameAndUserSessionIpAndExpiresAtAfter(deviceName, userSessionIp, now);
     }
 }

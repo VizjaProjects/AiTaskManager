@@ -10,4 +10,6 @@ public interface PasswordRestartJpaRepository extends JpaRepository<PasswordRest
     Optional<PasswordRestartEntity> findByUserId(UUID userId);
 
     boolean existsByToken(UUID token);
+
+    Optional<PasswordRestartEntity> findByToken(UUID token);
 }

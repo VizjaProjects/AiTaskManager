@@ -14,5 +14,7 @@ public interface PasswordRestartRepository {
 
     Optional<PasswordRestart> findByUserId(UserId userId);
 
+    Optional<PasswordRestart> findByToken(UUID token);
+
     Optional<PasswordRestart> findById(PasswordRestartId passwordRestartId);
 }

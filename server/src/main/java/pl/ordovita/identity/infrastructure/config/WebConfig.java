@@ -35,7 +35,7 @@ public class WebConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers( headers -> headers.httpStrictTransportSecurity(HeadersConfigurer.HstsConfig::disable))
                 .authorizeHttpRequests( auth -> auth
-                        .requestMatchers("/v1/api/auth/*", "/v1/api/emailVerification/*").permitAll()
+                        .requestMatchers("/v1/api/auth/**", "/v1/api/emailVerification/**").permitAll()
                         .requestMatchers("/swagger-ui/*", "/v3/api-docs/**").permitAll()
                         .anyRequest().authenticated()
                 );

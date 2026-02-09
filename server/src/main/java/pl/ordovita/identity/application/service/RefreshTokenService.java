@@ -1,17 +1,15 @@
 package pl.ordovita.identity.application.service;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import pl.ordovita.identity.application.port.in.DeviceManagerUseCase;
 import pl.ordovita.identity.application.port.in.RefreshTokenUseCase;
-import pl.ordovita.identity.application.port.out.TokenGenerator;
 import pl.ordovita.identity.domain.exception.TokenException;
-import pl.ordovita.identity.domain.model.token.AccessToken;
-import pl.ordovita.identity.domain.model.token.TokenMetadata;
 import pl.ordovita.identity.domain.model.token.TokenPair;
 import pl.ordovita.identity.domain.model.user.User;
-import pl.ordovita.identity.domain.model.userSession.Status;
 import pl.ordovita.identity.domain.model.userSession.UserSession;
-import pl.ordovita.identity.domain.model.userSession.UserSessionId;
 import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.identity.domain.port.UserSessionRepository;
 
@@ -23,44 +21,30 @@ public class RefreshTokenService implements RefreshTokenUseCase {
 
     private final UserSessionRepository userSessionRepository;
     private final UserRepository userRepository;
-    private final TokenGenerator tokenGenerator;
+    private final SessionManager sessionManager;
+    private final DeviceManagerUseCase deviceManagerUseCase;
 
     @Override
-    public TokenPair refresh(RefreshCommand command) {
+    public TokenPair refresh(RefreshCommand command, HttpServletResponse response, HttpServletRequest httpRequest) {
+        UserSession oldSession = userSessionRepository.findByRefreshToken(command.refreshToken())
+                .orElseThrow(() -> new TokenException("Invalid refresh token"));
+        String deviceName = deviceManagerUseCase.parseDeviceName(httpRequest);
+        String ipAddress = deviceManagerUseCase.getClientIp(httpRequest);
 
-        UserSession oldSession = userSessionRepository.findByRefreshToken(command.refreshToken()).orElseThrow(() -> new TokenException(
-                "Invalid refresh token"));
+        if (oldSession.getExpiresAt().isBefore(Instant.now())) {
+            throw new TokenException("Refresh token has expired");
+        }
 
-        if (oldSession.getExpiresAt().isBefore(Instant.now())) throw new TokenException("Refresh token has expired");
+        User user = userRepository.findById(oldSession.getUserId())
+                .orElseThrow(() -> new TokenException("User not found"));
 
-        User user = userRepository.findById(oldSession.getUserId()).orElseThrow(() -> new TokenException(
-                "User not found"));
-
-        if (!user.canLogin()) throw new TokenException("User is not allowed to login");
+        if (!user.canLogin()) {
+            throw new TokenException("User is not allowed to login");
+        }
 
         oldSession.detectiveSession();
-
         userSessionRepository.delete(oldSession);
 
-        UserSessionId userSessionId = UserSessionId.generate();
-
-        TokenMetadata newMetadata = new TokenMetadata(user.getId(), user.getEmail(), user.getRole(), userSessionId);
-
-        AccessToken newAccessToken = tokenGenerator.generateAccessToken(newMetadata);
-        String newRefreshToken = tokenGenerator.generateRefreshToken(newMetadata);
-        Instant newExpiresAt = tokenGenerator.calculateRefreshTokenExpiration();
-
-
-        UserSession newSession = UserSession.create(newRefreshToken,
-                command.deviceName(),
-                command.ipAddress(),
-                newExpiresAt,
-                Status.ACTIVE,
-                user.getId());
-
-        userSessionRepository.save(newSession);
-
-
-        return TokenPair.of(newAccessToken, newRefreshToken);
+        return sessionManager.createNewSession(user,deviceName,ipAddress,response);
     }
 }

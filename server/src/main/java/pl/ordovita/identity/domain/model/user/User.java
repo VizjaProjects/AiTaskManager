@@ -1,6 +1,7 @@
 package pl.ordovita.identity.domain.model.user;
 
 import pl.ordovita.identity.application.port.out.PasswordHasher;
+import pl.ordovita.identity.domain.event.PasswordChangedEvent;
 import pl.ordovita.identity.domain.event.UserRegisteredEvent;
 import pl.ordovita.identity.domain.exception.UserException;
 import pl.ordovita.shared.domain.event.DomainEvent;
@@ -13,18 +14,17 @@ import java.util.List;
 public class User {
 
     private final UserId id;
-    private final String fullName;
+    private String fullName;
     private final Email email;
     private final Role role;
-    private final HashedPassword password;
     private final Instant createdAt;
     private final boolean isEnabled;
+    private final List<DomainEvent> domainEvents = new ArrayList<>();
+    private HashedPassword password;
     private Instant updatedAt;
     private Instant lastLoginAt;
     private boolean emailVerified;
     private Instant emailVerifiedAt;
-
-    private final List<DomainEvent> domainEvents = new ArrayList<>();
 
 
     public User(UserId id, String fullName, Email email, Role role, HashedPassword hashedPassword, Instant createdAt, Instant updatedAt, Instant lastLoginAt, boolean isEnabled, boolean emailVerified, Instant emailVerifiedAt) {
@@ -72,6 +72,17 @@ public class User {
         return user;
     }
 
+    public void passwordChanged(String device, String ipAddress) {
+        this.registerEvent(new PasswordChangedEvent(this.email,Instant.now(),device,ipAddress));
+    }
+
+    public void changeFullName(String newFullName) {
+        if(fullName == null) throw new UserException("Full name cannot be null");
+        if(this.fullName.equals(newFullName)) throw new UserException("Your new full name cannot be the same as your previous one ");
+
+        this.fullName = newFullName;
+    }
+
 
     public void verifyEmail() {
         if (this.emailVerified) {
@@ -84,6 +95,32 @@ public class User {
 
     public boolean canLogin() {
         return isEnabled && emailVerified;
+    }
+
+    public void login() {
+        this.lastLoginAt = Instant.now();
+    }
+
+    public void userDataUpdated() {
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean isPasswordCorrect(RawPassword rawPassword, PasswordHasher passwordHasher) {
+        return passwordHasher.matches(rawPassword, password);
+    }
+
+    public void remindPassword(RawPassword rawPassword, PasswordHasher passwordHasher) {
+        if (!canLogin()) throw new UserException("Account is disabled!");
+        this.password = passwordHasher.hash(rawPassword);
+    }
+
+    public void changePassword(RawPassword oldPassword, RawPassword newPassword, RawPassword confirmPassword, PasswordHasher passwordHasher) {
+        if (!canLogin()) throw new UserException("Account is disabled!");
+        if (!newPassword.equals(confirmPassword)) throw new UserException("Passwords do not match!");
+        if (oldPassword.equals(newPassword))
+            throw new UserException("Your new password cannot be the same as your previous one");
+
+        this.password = passwordHasher.hash(newPassword);
     }
 
     public UserId getId() {
