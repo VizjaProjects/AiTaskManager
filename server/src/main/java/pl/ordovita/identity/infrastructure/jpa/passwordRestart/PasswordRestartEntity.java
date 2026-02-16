@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "password_restart")
+@Table(name = "identity_password_restart")
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

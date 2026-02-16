@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "email_verifications")
+@Table(name = "identity_email_verifications")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor

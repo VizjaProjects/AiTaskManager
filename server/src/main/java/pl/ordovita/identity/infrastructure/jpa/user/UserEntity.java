@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 @Entity
-@Table(name = "users")
+@Table(name = "identity_users")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,6 +38,7 @@ public class UserEntity {
     @Column(nullable = false)
     private Instant createdAt;
 
+    @Column(nullable = false)
     private Instant updatedAt;
 
     private Instant lastLoginAt;
