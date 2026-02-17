@@ -1,21 +1,20 @@
 package pl.ordovita.surveys.infrastructure.jpa.questions;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import pl.ordovita.surveys.domain.model.questions.QuestionType;
 import pl.ordovita.surveys.infrastructure.jpa.questionOption.QuestionOptionEntity;
 import pl.ordovita.surveys.infrastructure.jpa.surveys.SurveyEntity;
 
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
 @Entity
 @Table(name = "surveys_questions")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -25,12 +24,9 @@ public class QuestionEntity {
     @Column(updatable = false, nullable = false, unique = true)
     private UUID id;
 
-    @JoinColumn(updatable = false, nullable = false, unique = true)
+    @JoinColumn(name = "survey_id", updatable = false, nullable = false, unique = true)
     @ManyToOne(fetch = FetchType.LAZY)
     private SurveyEntity surveyId;
-
-    @OneToMany(fetch = FetchType.LAZY)
-    private Set<QuestionOptionEntity> questionOptions;
 
     @Column(nullable = false)
     private String questionText;

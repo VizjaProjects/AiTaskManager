@@ -1,20 +1,27 @@
 package pl.ordovita.surveys.infrastructure.adapter.userResponse;
 
 import pl.ordovita.identity.domain.model.user.UserId;
+import pl.ordovita.identity.infrastructure.jpa.user.UserEntity;
 import pl.ordovita.surveys.domain.model.questions.QuestionId;
 import pl.ordovita.surveys.domain.model.userResponse.TextAnswer;
 import pl.ordovita.surveys.domain.model.userResponse.UserResponse;
 import pl.ordovita.surveys.domain.model.userResponse.UserResponseId;
+import pl.ordovita.surveys.infrastructure.jpa.questions.QuestionEntity;
 import pl.ordovita.surveys.infrastructure.jpa.userResponse.UserResponseEntity;
 
 public class UserResponseEntityMapper {
 
     public static UserResponseEntity from(UserResponse userResponse) {
-        UserResponseEntity userResponseEntity = UserResponseEntity.builder().id(userResponse.getId().value()).build();
+        UserEntity userEntity = new UserEntity();
+        userEntity.setId(userResponse.getUserId().value());
+
+        QuestionEntity questionEntity = new QuestionEntity();
+        questionEntity.setId(userResponse.getQuestionId().value());
+
         return new UserResponseEntity(
                 userResponse.getId().value(),
-                userResponseEntity.getUserId(),
-                userResponseEntity.getQuestionId(),
+                userEntity,
+                questionEntity,
                 userResponse.getTextAnswer().value(),
                 userResponse.getCreatedAt(),
                 userResponse.getUpdatedAt()

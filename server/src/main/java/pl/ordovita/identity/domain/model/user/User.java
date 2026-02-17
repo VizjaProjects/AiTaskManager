@@ -18,7 +18,7 @@ public class User {
     private final Email email;
     private final Role role;
     private final Instant createdAt;
-    private final boolean isEnabled;
+    private boolean isEnabled;
     private final List<DomainEvent> domainEvents = new ArrayList<>();
     private HashedPassword password;
     private Instant updatedAt;
@@ -41,13 +41,14 @@ public class User {
         this.emailVerifiedAt = emailVerifiedAt;
     }
 
-    public User(UserId id, String fullName, Email email, Role role, RawPassword rawPassword, boolean isEnabled, Instant createdAt, PasswordHasher passwordHasher) {
+    public User(UserId id, String fullName, Email email, Role role, RawPassword rawPassword, boolean isEnabled, Instant createdAt, Instant updatedAt, PasswordHasher passwordHasher) {
         if (id == null) throw new UserException("User id cannot be null");
         if (fullName == null || fullName.isBlank()) throw new UserException("Full name cannot be null");
         if (email == null) throw new UserException("Email cannot be null");
         if (role == null) throw new UserException("Role cannot be null");
         if (rawPassword == null) throw new UserException("Raw password cannot be null");
         if (createdAt == null) throw new UserException("Created at cannot be null");
+        if (updatedAt == null) throw new UserException("Updated at cannot be null");
         this.id = id;
         this.fullName = fullName;
         this.email = email;
@@ -55,6 +56,7 @@ public class User {
         this.password = passwordHasher.hash(rawPassword);
         this.isEnabled = isEnabled;
         this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
     }
 
     public static User createUser(String fullName, Email email, RawPassword rawPassword, PasswordHasher passwordHasher) {
@@ -64,6 +66,7 @@ public class User {
                 Role.USER,
                 rawPassword,
                 false,
+                Instant.now(),
                 Instant.now(),
                 passwordHasher);
 
@@ -89,6 +92,7 @@ public class User {
             throw new UserException("Email already verified");
         }
         this.emailVerified = true;
+        this.isEnabled = true;
         this.emailVerifiedAt = Instant.now();
         this.updatedAt = Instant.now();
     }

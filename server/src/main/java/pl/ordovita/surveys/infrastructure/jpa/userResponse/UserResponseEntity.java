@@ -23,12 +23,12 @@ public class UserResponseEntity {
     @Column(updatable = false, nullable = false, unique = true)
     private UUID id;
 
-    @JoinColumn(updatable = false, nullable = false, unique = true)
+    @JoinColumn(name = "user_id", updatable = false, nullable = false)
     @ManyToOne(fetch = FetchType.LAZY)
     private UserEntity userId;
 
-    @JoinColumn(updatable = false, nullable = false, unique = true)
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", updatable = false, nullable = false)
     private QuestionEntity questionId;
 
     @Column(nullable = false)

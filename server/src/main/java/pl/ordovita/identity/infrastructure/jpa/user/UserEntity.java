@@ -1,10 +1,7 @@
 package pl.ordovita.identity.infrastructure.jpa.user;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import pl.ordovita.identity.domain.model.user.Role;
 
 import java.time.Instant;
@@ -13,6 +10,7 @@ import java.util.UUID;
 @Entity
 @Table(name = "identity_users")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder

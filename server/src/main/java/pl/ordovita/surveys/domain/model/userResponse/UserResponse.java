@@ -5,6 +5,7 @@ import pl.ordovita.surveys.domain.exception.UserResponseException;
 import pl.ordovita.surveys.domain.model.questions.QuestionId;
 
 import java.time.Instant;
+import java.util.List;
 
 public class UserResponse {
 
@@ -33,6 +34,11 @@ public class UserResponse {
     public static UserResponse create(UserId userId, QuestionId questionId, TextAnswer textAnswer) {
         return new UserResponse(UserResponseId.generate(), userId, questionId, textAnswer, Instant.now(), Instant.now());
     }
+
+    //TODO
+//    public boolean checkIfAlreadyAnswered(List<QuestionId> questionIdList) {
+//        if (questionIdList.contains(this.questionId)) return false;
+//    }
 
 
     public UserResponseId getId() {

@@ -8,23 +8,26 @@ import java.time.Instant;
 public class QuestionOption {
 
     private final QuestionOptionId id;
+    private final QuestionId questionId;
     private final OptionText optionText;
     private final Instant createAt;
     private final Instant updateAt;
 
-    public QuestionOption(QuestionOptionId id, OptionText optionText, Instant createAt, Instant updateAt) {
+    public QuestionOption(QuestionOptionId id, QuestionId questionId, OptionText optionText, Instant createAt, Instant updateAt) {
         if(id == null) throw new QuestionOptionException("Question option id cannot be null");
+        if(questionId == null) throw new QuestionOptionException("question id cannot be null");
         if(optionText == null) throw new QuestionOptionException("Option text cannot be null");
         if(createAt == null) throw new QuestionOptionException("Created at cannot be null");
         if(updateAt == null) throw new QuestionOptionException("Updated at cannot be null");
         this.id = id;
+        this.questionId = questionId;
         this.optionText = optionText;
         this.createAt = createAt;
         this.updateAt = updateAt;
     }
 
-    public static QuestionOption create(QuestionId questionId, OptionText optionText) {
-        return new QuestionOption(QuestionOptionId.generate(), optionText, Instant.now(), Instant.now());
+    public static QuestionOption create(QuestionId questionId,OptionText optionText) {
+        return new QuestionOption(QuestionOptionId.generate(), questionId, optionText, Instant.now(), Instant.now());
     }
 
 
@@ -42,5 +45,9 @@ public class QuestionOption {
 
     public Instant getUpdateAt() {
         return updateAt;
+    }
+
+    public QuestionId getQuestionId() {
+        return questionId;
     }
 }

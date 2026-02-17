@@ -19,6 +19,7 @@ import java.util.UUID;
 public class SurveyEntity {
 
     @Id
+    @Column(updatable = false, nullable = false, unique = true)
     private UUID id;
 
     @Column(nullable = false)

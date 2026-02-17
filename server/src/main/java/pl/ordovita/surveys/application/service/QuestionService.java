@@ -2,6 +2,7 @@ package pl.ordovita.surveys.application.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.ordovita.surveys.application.port.in.CreateQuestionSurveyUseCase;
 import pl.ordovita.surveys.domain.exception.QuestionException;
 import pl.ordovita.surveys.domain.exception.SurveyException;
@@ -27,28 +28,25 @@ public class QuestionService implements CreateQuestionSurveyUseCase {
     private final QuestionOptionRepository questionOptionRepository;
 
     @Override
+    @Transactional
     public CreateQuestionSurveyResult create(CreateQuestionSurveyCommand command) {
         SurveyId surveyId = new SurveyId(command.surveyUUID());
         Survey survey = surveyRepository.findById(surveyId).orElseThrow(() -> new SurveyException("Survey with id " + surveyId + " not found"));
 
-        Question question = Question.create(command.questionText(),survey.getId(),null, command.questionType(), command.isRequired());
+        Question question = Question.create(command.questionText(),survey.getId(), command.questionType(), command.isRequired());
+        questionRepository.save(question);
 
         if(command.questionType().equals(QuestionType.LIST) && command.optionTextValue().isEmpty()) throw new QuestionException("If question type is list option list cannot be null!");
 
         if(!command.optionTextValue().isEmpty()) {
-            Set<QuestionOption> questionOptionSet = new HashSet<>();
             for (String optionTextValue : command.optionTextValue()) {
                 OptionText optionText = new OptionText(optionTextValue);
-                QuestionOption questionOption = QuestionOption.create(question.getId(), optionText);
+                QuestionOption questionOption = QuestionOption.create(question.getId(),optionText);
 
-                questionOptionSet.add(questionOption);
                 questionOptionRepository.save(questionOption);
             }
-            question.addOption(questionOptionSet);
         }
 
-
-        questionRepository.save(question);
 
         return new CreateQuestionSurveyResult(survey.getId().value(),question.getId().value(),question.getCreatedAt());
     }
