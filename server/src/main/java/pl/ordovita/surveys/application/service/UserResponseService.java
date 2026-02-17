@@ -8,6 +8,7 @@ import pl.ordovita.identity.domain.port.CurrentUser;
 import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.surveys.application.dto.UserAnswer;
 import pl.ordovita.surveys.application.port.in.AddResponseToSurveyUseCase;
+import pl.ordovita.surveys.domain.exception.UserResponseException;
 import pl.ordovita.surveys.domain.model.questions.Question;
 import pl.ordovita.surveys.domain.model.questions.QuestionId;
 import pl.ordovita.surveys.domain.model.surveys.SurveyId;
@@ -17,6 +18,8 @@ import pl.ordovita.surveys.domain.port.QuestionRepository;
 import pl.ordovita.surveys.domain.port.UserResponseRepository;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -29,15 +32,20 @@ public class UserResponseService implements AddResponseToSurveyUseCase {
     private final CurrentUser currentUser;
 
 
+
     @Override
     public AddResponseResult addResponse(AddResponseCommand command) {
         User user = userRepository.findById(currentUser.requireAuthenticated().id()).orElseThrow(() -> new UserException(
                 "User not found"));
         SurveyId surveyId = new SurveyId(command.surveyId());
         Set<Question> questionSet = questionRepository.findAllBySurveyId(surveyId);
+        Set<UserResponse> userResponses = userResponseRepository.findAllByUserId(user.getId());
+
+        boolean alreadyAnswered = UserResponse.checkIfAlreadyAnswered(userResponses,questionSet.stream().map(Question::getId).toList());
+
+        if (alreadyAnswered) throw new UserResponseException("UserResponse already answered");
 
         for (Question question : questionSet) {
-//            String answer = command.answerSet().stream().filter(us -> new QuestionId(us.questionId()).equals(question.getId())).toString();
             String answer = command.answerSet().stream().filter(us -> us.questionId().equals(question.getId().value())).map(
                     UserAnswer::answer).findFirst().orElse("");
             TextAnswer textAnswer = new TextAnswer(answer);

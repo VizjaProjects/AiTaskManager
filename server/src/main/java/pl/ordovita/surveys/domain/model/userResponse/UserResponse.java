@@ -5,6 +5,7 @@ import pl.ordovita.surveys.domain.exception.UserResponseException;
 import pl.ordovita.surveys.domain.model.questions.QuestionId;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 
 public class UserResponse {
@@ -36,9 +37,11 @@ public class UserResponse {
     }
 
     //TODO
-//    public boolean checkIfAlreadyAnswered(List<QuestionId> questionIdList) {
-//        if (questionIdList.contains(this.questionId)) return false;
-//    }
+    public static boolean checkIfAlreadyAnswered(Collection<UserResponse> userResponses, Collection<QuestionId>  questionIds) {
+        if (userResponses == null || questionIds == null) throw new UserResponseException("userResponses and questionIds cannot be null");
+
+        return userResponses.stream().map(UserResponse::getQuestionId).anyMatch(questionIds::contains);
+    }
 
 
     public UserResponseId getId() {
