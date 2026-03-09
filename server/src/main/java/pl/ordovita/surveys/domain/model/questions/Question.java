@@ -1,26 +1,22 @@
 package pl.ordovita.surveys.domain.model.questions;
 
 import pl.ordovita.surveys.domain.exception.QuestionException;
-import pl.ordovita.surveys.domain.model.questionOption.QuestionOption;
 
 import pl.ordovita.surveys.domain.model.surveys.SurveyId;
 
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.Set;
 
 public class Question {
     private final QuestionId id;
-    private final SurveyId surveyId;
-    private final String questionText;
-    private final QuestionType questionType;
-    private final boolean isRequired;
+    private SurveyId surveyId;
+    private String questionText;
+    private QuestionType questionType;
+    private boolean isRequired;
     private final Instant createdAt;
-    private final Instant updatedAt;
+    private Instant updatedAt;
 
     public Question(QuestionId id, SurveyId surveyId, String questionText, QuestionType questionType,  boolean isRequired, Instant createdAt, Instant updatedAt) {
         if(id == null) throw new QuestionException("id cannot be null");
-        if(surveyId == null) throw new QuestionException("surveyId cannot be null");
         if(questionText == null) throw new QuestionException("questionText cannot be null");
         if(questionType == null) throw new QuestionException("questionType cannot be null");
         if(createdAt == null) throw new QuestionException("createdAt cannot be null");
@@ -38,6 +34,22 @@ public class Question {
         return new Question(QuestionId.generate(), surveyId, questionText, questionType, isRequired, Instant.now(), Instant.now());
     }
 
+    public void edit(String questionText, QuestionType questionType, boolean isRequired) {
+        if(questionText == null) throw new QuestionException("questionText cannot be null");
+        if(questionType == null) throw new QuestionException("questionType cannot be null");
+        this.questionText = questionText;
+        this.questionType = questionType;
+        this.isRequired = isRequired;
+        this.updatedAt = Instant.now();
+    }
+
+    public void deleteQuestion(QuestionId id) {
+        if (id == null) throw new QuestionException("id cannot be null");
+        if (surveyId == null) throw new QuestionException("surveyId is already null");
+        this.surveyId = null;
+        this.isRequired = false;
+        this.updatedAt = Instant.now();
+    }
 
     public QuestionId getId() {
         return id;

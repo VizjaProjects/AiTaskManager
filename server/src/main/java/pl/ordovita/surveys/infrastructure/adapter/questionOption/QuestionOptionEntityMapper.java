@@ -10,7 +10,11 @@ import pl.ordovita.surveys.infrastructure.jpa.questions.QuestionEntity;
 public class QuestionOptionEntityMapper {
 
     public static QuestionOptionEntity from(QuestionOption questionOption) {
-        QuestionEntity questionEntity = QuestionEntity.builder().id(questionOption.getQuestionId().value()).build();
+        QuestionEntity questionEntity = null;
+
+        if(questionOption.getQuestionId() != null) {
+            questionEntity = QuestionEntity.builder().id(questionOption.getQuestionId().value()).build();
+        }
 
 
         return new QuestionOptionEntity(questionOption.getId().value(),
@@ -21,9 +25,18 @@ public class QuestionOptionEntityMapper {
     }
 
     public static QuestionOption toDomain(QuestionOptionEntity questionOptionEntity) {
+
+        QuestionId questionId;
+
+        if(questionOptionEntity.getQuestionId() != null) {
+            questionId = new QuestionId(questionOptionEntity.getQuestionId().getId());
+        } else {
+            questionId = new QuestionId(null);
+        }
+
         return new QuestionOption(
                 new QuestionOptionId(questionOptionEntity.getId()),
-                new QuestionId(questionOptionEntity.getId()),
+                questionId,
                 new OptionText(questionOptionEntity.getOptionText()),
                 questionOptionEntity.getCreateAt(),
                 questionOptionEntity.getUpdateAt()

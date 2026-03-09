@@ -9,6 +9,8 @@ import pl.ordovita.surveys.infrastructure.jpa.surveys.SurveyEntity;
 import pl.ordovita.surveys.infrastructure.jpa.surveys.SurveyJpaRepository;
 
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -25,5 +27,15 @@ public class SurveyJpaRepositoryAdapter implements SurveyRepository {
     @Override
     public Optional<Survey> findById(SurveyId id) {
         return surveyJpaRepository.findById(id.value()).map(SurveyEntityMapper::toDomain);
+    }
+
+    @Override
+    public Set<Survey> findAllActiveSurveys() {
+        return surveyJpaRepository.findAllActiveSurveys().stream().map(SurveyEntityMapper::toDomain).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<Survey> getAllSurveys() {
+        return surveyJpaRepository.findAll().stream().map(SurveyEntityMapper::toDomain).collect(Collectors.toSet());
     }
 }

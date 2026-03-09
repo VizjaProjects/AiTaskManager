@@ -24,7 +24,7 @@ public class QuestionEntity {
     @Column(updatable = false, nullable = false, unique = true)
     private UUID id;
 
-    @JoinColumn(name = "survey_id", updatable = false, nullable = false, unique = true)
+    @JoinColumn(name = "survey_id")
     @ManyToOne(fetch = FetchType.LAZY)
     private SurveyEntity surveyId;
 

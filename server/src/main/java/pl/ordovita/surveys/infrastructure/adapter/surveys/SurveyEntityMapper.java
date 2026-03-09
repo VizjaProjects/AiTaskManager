@@ -12,7 +12,8 @@ public class SurveyEntityMapper {
                 survey.getTitle(),
                 survey.getDescription(),
                 survey.getCreatedAt(),
-                survey.getUpdatedAt()
+                survey.getUpdatedAt(),
+                survey.isVisible()
         );
     }
 
@@ -22,7 +23,8 @@ public class SurveyEntityMapper {
                 surveyEntity.getTitle(),
                 surveyEntity.getDescription(),
                 surveyEntity.getCreatedAt(),
-                surveyEntity.getUpdatedAt()
+                surveyEntity.getUpdatedAt(),
+                surveyEntity.isVisible()
         );
     }
 }

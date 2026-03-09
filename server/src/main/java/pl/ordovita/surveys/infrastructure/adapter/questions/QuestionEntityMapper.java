@@ -11,7 +11,11 @@ public class QuestionEntityMapper {
 
     public static QuestionEntity from(Question question) {
         SurveyEntity surveyEntity = new SurveyEntity();
-        surveyEntity.setId(question.getSurveyId().value());
+        if(question.getSurveyId() != null) {
+            surveyEntity.setId(question.getSurveyId().value());
+        } else {
+            surveyEntity = null;
+        }
 
         return new QuestionEntity(question.getId().value(),
                 surveyEntity,
@@ -26,8 +30,16 @@ public class QuestionEntityMapper {
 
     public static Question toDomain(QuestionEntity questionEntity) {
 
+        SurveyId surveyId;
+
+        if(questionEntity.getSurveyId() != null) {
+            surveyId = new SurveyId(questionEntity.getSurveyId().getId());
+        } else {
+            surveyId = new SurveyId(null);
+        }
+
         return new Question(new QuestionId(questionEntity.getId()),
-                new SurveyId(questionEntity.getSurveyId().getId()),
+                surveyId,
                 questionEntity.getQuestionText(),
                 questionEntity.getQuestionType(),
                 questionEntity.isRequired(),

@@ -3,16 +3,18 @@ package pl.ordovita.surveys.domain.model.surveys;
 import pl.ordovita.surveys.domain.exception.SurveyException;
 
 import java.time.Instant;
+import java.util.Objects;
 
 public class Survey {
     
     private final SurveyId id;
-    private final String title;
-    private final String description;
+    private String title;
+    private String description;
     private final Instant createdAt;
-    private final Instant updatedAt;
+    private Instant updatedAt;
+    private boolean isVisible;
 
-    public Survey(SurveyId id, String title, String description, Instant createdAt, Instant updatedAt) {
+    public Survey(SurveyId id, String title, String description, Instant createdAt, Instant updatedAt, boolean isVisible) {
         if (id == null) throw new SurveyException("Survey id cannot be null");
         if (title == null) throw new SurveyException("Title cannot be null");
         if (description == null) throw new SurveyException("Description cannot be null");
@@ -23,12 +25,28 @@ public class Survey {
         this.description = description;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.isVisible = isVisible;
     }
 
     public static Survey create(String title, String description) {
-        return new Survey(SurveyId.generate(), title, description, Instant.now(), Instant.now());
+        return new Survey(SurveyId.generate(), title, description, Instant.now(), Instant.now(),true);
     }
 
+    public void changeVisibility(boolean isVisible) {
+        if(isVisible == this.isVisible) throw new SurveyException("Survey visible status cannot be same as previous status");
+        this.isVisible = isVisible;
+        this.updatedAt = Instant.now();
+    }
+
+    public Survey editSurveyTitleAndDescription(String title, String description){
+        if(Objects.equals(this.title, title)) throw new SurveyException("Survey title  cannot be same as previous title");
+        if(Objects.equals(this.description, description)) throw new SurveyException("Survey description cannot be same as previous description");
+        this.title = title;
+        this.description = description;
+        this.updatedAt = Instant.now();
+
+        return this;
+    }
 
     public SurveyId getId() {
         return id;
@@ -48,5 +66,9 @@ public class Survey {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public boolean isVisible() {
+        return isVisible;
     }
 }

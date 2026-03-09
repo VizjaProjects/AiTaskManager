@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
+import pl.ordovita.surveys.domain.model.questions.QuestionType;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -33,5 +34,8 @@ public class SurveyEntity {
 
     @Column(nullable = false)
     private Instant updatedAt;
+
+    @Column(nullable = false)
+    private boolean isVisible;
 
 }
