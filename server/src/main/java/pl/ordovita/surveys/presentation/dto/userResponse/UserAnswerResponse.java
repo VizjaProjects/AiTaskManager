@@ -7,5 +7,5 @@ import java.time.Instant;
 import java.util.Set;
 import java.util.UUID;
 
-public record UserAnswerResponse(Set<UserAnswer> userAnswerSet , UUID userResponseId, Instant createdAt) {
+public record UserAnswerResponse(UUID questionId, String answer , UUID userResponseId, Instant createdAt) {
 }

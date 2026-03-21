@@ -2,6 +2,8 @@ package pl.ordovita.surveys.infrastructure.adapter.surveys;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import pl.ordovita.identity.domain.model.user.UserId;
+import pl.ordovita.surveys.application.dto.UserResponseResult;
 import pl.ordovita.surveys.domain.model.surveys.Survey;
 import pl.ordovita.surveys.domain.model.surveys.SurveyId;
 import pl.ordovita.surveys.domain.port.SurveyRepository;
@@ -10,6 +12,7 @@ import pl.ordovita.surveys.infrastructure.jpa.surveys.SurveyJpaRepository;
 
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Repository
@@ -37,5 +40,10 @@ public class SurveyJpaRepositoryAdapter implements SurveyRepository {
     @Override
     public Set<Survey> getAllSurveys() {
         return surveyJpaRepository.findAll().stream().map(SurveyEntityMapper::toDomain).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<UserResponseResult> getAllUserResponseResults(UserId userId) {
+        return surveyJpaRepository.getAllUserResponse(userId.value());
     }
 }

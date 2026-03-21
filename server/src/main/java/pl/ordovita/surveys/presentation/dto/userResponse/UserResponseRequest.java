@@ -4,6 +4,7 @@ package pl.ordovita.surveys.presentation.dto.userResponse;
 import pl.ordovita.surveys.application.dto.UserAnswer;
 
 import java.util.Set;
+import java.util.UUID;
 
-public record UserResponseRequest(Set<UserAnswer> answerSet) {
+public record UserResponseRequest(UUID questionId, String answer) {
 }

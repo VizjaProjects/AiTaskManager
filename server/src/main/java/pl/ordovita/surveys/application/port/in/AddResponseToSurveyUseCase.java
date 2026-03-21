@@ -9,8 +9,8 @@ import java.util.UUID;
 
 public interface AddResponseToSurveyUseCase {
 
-    record AddResponseCommand(UUID surveyId, Set<UserAnswer> answerSet) {}
-    record AddResponseResult(UUID surveyId, Set<UserAnswer> answerSet, Instant createdAt) {}
+    record AddResponseCommand(UUID surveyId, UUID questionId, String answer) {}
+    record AddResponseResult(UUID questionId, UUID surveyId, String answer, Instant createdAt) {}
 
 
     AddResponseResult addResponse(AddResponseCommand command);

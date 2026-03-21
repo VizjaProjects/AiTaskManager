@@ -36,4 +36,14 @@ public class UserResponseJpaRepositoryAdapter implements UserResponseRepository 
     public Set<UserResponse> findAllByUserId(UserId id) {
         return userResponseJpaRepository.findAllByUserId(id.value()).stream().map(UserResponseEntityMapper::toDomain).collect(Collectors.toSet());
     }
+
+    @Override
+    public Optional<UserResponse> findByUserIdAndUserResponseId(UserId id, UserResponseId userResponseId) {
+        return userResponseJpaRepository.findByUserIdAndUserResponseId(userResponseId.value(),id.value()).map(UserResponseEntityMapper::toDomain);
+    }
+
+    @Override
+    public void delete(UserResponse userResponse) {
+        userResponseJpaRepository.delete(UserResponseEntityMapper.from(userResponse));
+    }
 }

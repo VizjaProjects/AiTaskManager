@@ -13,9 +13,9 @@ public class UserResponse {
     private final UserResponseId id;
     private final UserId userId;
     private final QuestionId questionId;
-    private final TextAnswer textAnswer;
+    private TextAnswer textAnswer;
     private final Instant createdAt;
-    private final Instant updatedAt;
+    private Instant updatedAt;
 
     public UserResponse(UserResponseId id, UserId userId, QuestionId questionId, TextAnswer textAnswer, Instant createdAt, Instant updatedAt) {
         if (id==null) throw new UserResponseException("id cannot be null");
@@ -36,12 +36,19 @@ public class UserResponse {
         return new UserResponse(UserResponseId.generate(), userId, questionId, textAnswer, Instant.now(), Instant.now());
     }
 
-    //TODO
     public static boolean checkIfAlreadyAnswered(Collection<UserResponse> userResponses, Collection<QuestionId>  questionIds) {
         if (userResponses == null || questionIds == null) throw new UserResponseException("userResponses and questionIds cannot be null");
 
         return userResponses.stream().map(UserResponse::getQuestionId).anyMatch(questionIds::contains);
     }
+
+    public void changeResponse(TextAnswer textAnswer) {
+        if(textAnswer.equals(this.textAnswer)) throw new UserResponseException("TextAnswer cannot be the same as new TextAnswer");
+        this.textAnswer = textAnswer;
+        this.updatedAt = Instant.now();
+    }
+
+
 
 
     public UserResponseId getId() {

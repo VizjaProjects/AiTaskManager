@@ -10,7 +10,6 @@ import pl.ordovita.surveys.domain.exception.QuestionException;
 import pl.ordovita.surveys.domain.exception.SurveyException;
 import pl.ordovita.surveys.domain.model.questionOption.OptionText;
 import pl.ordovita.surveys.domain.model.questionOption.QuestionOption;
-import pl.ordovita.surveys.domain.model.questionOption.QuestionOptionId;
 import pl.ordovita.surveys.domain.model.questions.Question;
 import pl.ordovita.surveys.domain.model.questions.QuestionId;
 import pl.ordovita.surveys.domain.model.questions.QuestionType;
@@ -43,6 +42,7 @@ public class QuestionUseService implements CreateQuestionSurveyUseCase, GetAllSu
                 survey.getId(),
                 command.questionType(),
                 command.isRequired());
+
         questionRepository.save(question);
 
         if (command.questionType().equals(QuestionType.LIST) && command.optionTextValue().isEmpty())

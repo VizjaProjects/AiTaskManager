@@ -11,4 +11,6 @@ public interface UserResponseRepository {
     Optional<UserResponse> findById(UserResponseId id);
     UserResponse save(UserResponse userResponse);
     Set<UserResponse> findAllByUserId(UserId id);
+    Optional<UserResponse> findByUserIdAndUserResponseId(UserId id, UserResponseId userResponseId);
+    void delete(UserResponse userResponse);
 }
