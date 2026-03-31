@@ -5,6 +5,8 @@ import org.springframework.stereotype.Repository;
 import pl.ordovita.tasks.domain.model.calendar.CalendarId;
 import pl.ordovita.tasks.domain.model.event.Event;
 import pl.ordovita.tasks.domain.model.event.EventId;
+import pl.ordovita.tasks.domain.model.event.EventStatus;
+import pl.ordovita.tasks.domain.model.task.TaskId;
 import pl.ordovita.tasks.domain.port.EventRepository;
 import pl.ordovita.tasks.infrastructure.jpa.event.EventEntity;
 import pl.ordovita.tasks.infrastructure.jpa.event.EventJpaRepository;
@@ -32,5 +34,20 @@ public class EventRepositoryAdapter implements EventRepository {
     @Override
     public List<Event> findAllByCalendarId(CalendarId calendarId) {
         return eventJpaRepository.findAllByCalendarId(calendarId.value()).stream().map(EventEntityMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Event> findByCalendarIdAndStatus(CalendarId calendarId, EventStatus status) {
+        return eventJpaRepository.findByCalendarIdAndStatus(calendarId.value(), status).stream().map(EventEntityMapper::toDomain).toList();
+    }
+
+    @Override
+    public Optional<Event> findByTaskId(TaskId taskId) {
+        return eventJpaRepository.findByTaskId(taskId.value()).map(EventEntityMapper::toDomain);
+    }
+
+    @Override
+    public void delete(Event event) {
+        eventJpaRepository.delete(EventEntityMapper.from(event));
     }
 }

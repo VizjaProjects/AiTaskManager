@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "AI Task Manager",
+    "slug": "ai-task-manager",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "aitaskmanager",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#fbf8ff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "pl.ordovita.aitaskmanager"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#fbf8ff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "pl.ordovita.aitaskmanager"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": ["expo-router", "expo-secure-store", "expo-font"]
+  }
+}

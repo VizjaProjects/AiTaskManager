@@ -47,10 +47,24 @@ public class Event {
 
     public static Event create(TaskId taskId, String title, Instant startDateTime, Instant endDateTime,
                                boolean allDay, ProposedBy proposedBy, CalendarId calendarId) {
+        EventStatus status = proposedBy == ProposedBy.AI ? EventStatus.PROPOSED : EventStatus.ACCEPTED;
         return new Event(EventId.generate(), taskId, title, startDateTime, endDateTime, allDay,
-                EventStatus.PROPOSED, proposedBy, calendarId, Instant.now(), Instant.now());
+                status, proposedBy, calendarId, Instant.now(), Instant.now());
     }
 
+    public void accept() {
+        this.status = EventStatus.ACCEPTED;
+        this.updatedAt = Instant.now();
+    }
+    public Event edit(String title, Instant startDateTime, Instant endDateTime, boolean allDay, EventStatus status) {
+        this.title = title;
+        this.startDateTime = startDateTime;
+        this.endDateTime = endDateTime;
+        this.allDay = allDay;
+        this.status = status;
+        this.updatedAt = Instant.now();
+        return this;
+    }
     public EventId getId() {
         return id;
     }

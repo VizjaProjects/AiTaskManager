@@ -20,7 +20,36 @@ services:
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=DEBUG
       - LOGGING_LEVEL_ORG_HIBERNATE_SQL=DEBUG
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:9251
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- --spider http://localhost:8080/swagger-ui/index.html || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+      args:
+        EXPO_PUBLIC_API_URL: ""
+    ports:
+      - "3000:80"
+    container_name: ordovita-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - ordovita-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
 
 networks:
   ordovita-network:

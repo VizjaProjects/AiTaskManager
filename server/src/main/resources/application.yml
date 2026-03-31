@@ -33,7 +33,7 @@ spring:
     show-sql: true
 
 cors:
-  allowed-origins: http://localhost:5173, http://localhost
+  allowed-origins: http://localhost:5173, http://localhost, http://localhost:8081, http://localhost:19006, http://localhost:3000
   allowed-methods: GET,POST,PUT,DELETE,OPTIONS
   allowed-headers: "*"
   allow-credentials: true
@@ -47,3 +47,8 @@ jwt:
 
 path:
   email-template: templates/identity
+
+ai:
+  gemini:
+    api-key: ${GEMINI_API_KEY}
+    model: gemini-3-flash-preview

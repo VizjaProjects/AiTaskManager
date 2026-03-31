@@ -35,6 +35,16 @@ public class TaskRepositoryAdapter implements TaskRepository {
     }
 
     @Override
+    public List<Task> findAcceptedByUserId(UserId userId) {
+        return taskJpaRepository.findAcceptedByUserId(userId.value()).stream().map(TaskEntityMapper::toDomain).toList();
+    }
+
+    @Override
+    public List<Task> findPendingByUserId(UserId userId) {
+        return taskJpaRepository.findPendingByUserId(userId.value()).stream().map(TaskEntityMapper::toDomain).toList();
+    }
+
+    @Override
     public void delete(Task task) {
         taskJpaRepository.delete(TaskEntityMapper.from(task));
     }

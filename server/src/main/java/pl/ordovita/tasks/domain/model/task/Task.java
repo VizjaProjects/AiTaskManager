@@ -18,13 +18,14 @@ public class Task {
     private Instant dueDateTime;
     private TaskStatusId statusId;
     private TaskSource source;
+    private boolean accepted;
     private final UserId userId;
     private final Instant createdAt;
     private Instant updatedAt;
 
     public Task(TaskId id, String title, String description, TaskPriority priority, CategoryId categoryId,
                 int estimatedDuration, Instant dueDateTime, TaskStatusId statusId, TaskSource source,
-                UserId userId, Instant createdAt, Instant updatedAt) {
+                boolean accepted, UserId userId, Instant createdAt, Instant updatedAt) {
         if (id == null) throw new TaskException("Task id cannot be null");
         if (title == null) throw new TaskException("Title cannot be null");
         if (priority == null) throw new TaskException("Priority cannot be null");
@@ -42,6 +43,7 @@ public class Task {
         this.dueDateTime = dueDateTime;
         this.statusId = statusId;
         this.source = source;
+        this.accepted = accepted;
         this.userId = userId;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
@@ -50,8 +52,14 @@ public class Task {
     public static Task create(String title, String description, TaskPriority priority, CategoryId categoryId,
                               int estimatedDuration, Instant dueDateTime, TaskStatusId statusId,
                               TaskSource source, UserId userId) {
+        boolean accepted = source != TaskSource.AI_PARSED;
         return new Task(TaskId.generate(), title, description, priority, categoryId, estimatedDuration,
-                dueDateTime, statusId, source, userId, Instant.now(), Instant.now());
+                dueDateTime, statusId, source, accepted, userId, Instant.now(), Instant.now());
+    }
+
+    public void accept() {
+        this.accepted = true;
+        this.updatedAt = Instant.now();
     }
 
     public Task edit(String title, String description, TaskPriority priority, CategoryId categoryId,
@@ -101,6 +109,10 @@ public class Task {
 
     public TaskSource getSource() {
         return source;
+    }
+
+    public boolean isAccepted() {
+        return accepted;
     }
 
     public UserId getUserId() {

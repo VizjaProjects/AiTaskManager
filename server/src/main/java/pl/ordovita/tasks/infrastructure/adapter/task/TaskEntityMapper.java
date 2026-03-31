@@ -33,6 +33,7 @@ public class TaskEntityMapper {
                 task.getDueDateTime(),
                 statusEntity,
                 task.getSource(),
+                task.isAccepted(),
                 userEntity,
                 task.getCreatedAt(),
                 task.getUpdatedAt()
@@ -55,6 +56,7 @@ public class TaskEntityMapper {
                 entity.getDueDateTime(),
                 new TaskStatusId(entity.getStatusId().getId()),
                 entity.getSource(),
+                entity.isAccepted(),
                 new UserId(entity.getUserId().getId()),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt()

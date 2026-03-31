@@ -11,4 +11,10 @@ public interface TaskJpaRepository extends JpaRepository<TaskEntity, UUID> {
 
     @Query("FROM TaskEntity t WHERE t.userId.id = :userId")
     List<TaskEntity> findAllByUserId(@Param("userId") UUID userId);
+
+    @Query("FROM TaskEntity t WHERE t.userId.id = :userId AND t.accepted = true")
+    List<TaskEntity> findAcceptedByUserId(@Param("userId") UUID userId);
+
+    @Query("FROM TaskEntity t WHERE t.userId.id = :userId AND t.accepted = false")
+    List<TaskEntity> findPendingByUserId(@Param("userId") UUID userId);
 }

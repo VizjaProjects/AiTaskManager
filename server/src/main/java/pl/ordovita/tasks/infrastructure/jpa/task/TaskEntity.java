@@ -50,6 +50,9 @@ public class TaskEntity {
     @Column(nullable = false)
     private TaskSource source;
 
+    @Column(nullable = false)
+    private boolean accepted;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity userId;

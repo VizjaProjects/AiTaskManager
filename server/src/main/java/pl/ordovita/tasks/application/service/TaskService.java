@@ -108,7 +108,7 @@ public class TaskService implements CreateTaskUseCase, EditTaskUseCase, DeleteTa
         User user = userRepository.findById(currentUser.requireAuthenticated().id())
                 .orElseThrow(() -> new UserException("User not found"));
 
-        List<TaskResult> tasks = taskRepository.findAllByUserId(user.getId()).stream()
+        List<TaskResult> tasks = taskRepository.findAcceptedByUserId(user.getId()).stream()
                 .map(task -> new TaskResult(
                         task.getId().value(),
                         task.getTitle(),

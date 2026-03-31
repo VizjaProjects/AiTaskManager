@@ -11,5 +11,7 @@ public interface TaskRepository {
     Task save(Task task);
     Optional<Task> findById(TaskId id);
     List<Task> findAllByUserId(UserId userId);
+    List<Task> findAcceptedByUserId(UserId userId);
+    List<Task> findPendingByUserId(UserId userId);
     void delete(Task task);
 }
