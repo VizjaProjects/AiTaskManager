@@ -97,7 +97,13 @@ function CreateEventModal({
       setEndMin(initialEndMin ?? "00");
       setAllDay(false);
     }
-  }, [visible, initialStartHour, initialStartMin, initialEndHour, initialEndMin]);
+  }, [
+    visible,
+    initialStartHour,
+    initialStartMin,
+    initialEndHour,
+    initialEndMin,
+  ]);
 
   function handleCreate() {
     if (!title.trim()) return;
@@ -253,9 +259,8 @@ export default function CalendarScreen() {
 
   const gridRef = useRef<View>(null);
   const weekDaysRef = useRef<Date[]>([]);
-  const dragEndRef = useRef<
-    (colIdx: number, startH: number, endH: number) => void
-  >();
+  const dragEndRef =
+    useRef<(colIdx: number, startH: number, endH: number) => void>();
 
   const today = useMemo(() => {
     const d = new Date();
@@ -568,7 +573,9 @@ export default function CalendarScreen() {
 
       {/* Time grid */}
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={{ height: HOURS.length * HOUR_HEIGHT, position: "relative" }}>
+        <View
+          style={{ height: HOURS.length * HOUR_HEIGHT, position: "relative" }}
+        >
           {/* Hour rows with labels */}
           {HOURS.map((hour) => (
             <View
@@ -683,8 +690,7 @@ export default function CalendarScreen() {
                     left: `${(dragSel.colIdx / 7) * 100}%`,
                     width: `${100 / 7}%`,
                     top: (dragSel.startHour - 7) * HOUR_HEIGHT,
-                    height:
-                      (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
+                    height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
                     backgroundColor: "rgba(77, 65, 223, 0.12)",
                     borderWidth: 1,
                     borderColor: "#4d41df",

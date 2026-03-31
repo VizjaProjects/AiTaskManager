@@ -453,9 +453,7 @@ export default function TasksScreen() {
                     : "bg-surface-container-high border border-outline"
                 }`}
                 style={
-                  active
-                    ? { backgroundColor: PRIORITY_COLORS[p] }
-                    : undefined
+                  active ? { backgroundColor: PRIORITY_COLORS[p] } : undefined
                 }
               >
                 <Text
@@ -538,8 +536,7 @@ export default function TasksScreen() {
             contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
           >
             {orderedStatuses.map((status, colIdx) => {
-              const statusTasks =
-                groupedByStatus.get(status.statusId) ?? [];
+              const statusTasks = groupedByStatus.get(status.statusId) ?? [];
               return (
                 <DropColumn
                   key={status.statusId}
@@ -642,8 +639,7 @@ export default function TasksScreen() {
             contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
           >
             {orderedStatuses.map((status) => {
-              const statusTasks =
-                groupedByStatus.get(status.statusId) ?? [];
+              const statusTasks = groupedByStatus.get(status.statusId) ?? [];
               if (statusTasks.length === 0) return null;
               return (
                 <View key={status.statusId} className="gap-2">
