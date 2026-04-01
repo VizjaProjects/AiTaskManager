@@ -13,7 +13,7 @@ export function Card({
   const base = "rounded-2xl";
 
   const variants = {
-    glass: `${base} bg-white/70 p-6`,
+    glass: `${base} bg-surface-container-lowest p-6`,
     surface: `${base} bg-surface-container-lowest p-5`,
     elevated: `${base} bg-surface-container-lowest p-5 shadow-lg`,
   };

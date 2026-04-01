@@ -10,11 +10,19 @@ import {
 } from "react-native";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "expo-router";
 import { PageLayout } from "@/components/organisms";
-import { Button, Input } from "@/components/atoms";
-import { useEvents, useCreateEvent } from "@/lib/hooks";
+import { Button, Input, InlineDatePicker } from "@/components/atoms";
+import {
+  useEvents,
+  useCreateEvent,
+  useEditEvent,
+  useDeleteEvent,
+} from "@/lib/hooks";
 import { ProposedBy, EventStatus } from "@/lib/types";
-import type { CalendarEvent } from "@/lib/types";
+import type { CalendarEvent, EditEventRequest } from "@/lib/types";
+import { useThemeStore } from "@/lib/stores";
+import { useQueryClient } from "@tanstack/react-query";
 
 const WEEK_DAYS_SHORT = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 7);
@@ -244,13 +252,207 @@ interface DragSelection {
   endHour: number;
 }
 
+function EditCalendarEventModal({
+  event,
+  visible,
+  onClose,
+}: {
+  event: CalendarEvent;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const editEvent = useEditEvent();
+  const deleteEvent = useDeleteEvent();
+  const [title, setTitle] = useState(event.title);
+  const [eventDate, setEventDate] = useState(() => {
+    const s = new Date(event.startDateTime);
+    return new Date(s.getFullYear(), s.getMonth(), s.getDate());
+  });
+  const [startHour, setStartHour] = useState("09");
+  const [startMin, setStartMin] = useState("00");
+  const [endHour, setEndHour] = useState("10");
+  const [endMin, setEndMin] = useState("00");
+  const [allDay, setAllDay] = useState(event.allDay);
+
+  useEffect(() => {
+    if (visible) {
+      setTitle(event.title);
+      setAllDay(event.allDay);
+      const s = new Date(event.startDateTime);
+      const e = new Date(event.endDateTime);
+      setEventDate(new Date(s.getFullYear(), s.getMonth(), s.getDate()));
+      setStartHour(String(s.getHours()).padStart(2, "0"));
+      setStartMin(String(s.getMinutes()).padStart(2, "0"));
+      setEndHour(String(e.getHours()).padStart(2, "0"));
+      setEndMin(String(e.getMinutes()).padStart(2, "0"));
+    }
+  }, [visible, event]);
+
+  function handleSave() {
+    if (!title.trim()) return;
+    const start = new Date(eventDate);
+    start.setHours(parseInt(startHour), parseInt(startMin), 0, 0);
+    const end = new Date(eventDate);
+    end.setHours(parseInt(endHour), parseInt(endMin), 0, 0);
+
+    editEvent.mutate(
+      {
+        eventId: event.eventId,
+        data: {
+          title: title.trim(),
+          startDateTime: start.toISOString(),
+          endDateTime: end.toISOString(),
+          allDay,
+          status: event.status,
+        },
+      },
+      { onSuccess: onClose },
+    );
+  }
+
+  function handleDelete() {
+    deleteEvent.mutate(event.eventId, { onSuccess: onClose });
+  }
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View className="flex-1 bg-black/50 items-center justify-center p-6">
+        <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
+          <View className="flex-row items-center justify-between">
+            <Text className="font-headline text-on-surface text-lg">
+              Edytuj wydarzenie
+            </Text>
+            <TouchableOpacity onPress={onClose}>
+              <MaterialIcons name="close" size={24} color="#777587" />
+            </TouchableOpacity>
+          </View>
+          <Input
+            label="Tytuł"
+            value={title}
+            onChangeText={setTitle}
+            placeholder="Nazwa wydarzenia"
+          />
+          <View>
+            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+              Data
+            </Text>
+            <InlineDatePicker value={eventDate} onChange={setEventDate} />
+          </View>
+          <View className="flex-row gap-6">
+            <View>
+              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                Start
+              </Text>
+              <View className="flex-row items-center gap-1">
+                <TextInput
+                  value={startHour}
+                  onChangeText={(v) =>
+                    setStartHour(v.replace(/\D/g, "").slice(0, 2))
+                  }
+                  maxLength={2}
+                  placeholder="HH"
+                  placeholderTextColor="#777587"
+                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                />
+                <Text className="text-on-surface font-headline text-lg">:</Text>
+                <TextInput
+                  value={startMin}
+                  onChangeText={(v) =>
+                    setStartMin(v.replace(/\D/g, "").slice(0, 2))
+                  }
+                  maxLength={2}
+                  placeholder="MM"
+                  placeholderTextColor="#777587"
+                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                />
+              </View>
+            </View>
+            <View>
+              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                Koniec
+              </Text>
+              <View className="flex-row items-center gap-1">
+                <TextInput
+                  value={endHour}
+                  onChangeText={(v) =>
+                    setEndHour(v.replace(/\D/g, "").slice(0, 2))
+                  }
+                  maxLength={2}
+                  placeholder="HH"
+                  placeholderTextColor="#777587"
+                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                />
+                <Text className="text-on-surface font-headline text-lg">:</Text>
+                <TextInput
+                  value={endMin}
+                  onChangeText={(v) =>
+                    setEndMin(v.replace(/\D/g, "").slice(0, 2))
+                  }
+                  maxLength={2}
+                  placeholder="MM"
+                  placeholderTextColor="#777587"
+                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                />
+              </View>
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={() => setAllDay(!allDay)}
+            className="flex-row items-center gap-2"
+          >
+            <MaterialIcons
+              name={allDay ? "check-box" : "check-box-outline-blank"}
+              size={22}
+              color="#4d41df"
+            />
+            <Text className="text-on-surface font-body text-sm">
+              Cały dzień
+            </Text>
+          </TouchableOpacity>
+          <View className="flex-row gap-3 justify-end mt-2">
+            <Button
+              variant="error"
+              label="Usuń"
+              loading={deleteEvent.isPending}
+              onPress={handleDelete}
+            />
+            <Button variant="outline" label="Anuluj" onPress={onClose} />
+            <Button
+              label="Zapisz"
+              loading={editEvent.isPending}
+              disabled={!title.trim()}
+              onPress={handleSave}
+            />
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export default function CalendarScreen() {
   const { data: events } = useEvents();
+  const editEvent = useEditEvent();
+  const queryClient = useQueryClient();
+  const navigation = useNavigation();
+  const themeMode = useThemeStore((s) => s.mode);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener("focus", () => {
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+    });
+    return unsubscribe;
+  }, [navigation, queryClient]);
+
+  const isDark = themeMode === "dark";
+  const gridBorderColor = isDark ? "#464560" : "#c7c4d8";
+  const gridLineColor = isDark ? "#313448" : "#e0dff0";
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>("week");
   const [showCreate, setShowCreate] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [dragSel, setDragSel] = useState<DragSelection | null>(null);
   const [createStartH, setCreateStartH] = useState("09");
   const [createStartM, setCreateStartM] = useState("00");
@@ -259,8 +461,19 @@ export default function CalendarScreen() {
 
   const gridRef = useRef<View>(null);
   const weekDaysRef = useRef<Date[]>([]);
-  const dragEndRef =
-    useRef<(colIdx: number, startH: number, endH: number) => void>();
+  const dragEndRef = useRef<
+    ((colIdx: number, startH: number, endH: number) => void) | null
+  >(null);
+  const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
+  const [dragPreview, setDragPreview] = useState<{
+    colIdx: number;
+    top: number;
+    height: number;
+    title: string;
+    color: string;
+    startLabel: string;
+    endLabel: string;
+  } | null>(null);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -335,6 +548,69 @@ export default function CalendarScreen() {
     };
   }
 
+  function layoutOverlappingEvents(dayEvts: CalendarEvent[]) {
+    if (dayEvts.length === 0) return [];
+    const sorted = [...dayEvts].sort(
+      (a, b) =>
+        new Date(a.startDateTime).getTime() -
+        new Date(b.startDateTime).getTime(),
+    );
+    const columns: CalendarEvent[][] = [];
+    const eventColumnMap = new Map<
+      string,
+      { colIdx: number; totalCols: number }
+    >();
+    const groups: CalendarEvent[][] = [];
+    let currentGroup: CalendarEvent[] = [];
+    let groupEnd = 0;
+    for (const evt of sorted) {
+      const s = new Date(evt.startDateTime).getTime();
+      const e = new Date(evt.endDateTime).getTime();
+      if (currentGroup.length === 0 || s < groupEnd) {
+        currentGroup.push(evt);
+        groupEnd = Math.max(groupEnd, e);
+      } else {
+        groups.push(currentGroup);
+        currentGroup = [evt];
+        groupEnd = e;
+      }
+    }
+    if (currentGroup.length > 0) groups.push(currentGroup);
+    for (const group of groups) {
+      const cols: CalendarEvent[][] = [];
+      for (const evt of group) {
+        const s = new Date(evt.startDateTime).getTime();
+        let placed = false;
+        for (let c = 0; c < cols.length; c++) {
+          const lastInCol = cols[c][cols[c].length - 1];
+          const lastEnd = new Date(lastInCol.endDateTime).getTime();
+          if (s >= lastEnd) {
+            cols[c].push(evt);
+            placed = true;
+            eventColumnMap.set(evt.eventId, { colIdx: c, totalCols: 0 });
+            break;
+          }
+        }
+        if (!placed) {
+          cols.push([evt]);
+          eventColumnMap.set(evt.eventId, {
+            colIdx: cols.length - 1,
+            totalCols: 0,
+          });
+        }
+      }
+      const totalCols = cols.length;
+      for (const evt of group) {
+        const info = eventColumnMap.get(evt.eventId)!;
+        info.totalCols = totalCols;
+      }
+    }
+    return dayEvts.map((evt) => ({
+      event: evt,
+      ...(eventColumnMap.get(evt.eventId) ?? { colIdx: 0, totalCols: 1 }),
+    }));
+  }
+
   dragEndRef.current = (colIdx: number, startH: number, endH: number) => {
     const day = weekDaysRef.current[colIdx];
     if (!day) return;
@@ -355,11 +631,18 @@ export default function CalendarScreen() {
     if (Platform.OS !== "web" || !gridRef.current) return;
     const el = gridRef.current as unknown as HTMLElement;
     el.style.userSelect = "none";
-    el.style.cursor = "crosshair";
 
-    let isDragging = false;
+    let mode: "idle" | "pending" | "grid-drag" | "event-drag" = "idle";
+    let startX = 0;
+    let startY = 0;
     let startCol = 0;
     let startH = 0;
+    let draggedEvtId: string | null = null;
+    let draggedEvtHeight = 0;
+    let draggedEvtTitle = "";
+    let draggedEvtColor = "";
+    let draggedEvtDurationH = 1;
+    const THRESHOLD = 6;
 
     function getPos(e: MouseEvent) {
       const rect = el.getBoundingClientRect();
@@ -369,49 +652,160 @@ export default function CalendarScreen() {
       const colIdx = Math.min(6, Math.max(0, Math.floor(x / colWidth)));
       const rawHour = 7 + y / HOUR_HEIGHT;
       const hour = Math.round(rawHour * 2) / 2;
-      return { colIdx, hour: Math.max(7, Math.min(24, hour)) };
+      return { colIdx, hour: Math.max(7, Math.min(24, hour)), y };
     }
 
     function onMouseDown(e: MouseEvent) {
       if (e.button !== 0) return;
+      const target = e.target as HTMLElement;
+      const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
+      startX = e.clientX;
+      startY = e.clientY;
       const pos = getPos(e);
-      isDragging = true;
       startCol = pos.colIdx;
       startH = pos.hour;
-      setDragSel({
-        colIdx: startCol,
-        startHour: startH,
-        endHour: Math.min(24, startH + 0.5),
-      });
-      e.preventDefault();
+      if (eventEl) {
+        draggedEvtId = eventEl.getAttribute("data-event-id");
+        draggedEvtHeight = eventEl.offsetHeight;
+        draggedEvtTitle = eventEl.getAttribute("data-event-title") || "";
+        draggedEvtColor = eventEl.getAttribute("data-event-color") || "#4d41df";
+        const durAttr = eventEl.getAttribute("data-event-duration");
+        draggedEvtDurationH = durAttr ? parseFloat(durAttr) : 1;
+        mode = "pending";
+      } else {
+        draggedEvtId = null;
+        mode = "pending";
+      }
     }
 
     function onMouseMove(e: MouseEvent) {
-      if (!isDragging) return;
-      const pos = getPos(e);
-      const minEnd = startH + 0.5;
-      const endH = Math.max(minEnd, pos.hour);
-      setDragSel({ colIdx: startCol, startHour: startH, endHour: endH });
+      if (mode === "idle") return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (mode === "pending" && dist >= THRESHOLD) {
+        if (draggedEvtId) {
+          mode = "event-drag";
+          el.style.cursor = "grabbing";
+          setDraggingEventId(draggedEvtId);
+        } else {
+          mode = "grid-drag";
+          el.style.cursor = "crosshair";
+          setDragSel({
+            colIdx: startCol,
+            startHour: startH,
+            endHour: Math.min(24, startH + 0.5),
+          });
+        }
+        e.preventDefault();
+      }
+
+      if (mode === "grid-drag") {
+        const pos = getPos(e);
+        const minEnd = startH + 0.5;
+        const endH = Math.max(minEnd, pos.hour);
+        setDragSel({ colIdx: startCol, startHour: startH, endHour: endH });
+        e.preventDefault();
+      }
+
+      if (mode === "event-drag") {
+        const pos = getPos(e);
+        const snapTop =
+          Math.round(pos.y / (HOUR_HEIGHT / 4)) * (HOUR_HEIGHT / 4);
+        const snapHour = 7 + snapTop / HOUR_HEIGHT;
+        const endHour = snapHour + draggedEvtDurationH;
+        const fmtH = (h: number) => {
+          const hh = Math.floor(h);
+          const mm = Math.round((h % 1) * 60);
+          return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+        };
+        setDragPreview({
+          colIdx: pos.colIdx,
+          top: snapTop,
+          height: draggedEvtDurationH * HOUR_HEIGHT,
+          title: draggedEvtTitle,
+          color: draggedEvtColor,
+          startLabel: fmtH(snapHour),
+          endLabel: fmtH(endHour),
+        });
+        e.preventDefault();
+      }
     }
 
-    function onMouseUp() {
-      if (!isDragging) return;
-      isDragging = false;
-      setDragSel((sel) => {
-        if (sel) dragEndRef.current?.(sel.colIdx, sel.startHour, sel.endHour);
-        return null;
-      });
+    function onMouseUp(e: MouseEvent) {
+      const prevMode = mode;
+      mode = "idle";
+      el.style.cursor = "";
+
+      if (prevMode === "grid-drag") {
+        setDragSel((sel) => {
+          if (sel) dragEndRef.current?.(sel.colIdx, sel.startHour, sel.endHour);
+          return null;
+        });
+      } else if (prevMode === "event-drag" && draggedEvtId) {
+        const pos = getPos(e);
+        const snapHour =
+          7 +
+          (Math.round(pos.y / (HOUR_HEIGHT / 4)) * (HOUR_HEIGHT / 4)) /
+            HOUR_HEIGHT;
+        const evtId = draggedEvtId;
+        setDraggingEventId(null);
+        setDragPreview(null);
+        // Move the event
+        const evts = (window as any).__calendarEvents as
+          | CalendarEvent[]
+          | undefined;
+        const evt = evts?.find((ev) => ev.eventId === evtId);
+        if (evt) {
+          const targetDay = weekDaysRef.current[pos.colIdx];
+          if (targetDay) {
+            const oldStart = new Date(evt.startDateTime);
+            const oldEnd = new Date(evt.endDateTime);
+            const dur = oldEnd.getTime() - oldStart.getTime();
+            const newStart = new Date(targetDay);
+            const hourInt = Math.floor(snapHour);
+            const minInt = Math.round((snapHour % 1) * 60);
+            newStart.setHours(hourInt, minInt, 0, 0);
+            const newEnd = new Date(newStart.getTime() + dur);
+            editEvent.mutate({
+              eventId: evt.eventId,
+              data: {
+                title: evt.title,
+                startDateTime: newStart.toISOString(),
+                endDateTime: newEnd.toISOString(),
+                allDay: evt.allDay,
+                status: evt.status,
+              },
+            });
+          }
+        }
+      } else {
+        // click without drag
+        setDraggingEventId(null);
+        setDragPreview(null);
+      }
+
+      draggedEvtId = null;
     }
 
     el.addEventListener("mousedown", onMouseDown);
-    el.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mousemove", onMouseMove);
     window.addEventListener("mouseup", onMouseUp);
     return () => {
       el.removeEventListener("mousedown", onMouseDown);
-      el.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
   }, []);
+
+  // Expose events to the mouse handler
+  useEffect(() => {
+    (window as any).__calendarEvents = events;
+    return () => {
+      delete (window as any).__calendarEvents;
+    };
+  }, [events]);
 
   const prevPeriod = useCallback(() => {
     const d = new Date(selectedDate);
@@ -537,7 +931,7 @@ export default function CalendarScreen() {
       {/* Day header row */}
       <View
         className="flex-row"
-        style={{ borderBottomWidth: 1, borderBottomColor: "#c7c4d8" }}
+        style={{ borderBottomWidth: 1, borderBottomColor: gridBorderColor }}
       >
         <View className="w-14" />
         {weekDays.map((day, i) => {
@@ -549,7 +943,7 @@ export default function CalendarScreen() {
               className="flex-1 items-center py-3"
               style={{
                 borderLeftWidth: 1,
-                borderLeftColor: "#c7c4d8",
+                borderLeftColor: gridBorderColor,
               }}
             >
               <Text
@@ -584,7 +978,7 @@ export default function CalendarScreen() {
               style={{
                 height: HOUR_HEIGHT,
                 borderBottomWidth: 1,
-                borderBottomColor: "#e0dff0",
+                borderBottomColor: gridLineColor,
               }}
             >
               <View className="w-14 pr-2 items-end" style={{ marginTop: -7 }}>
@@ -599,7 +993,7 @@ export default function CalendarScreen() {
                     className="flex-1"
                     style={{
                       borderLeftWidth: 1,
-                      borderLeftColor: "#e0dff0",
+                      borderLeftColor: gridLineColor,
                     }}
                   />
                 ))}
@@ -607,18 +1001,20 @@ export default function CalendarScreen() {
             </View>
           ))}
 
-          {/* Events overlay */}
+          {/* Single overlay: events + drag interaction */}
           <View
+            ref={gridRef}
             className="absolute flex-row"
             style={{ left: 56, right: 0, top: 0, bottom: 0 }}
           >
             {weekDays.map((day, colIdx) => {
               const dayEvts = getEventsForDay(day);
+              const laidOut = layoutOverlappingEvents(dayEvts);
               return (
                 <View key={colIdx} className="flex-1 relative">
-                  {dayEvts.map((evt, evtIdx) => {
+                  {laidOut.map(({ event: evt, colIdx: evtCol, totalCols }) => {
                     const pos = getEventPosition(evt);
-                    const color = getEventColor(evt, evtIdx);
+                    const color = getEventColor(evt, colIdx);
                     const isProposed = evt.status === EventStatus.PROPOSED;
                     const startTime = new Date(
                       evt.startDateTime,
@@ -632,19 +1028,42 @@ export default function CalendarScreen() {
                       hour: "2-digit",
                       minute: "2-digit",
                     });
+                    const widthPct = `${100 / totalCols}%`;
+                    const leftPct = `${(evtCol / totalCols) * 100}%`;
                     return (
-                      <View
+                      <TouchableOpacity
                         key={evt.eventId}
+                        onPress={() => {
+                          if (!draggingEventId) setEditingEvent(evt);
+                        }}
+                        activeOpacity={0.7}
                         className="absolute rounded-md px-1.5 py-1 overflow-hidden"
+                        dataSet={{
+                          eventId: evt.eventId,
+                          eventTitle: evt.title,
+                          eventColor: color,
+                          eventDuration: String(
+                            (new Date(evt.endDateTime).getTime() -
+                              new Date(evt.startDateTime).getTime()) /
+                              3600000,
+                          ),
+                        }}
                         style={{
                           top: pos.top,
                           height: pos.height,
-                          left: 2,
-                          right: 2,
-                          backgroundColor: `${color}20`,
+                          left: leftPct,
+                          width: widthPct,
+                          paddingHorizontal: 3,
+                          backgroundColor:
+                            draggingEventId === evt.eventId
+                              ? `${color}10`
+                              : `${color}20`,
                           borderLeftWidth: 3,
                           borderLeftColor: color,
                           borderStyle: isProposed ? "dashed" : "solid",
+                          zIndex: 2,
+                          opacity: draggingEventId === evt.eventId ? 0.4 : 1,
+                          cursor: "grab",
                         }}
                       >
                         {isProposed && (
@@ -668,39 +1087,96 @@ export default function CalendarScreen() {
                         >
                           {startTime} - {endTime}
                         </Text>
-                      </View>
+                      </TouchableOpacity>
                     );
                   })}
                 </View>
               );
             })}
-          </View>
 
-          {/* Drag interaction overlay (web only) */}
-          {Platform.OS === "web" && (
-            <View
-              ref={gridRef}
-              className="absolute"
-              style={{ left: 56, right: 0, top: 0, bottom: 0 }}
-            >
-              {dragSel && (
+            {/* Drag preview – ghost card */}
+            {dragPreview && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: `${(dragPreview.colIdx / 7) * 100}%`,
+                  width: `${100 / 7}%`,
+                  top: dragPreview.top,
+                  height: dragPreview.height,
+                  zIndex: 20,
+                }}
+              >
+                {/* Drop zone indicator line */}
                 <View
                   style={{
                     position: "absolute",
-                    left: `${(dragSel.colIdx / 7) * 100}%`,
-                    width: `${100 / 7}%`,
-                    top: (dragSel.startHour - 7) * HOUR_HEIGHT,
-                    height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
-                    backgroundColor: "rgba(77, 65, 223, 0.12)",
-                    borderWidth: 1,
-                    borderColor: "#4d41df",
-                    borderRadius: 4,
-                    borderStyle: "dashed",
+                    top: -1,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    backgroundColor: dragPreview.color,
+                    borderRadius: 1,
                   }}
                 />
-              )}
-            </View>
-          )}
+                {/* Ghost event card */}
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: `${dragPreview.color}25`,
+                    borderLeftWidth: 3,
+                    borderLeftColor: dragPreview.color,
+                    borderRadius: 6,
+                    paddingHorizontal: 6,
+                    paddingVertical: 4,
+                    borderWidth: 1,
+                    borderColor: `${dragPreview.color}50`,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: dragPreview.color,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {dragPreview.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 9,
+                      color: dragPreview.color,
+                      opacity: 0.8,
+                    }}
+                  >
+                    {dragPreview.startLabel} – {dragPreview.endLabel}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Drag selection visual */}
+            {dragSel && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: `${(dragSel.colIdx / 7) * 100}%`,
+                  width: `${100 / 7}%`,
+                  top: (dragSel.startHour - 7) * HOUR_HEIGHT,
+                  height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
+                  backgroundColor: "rgba(77, 65, 223, 0.12)",
+                  borderWidth: 1,
+                  borderColor: "#4d41df",
+                  borderRadius: 4,
+                  borderStyle: "dashed",
+                  zIndex: 1,
+                }}
+              />
+            )}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -790,6 +1266,14 @@ export default function CalendarScreen() {
         initialEndHour={createEndH}
         initialEndMin={createEndM}
       />
+
+      {editingEvent && (
+        <EditCalendarEventModal
+          event={editingEvent}
+          visible={!!editingEvent}
+          onClose={() => setEditingEvent(null)}
+        />
+      )}
     </PageLayout>
   );
 }

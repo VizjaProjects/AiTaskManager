@@ -20,5 +20,5 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, UUID> {
                                                  @Param("status") EventStatus status);
 
     @Query("FROM EventEntity e WHERE e.taskId.id = :taskId")
-    Optional<EventEntity> findByTaskId(@Param("taskId") UUID taskId);
+    List<EventEntity> findByTaskId(@Param("taskId") UUID taskId);
 }

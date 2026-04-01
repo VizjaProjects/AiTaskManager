@@ -218,12 +218,16 @@ export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [listGrouping, setListGrouping] = useState<ListGrouping>("status");
-  const [selectedPriority, setSelectedPriority] = useState<TaskPriority | null>(
-    null,
+  const [selectedPriorities, setSelectedPriorities] = useState<
+    Set<TaskPriority>
+  >(new Set());
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<Set<string>>(
+    new Set(),
   );
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
-    null,
+  const [selectedStatusIds, setSelectedStatusIds] = useState<Set<string>>(
+    new Set(),
   );
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
   const [createStatusId, setCreateStatusId] = useState<string | undefined>();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -271,12 +275,16 @@ export default function TasksScreen() {
 
   const filteredTasks = useMemo(() => {
     let result = tasks ?? [];
-    if (selectedPriority)
-      result = result.filter((t) => t.priority === selectedPriority);
-    if (selectedCategoryId)
-      result = result.filter((t) => t.categoryId === selectedCategoryId);
+    if (selectedPriorities.size > 0)
+      result = result.filter((t) => selectedPriorities.has(t.priority));
+    if (selectedCategoryIds.size > 0)
+      result = result.filter(
+        (t) => t.categoryId != null && selectedCategoryIds.has(t.categoryId),
+      );
+    if (selectedStatusIds.size > 0)
+      result = result.filter((t) => selectedStatusIds.has(t.statusId));
     return result;
-  }, [tasks, selectedPriority, selectedCategoryId]);
+  }, [tasks, selectedPriorities, selectedCategoryIds, selectedStatusIds]);
 
   const groupedByStatus = useMemo(() => {
     const groups = new Map<string, Task[]>();
@@ -439,74 +447,393 @@ export default function TasksScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Close dropdown overlay */}
+        {openDropdown && (
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={() => setOpenDropdown(null)}
+            style={{
+              position: "fixed" as any,
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+            }}
+          />
+        )}
+
         {/* Filters */}
-        <View className="flex-row items-center gap-2 flex-wrap">
-          {priorities.map((p) => {
-            const active = selectedPriority === p;
-            return (
-              <TouchableOpacity
-                key={p}
-                onPress={() => setSelectedPriority(active ? null : p)}
-                className={`px-3 py-1.5 rounded-full ${
-                  active
-                    ? ""
-                    : "bg-surface-container-high border border-outline"
-                }`}
-                style={
-                  active ? { backgroundColor: PRIORITY_COLORS[p] } : undefined
-                }
+        <View
+          className="flex-row items-center gap-2 flex-wrap"
+          style={{ zIndex: 20 }}
+        >
+          {/* Priority dropdown */}
+          <View style={{ position: "relative", zIndex: 30 }}>
+            <TouchableOpacity
+              onPress={() =>
+                setOpenDropdown(openDropdown === "priority" ? null : "priority")
+              }
+              className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+                selectedPriorities.size > 0
+                  ? "bg-primary/10 border-primary"
+                  : "bg-surface-container-high border-outline-variant"
+              }`}
+            >
+              <MaterialIcons
+                name="flag"
+                size={14}
+                color={selectedPriorities.size > 0 ? "#4d41df" : "#777587"}
+              />
+              <Text
+                className={`text-xs font-label ${selectedPriorities.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
               >
-                <Text
-                  className={`text-xs font-label ${
-                    active ? "text-white" : "text-on-surface"
-                  }`}
+                Priorytet
+                {selectedPriorities.size > 0
+                  ? ` (${selectedPriorities.size})`
+                  : ""}
+              </Text>
+              <MaterialIcons
+                name={
+                  openDropdown === "priority" ? "expand-less" : "expand-more"
+                }
+                size={16}
+                color="#777587"
+              />
+            </TouchableOpacity>
+            {openDropdown === "priority" && (
+              <View
+                className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  marginTop: 4,
+                  minWidth: 160,
+                  elevation: 8,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.15,
+                  shadowRadius: 12,
+                  zIndex: 50,
+                }}
+              >
+                <TouchableOpacity
+                  onPress={() => {
+                    if (selectedPriorities.size === priorities.length) {
+                      setSelectedPriorities(new Set());
+                    } else {
+                      setSelectedPriorities(new Set(priorities));
+                    }
+                  }}
+                  className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
                 >
-                  {p}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
+                  <MaterialIcons
+                    name={
+                      selectedPriorities.size === priorities.length
+                        ? "check-box"
+                        : "check-box-outline-blank"
+                    }
+                    size={18}
+                    color={
+                      selectedPriorities.size === priorities.length
+                        ? "#4d41df"
+                        : "#777587"
+                    }
+                  />
+                  <Text className="text-xs font-label text-on-surface-variant">
+                    Zaznacz wszystko
+                  </Text>
+                </TouchableOpacity>
+                {priorities.map((p) => {
+                  const active = selectedPriorities.has(p);
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => {
+                        setSelectedPriorities((prev) => {
+                          const next = new Set(prev);
+                          if (active) next.delete(p);
+                          else next.add(p);
+                          return next;
+                        });
+                      }}
+                      className="flex-row items-center gap-2.5 px-3 py-2.5"
+                    >
+                      <MaterialIcons
+                        name={active ? "check-box" : "check-box-outline-blank"}
+                        size={18}
+                        color={active ? PRIORITY_COLORS[p] : "#777587"}
+                      />
+                      <View
+                        className="w-2.5 h-2.5 rounded-full"
+                        style={{ backgroundColor: PRIORITY_COLORS[p] }}
+                      />
+                      <Text
+                        className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                      >
+                        {p}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+          </View>
 
+          {/* Category dropdown */}
           {(categories?.length ?? 0) > 0 && (
-            <View className="w-px h-6 bg-outline mx-1" />
-          )}
-
-          {categories?.map((cat) => {
-            const active = selectedCategoryId === cat.categoryId;
-            return (
+            <View style={{ position: "relative", zIndex: 29 }}>
               <TouchableOpacity
-                key={cat.categoryId}
                 onPress={() =>
-                  setSelectedCategoryId(active ? null : cat.categoryId)
+                  setOpenDropdown(
+                    openDropdown === "category" ? null : "category",
+                  )
                 }
-                className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                  active
-                    ? "bg-primary-fixed border border-primary"
-                    : "bg-surface-container-high border border-outline"
+                className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+                  selectedCategoryIds.size > 0
+                    ? "bg-primary/10 border-primary"
+                    : "bg-surface-container-high border-outline-variant"
                 }`}
               >
-                <View
-                  className="w-2.5 h-2.5 rounded-full"
-                  style={{ backgroundColor: cat.color }}
+                <MaterialIcons
+                  name="folder"
+                  size={14}
+                  color={selectedCategoryIds.size > 0 ? "#4d41df" : "#777587"}
                 />
                 <Text
-                  className={`text-xs font-label ${
-                    active ? "text-primary" : "text-on-surface"
-                  }`}
+                  className={`text-xs font-label ${selectedCategoryIds.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
                 >
-                  {cat.name}
+                  Kategoria
+                  {selectedCategoryIds.size > 0
+                    ? ` (${selectedCategoryIds.size})`
+                    : ""}
                 </Text>
+                <MaterialIcons
+                  name={
+                    openDropdown === "category" ? "expand-less" : "expand-more"
+                  }
+                  size={16}
+                  color="#777587"
+                />
               </TouchableOpacity>
-            );
-          })}
+              {openDropdown === "category" && (
+                <View
+                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: 4,
+                    minWidth: 200,
+                    elevation: 8,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    zIndex: 50,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      const allIds = new Set(
+                        (categories ?? []).map((c) => c.categoryId),
+                      );
+                      if (selectedCategoryIds.size === allIds.size) {
+                        setSelectedCategoryIds(new Set());
+                      } else {
+                        setSelectedCategoryIds(allIds);
+                      }
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+                  >
+                    <MaterialIcons
+                      name={
+                        selectedCategoryIds.size === (categories?.length ?? 0)
+                          ? "check-box"
+                          : "check-box-outline-blank"
+                      }
+                      size={18}
+                      color={
+                        selectedCategoryIds.size === (categories?.length ?? 0)
+                          ? "#4d41df"
+                          : "#777587"
+                      }
+                    />
+                    <Text className="text-xs font-label text-on-surface-variant">
+                      Zaznacz wszystko
+                    </Text>
+                  </TouchableOpacity>
+                  {categories?.map((cat) => {
+                    const active = selectedCategoryIds.has(cat.categoryId);
+                    return (
+                      <TouchableOpacity
+                        key={cat.categoryId}
+                        onPress={() => {
+                          setSelectedCategoryIds((prev) => {
+                            const next = new Set(prev);
+                            if (active) next.delete(cat.categoryId);
+                            else next.add(cat.categoryId);
+                            return next;
+                          });
+                        }}
+                        className="flex-row items-center gap-2.5 px-3 py-2.5"
+                      >
+                        <MaterialIcons
+                          name={
+                            active ? "check-box" : "check-box-outline-blank"
+                          }
+                          size={18}
+                          color={active ? cat.color : "#777587"}
+                        />
+                        <View
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <Text
+                          className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                        >
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
 
-          {(selectedPriority || selectedCategoryId) && (
+          {/* Status dropdown */}
+          {(statuses?.length ?? 0) > 0 && (
+            <View style={{ position: "relative", zIndex: 28 }}>
+              <TouchableOpacity
+                onPress={() =>
+                  setOpenDropdown(openDropdown === "status" ? null : "status")
+                }
+                className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+                  selectedStatusIds.size > 0
+                    ? "bg-primary/10 border-primary"
+                    : "bg-surface-container-high border-outline-variant"
+                }`}
+              >
+                <MaterialIcons
+                  name="view-kanban"
+                  size={14}
+                  color={selectedStatusIds.size > 0 ? "#4d41df" : "#777587"}
+                />
+                <Text
+                  className={`text-xs font-label ${selectedStatusIds.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
+                >
+                  Status
+                  {selectedStatusIds.size > 0
+                    ? ` (${selectedStatusIds.size})`
+                    : ""}
+                </Text>
+                <MaterialIcons
+                  name={
+                    openDropdown === "status" ? "expand-less" : "expand-more"
+                  }
+                  size={16}
+                  color="#777587"
+                />
+              </TouchableOpacity>
+              {openDropdown === "status" && (
+                <View
+                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+                  style={{
+                    position: "absolute",
+                    top: "100%",
+                    left: 0,
+                    marginTop: 4,
+                    minWidth: 200,
+                    elevation: 8,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.15,
+                    shadowRadius: 12,
+                    zIndex: 50,
+                  }}
+                >
+                  <TouchableOpacity
+                    onPress={() => {
+                      const allIds = new Set(
+                        (statuses ?? []).map((s) => s.statusId),
+                      );
+                      if (selectedStatusIds.size === allIds.size) {
+                        setSelectedStatusIds(new Set());
+                      } else {
+                        setSelectedStatusIds(allIds);
+                      }
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+                  >
+                    <MaterialIcons
+                      name={
+                        selectedStatusIds.size === (statuses?.length ?? 0)
+                          ? "check-box"
+                          : "check-box-outline-blank"
+                      }
+                      size={18}
+                      color={
+                        selectedStatusIds.size === (statuses?.length ?? 0)
+                          ? "#4d41df"
+                          : "#777587"
+                      }
+                    />
+                    <Text className="text-xs font-label text-on-surface-variant">
+                      Zaznacz wszystko
+                    </Text>
+                  </TouchableOpacity>
+                  {statuses?.map((s) => {
+                    const active = selectedStatusIds.has(s.statusId);
+                    return (
+                      <TouchableOpacity
+                        key={s.statusId}
+                        onPress={() => {
+                          setSelectedStatusIds((prev) => {
+                            const next = new Set(prev);
+                            if (active) next.delete(s.statusId);
+                            else next.add(s.statusId);
+                            return next;
+                          });
+                        }}
+                        className="flex-row items-center gap-2.5 px-3 py-2.5"
+                      >
+                        <MaterialIcons
+                          name={
+                            active ? "check-box" : "check-box-outline-blank"
+                          }
+                          size={18}
+                          color={active ? s.color : "#777587"}
+                        />
+                        <View
+                          className="w-2.5 h-2.5 rounded-full"
+                          style={{ backgroundColor: s.color }}
+                        />
+                        <Text
+                          className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                        >
+                          {s.name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+
+          {(selectedPriorities.size > 0 ||
+            selectedCategoryIds.size > 0 ||
+            selectedStatusIds.size > 0) && (
             <TouchableOpacity
               onPress={() => {
-                setSelectedPriority(null);
-                setSelectedCategoryId(null);
+                setSelectedPriorities(new Set());
+                setSelectedCategoryIds(new Set());
+                setSelectedStatusIds(new Set());
+                setOpenDropdown(null);
               }}
-              className="px-3 py-1.5"
+              className="px-3 py-2"
             >
               <Text className="text-xs font-label text-primary">Wyczyść</Text>
             </TouchableOpacity>

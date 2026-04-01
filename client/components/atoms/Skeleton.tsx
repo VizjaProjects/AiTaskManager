@@ -66,7 +66,7 @@ export function TaskCardSkeleton() {
 
 export function StatCardSkeleton() {
   return (
-    <View className="bg-white/70 rounded-2xl p-6 h-32 justify-between">
+    <View className="bg-surface-container-lowest rounded-2xl p-6 h-32 justify-between">
       <Skeleton width="60%" height={12} />
       <Skeleton width={80} height={36} borderRadius={4} />
     </View>

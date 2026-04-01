@@ -13,4 +13,5 @@ public interface CategoryRepository {
     List<TaskCategory> findAllByUserId(UserId userId);
     List<TaskCategory> findAll();
     void delete(TaskCategory category);
+    int count(UserId userId);
 }

@@ -1,6 +1,7 @@
 package pl.ordovita.tasks.application.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import pl.ordovita.identity.domain.exception.UserException;
 import pl.ordovita.identity.domain.model.user.User;
@@ -19,6 +20,7 @@ import pl.ordovita.tasks.domain.model.category.CategoryId;
 import pl.ordovita.tasks.domain.model.event.Event;
 import pl.ordovita.tasks.domain.model.event.EventId;
 import pl.ordovita.tasks.domain.model.event.EventStatus;
+import pl.ordovita.tasks.domain.model.event.ProposedBy;
 import pl.ordovita.tasks.domain.model.status.TaskStatusId;
 import pl.ordovita.tasks.domain.model.task.Task;
 import pl.ordovita.tasks.domain.model.task.TaskId;
@@ -28,6 +30,7 @@ import pl.ordovita.tasks.domain.port.TaskRepository;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiProposalService implements GetPendingAiProposalsUseCase, AcceptAiTaskUseCase,
@@ -79,16 +82,29 @@ public class AiProposalService implements GetPendingAiProposalsUseCase, AcceptAi
         CategoryId categoryId = command.categoryId() != null ? new CategoryId(command.categoryId()) : null;
         TaskStatusId statusId = new TaskStatusId(command.statusId());
 
+
         task.edit(command.title(), command.description(), command.priority(), categoryId,
                 command.estimatedDuration(), command.dueDateTime(), statusId);
         task.accept();
 
         Task saved = taskRepository.save(task);
 
-        eventRepository.findByTaskId(taskId).ifPresent(event -> {
+        List<Event> existingEvents = eventRepository.findByTaskId(taskId);
+
+        if (!existingEvents.isEmpty()) {
+            for (Event event : existingEvents) {
+                event.accept();
+                eventRepository.save(event);
+            }
+        } else if (command.dueDateTime() != null) {
+            Calendar calendar = calendarRepository.findByUserId(user.getId())
+                    .orElseThrow(() -> new CalendarException("Calendar not found for user"));
+            Event event = Event.create(taskId, task.getTitle(),
+                    command.dueDateTime().minusSeconds(command.estimatedDuration() * 60L),
+                    command.dueDateTime(), false, ProposedBy.USER, calendar.getId());
             event.accept();
             eventRepository.save(event);
-        });
+        }
 
         return new AcceptAiTaskResult(saved.getId().value(), saved.getUpdatedAt());
     }
@@ -105,7 +121,7 @@ public class AiProposalService implements GetPendingAiProposalsUseCase, AcceptAi
             throw new TaskException("Task does not belong to current user");
         }
 
-        eventRepository.findByTaskId(taskId).ifPresent(eventRepository::delete);
+        eventRepository.findByTaskId(taskId).forEach(eventRepository::delete);
         taskRepository.delete(task);
     }
 

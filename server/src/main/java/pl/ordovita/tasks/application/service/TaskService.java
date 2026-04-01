@@ -82,7 +82,17 @@ public class TaskService implements CreateTaskUseCase, EditTaskUseCase, DeleteTa
         task.edit(command.title(), command.description(), command.priority(), categoryId,
                 command.estimatedDuration(), command.dueDateTime(), statusId);
 
+
         Task updatedTask = taskRepository.save(task);
+
+        if(command.dueDateTime() != null) {
+            Calendar calendar = calendarRepository.findByUserId(user.getId()).orElseThrow(() -> new CalendarException("Calendar not found for user"));
+
+            Event event = Event.create(taskId,task.getTitle(),(command.dueDateTime().minusSeconds(command.estimatedDuration() * 60L)), command.dueDateTime(), false, ProposedBy.USER, calendar.getId());
+            eventRepository.save(event);
+
+
+        }
 
         return new EditTaskResult(updatedTask.getId().value(), updatedTask.getUpdatedAt());
     }

@@ -1,12 +1,13 @@
 package pl.ordovita.tasks.application.port.in;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public interface GenerateAiPlanUseCase {
 
-    record GenerateAiPlanCommand(String userText) {}
+    record GenerateAiPlanCommand(String userText, ZonedDateTime zonedDateTime) {}
 
     record GeneratedTask(UUID taskId, String title, String description, String priority,
                          UUID categoryId, UUID statusId, int estimatedDuration, Instant dueDateTime) {}

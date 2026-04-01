@@ -21,7 +21,9 @@ export function StatCard({
   return (
     <View
       className={`p-6 rounded-2xl h-32 justify-between ${
-        isGlass ? "bg-white/70" : "bg-primary-container shadow-lg"
+        isGlass
+          ? "bg-surface-container-lowest"
+          : "bg-primary-container shadow-lg"
       }`}
     >
       <View className="flex-row justify-between items-start">

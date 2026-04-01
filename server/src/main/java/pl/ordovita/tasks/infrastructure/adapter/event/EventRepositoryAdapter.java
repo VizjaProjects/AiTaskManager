@@ -42,8 +42,8 @@ public class EventRepositoryAdapter implements EventRepository {
     }
 
     @Override
-    public Optional<Event> findByTaskId(TaskId taskId) {
-        return eventJpaRepository.findByTaskId(taskId.value()).map(EventEntityMapper::toDomain);
+    public List<Event> findByTaskId(TaskId taskId) {
+        return eventJpaRepository.findByTaskId(taskId.value()).stream().map(EventEntityMapper::toDomain).toList();
     }
 
     @Override

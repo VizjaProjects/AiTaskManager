@@ -74,13 +74,16 @@ public class AiPlanningService implements GenerateAiPlanUseCase {
         List<GetCategoriesUseCase.CategoryResult> categories =
                 getCategoriesUseCase.getUserCategories().categories();
 
+
         List<GetTaskStatusesUseCase.TaskStatusResult> statuses =
                 getTaskStatusesUseCase.getUserTaskStatuses().statuses();
 
-        String prompt = AiPlanPromptBuilder.build(command.userText(), surveyAnswers, categories, statuses);
+        String prompt = AiPlanPromptBuilder.build(command.userText(), surveyAnswers, categories, statuses, command.zonedDateTime());
 
         log.info("Sending AI plan request for user {}", user.getId().value());
         AiResponse aiResponse = aiClient.ask(new AiRequest(prompt));
+
+        log.info("Sending prompt to AI {}", prompt);
 
         AiPlanJson plan = parseResponse(aiResponse.content());
 

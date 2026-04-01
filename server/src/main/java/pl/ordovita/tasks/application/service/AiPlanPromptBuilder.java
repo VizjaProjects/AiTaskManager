@@ -4,6 +4,7 @@ import pl.ordovita.surveys.application.dto.UserResponseResult;
 import pl.ordovita.tasks.application.port.in.GetCategoriesUseCase.CategoryResult;
 import pl.ordovita.tasks.application.port.in.GetTaskStatusesUseCase.TaskStatusResult;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Set;
 
@@ -14,7 +15,9 @@ final class AiPlanPromptBuilder {
     static String build(String userText,
                         Set<UserResponseResult> surveyAnswers,
                         List<CategoryResult> categories,
-                        List<TaskStatusResult> statuses) {
+                        List<TaskStatusResult> statuses,
+                        ZonedDateTime now) {
+
 
         StringBuilder sb = new StringBuilder();
 
@@ -24,34 +27,61 @@ final class AiPlanPromptBuilder {
                 Twoim zadaniem jest przeanalizowanie tego tekstu i wygenerowanie ustrukturyzowanych zadań, wydarzeń w kalendarzu oraz nowych kategorii, jeśli to konieczne.
                 Zastanów się głęboko nad każdym elementem — weź pod uwagę kontekst, priorytety i czas.
 
-                ZASADY:
-                - Twórz ZADANIA (tasks) dla rzeczy, które użytkownik musi wykonać (obowiązki, praca, zakupy itp.).
-                - BARDZO WAŻNE: NIE twórz wydarzeń (events) i NIE przypisuj daty/czasu wykonania (dueDateTime) do zadania, chyba że użytkownik jasno i konkretnie określił, kiedy ma to nastąpić. Jeśli nie ma wyraźnego terminu, zostaw `dueDateTime` jako null i nie dodawaj wpisu do kalendarza!
-                - Twórz WYDARZENIA (events) TYLKO dla aktywności, które mają z góry określony przedział czasowy w wypowiedzi (np. spotkania, wizyty).
-                - Jeśli coś jest zadaniem i ma wyraźnie określony czas wykonania, stwórz ZARÓWNO zadanie (z przypisanym dueDateTime), JAK I wydarzenie.
-                - Dla każdego zadania przypisz realistyczny szacowany czas trwania w minutach (`estimatedDuration`). Przemyśl to dokładnie.
-                - Używaj istniejących kategorii użytkownika, gdy pasują do kontekstu. Użyj pola `categoryId` dla istniejących kategorii.
-                - Jeśli ŻADNA z istniejących kategorii nie pasuje do zadania, utwórz NOWĄ: ustaw `categoryId` na null i podaj `newCategoryName` oraz `newCategoryColor` (kolor hex, np. "#8B5CF6").
-                - Twórz nowe kategorie odważnie — jeśli zadania użytkownika obejmują różne, nowe obszary życia lub pracy, twórz dla nich odpowiednie kategorie.
-                - Jako priorytet (`priority`) wybierz dokładnie jedną z wartości: CRITICAL, HIGH, MEDIUM, LOW.
-                - Dla `statusId` wybierz z dostępnych ten status, który oznacza "Do zrobienia" (To Do) lub podobny.
-                - Wykorzystaj poniższy kontekst z ankiet, aby lepiej zrozumieć pracę, nawyki i preferencje użytkownika. To KLUCZOWE informacje.
-                - Wszystkie wartości daty i czasu muszą być w formacie ISO-8601 UTC (np. 2026-03-26T15:00:00Z).
-                - Kontekst dzisiejszej daty jest zawarty w wiadomości użytkownika.
+                === KLUCZOWE ROZRÓŻNIENIE: ZADANIE vs WYDARZENIE ===
+
+                ZADANIE (task) = coś, co użytkownik musi ZROBIĆ (obowiązek, praca, zakupy, nauka itp.).
+                WYDARZENIE (event) = coś, na co użytkownik musi się STAWIĆ lub co TRWA w określonym przedziale czasowym i NIE jest zadaniem do wykonania (spotkanie, wizyta u lekarza, koncert, wykład).
+
+                === ZASADY TWORZENIA ZADAŃ ===
+
+                1. Twórz ZADANIA dla wszystkich rzeczy, które użytkownik musi wykonać.
+                2. Pole `dueDateTime` ustawiaj TYLKO wtedy, gdy użytkownik wyraźnie podał termin lub czas wykonania.
+                   - Brak konkretnego terminu → `dueDateTime` = null.
+                   - WAŻNE: Gdy zadanie ma `dueDateTime`, system AUTOMATYCZNIE tworzy powiązany wpis w kalendarzu.
+                     NIE dodawaj tego samego elementu do tablicy `events` — to spowoduje duplikat!
+                3. Przypisz realistyczny szacowany czas trwania w minutach (`estimatedDuration`).
+                   System użyje tej wartości do obliczenia czasu zakończenia wpisu w kalendarzu (start + estimatedDuration).
+                4. Jako priorytet (`priority`) wybierz: CRITICAL, HIGH, MEDIUM lub LOW.
+                5. Dla `statusId` wybierz z dostępnych poniżej ten, który oznacza "Do zrobienia" / "To Do" lub podobny.
+                6. Jeżeli użytkownik dodał opis przy zadaniu, dodaj go do description (postaraja się go uspójnić i ujednolicić)
+
+                === ZASADY TWORZENIA WYDARZEŃ ===
+
+                1. Twórz WYDARZENIA wyłącznie dla aktywności, które:
+                   - mają z góry określony przedział czasowy (start i koniec),
+                   - NIE są zadaniami do wykonania, lecz czymś, w czym użytkownik uczestniczy.
+                   Przykłady: spotkanie o 14:00, wizyta u dentysty, konferencja, mecz.
+                2. NIE twórz wydarzeń dla rzeczy, które są zadaniami z terminem — te obsłuży automatycznie pole `dueDateTime` w zadaniu.
+                3. Pole `allDay` ustaw na true tylko dla wydarzeń całodniowych (np. "urodziny", "dzień wolny").
+
+                === KATEGORIE ===
+
+                - Używaj istniejących kategorii użytkownika, gdy pasują. Wpisz odpowiedni `categoryId`.
+                - Jeśli ŻADNA istniejąca kategoria nie pasuje, utwórz nową: ustaw `categoryId` na null i podaj `newCategoryName` oraz `newCategoryColor` (kolor hex, np. "#8B5CF6").
+                - Twórz nowe kategorie śmiało, jeśli zadania obejmują nowe obszary życia lub pracy.
+                - Limit kategorii wynosi 20. Jeśli użytkownik osiągnął limit, dopasuj zadanie do najbliższej istniejącej kategorii.
+
+                === DODATKOWE ZASADY ===
+
+                - Wykorzystaj kontekst z ankiet użytkownika (poniżej), aby lepiej zrozumieć jego pracę, nawyki i preferencje.
+                - Wszystkie daty i czasy w formacie ISO-8601 UTC (np. 2026-03-26T15:00:00Z).
+                - Aktualny czas podany jest poniżej — używaj go do określania dat względnych ("jutro", "w piątek", "za tydzień").
 
                 """);
 
+        sb.append("AKTUALNY CZAS: ").append(now).append("\n\n");
+
         if (!surveyAnswers.isEmpty()) {
-            sb.append("KONTEKST ANKIETY UŻYTKOWNIKA (odpowiedzi z ankiet wdrożeniowych):\n");
+            sb.append("KONTEKST ANKIETY UŻYTKOWNIKA:\n");
             for (UserResponseResult answer : surveyAnswers) {
                 sb.append("- Pytanie: ").append(answer.questionText())
-                        .append("  Odpowiedź: ").append(answer.textAnswer()).append("\n");
+                        .append(" → Odpowiedź: ").append(answer.textAnswer()).append("\n");
             }
             sb.append("\n");
         }
 
         if (!categories.isEmpty()) {
-            sb.append("DOSTĘPNE KATEGORIE (użyj categoryId, jeśli pasuje):\n");
+            sb.append("DOSTĘPNE KATEGORIE (aktualnie: ").append(categories.size()).append("/20):\n");
             for (CategoryResult cat : categories) {
                 sb.append("- id: ").append(cat.categoryId())
                         .append(", nazwa: \"").append(cat.name()).append("\"\n");
@@ -60,7 +90,7 @@ final class AiPlanPromptBuilder {
         }
 
         if (!statuses.isEmpty()) {
-            sb.append("DOSTĘPNE STATUSY (użyj statusId):\n");
+            sb.append("DOSTĘPNE STATUSY:\n");
             for (TaskStatusResult status : statuses) {
                 sb.append("- id: ").append(status.statusId())
                         .append(", nazwa: \"").append(status.name()).append("\"\n");
@@ -69,34 +99,35 @@ final class AiPlanPromptBuilder {
         }
 
         sb.append("""
-                ODPOWIADAJ TYLKO poprawnym kodem JSON w poniższym, ścisłym formacie, bez żadnego dodatkowego tekstu ani znaczników formatowania:
+                ODPOWIADAJ WYŁĄCZNIE poprawnym JSON-em w poniższym formacie. Bez dodatkowego tekstu, bez znaczników markdown:
                 {
                   "tasks": [
                     {
                       "title": "string",
                       "description": "string lub null",
                       "priority": "CRITICAL|HIGH|MEDIUM|LOW",
-                      "categoryId": "uuid istniejącej kategorii, lub null jeśli tworzysz nową",
-                      "newCategoryName": "string — nazwa nowej kategorii, lub null jeśli używasz istniejącej",
-                      "newCategoryColor": "kolor hex dla nowej kategorii, lub null jeśli używasz istniejącej",
+                      "categoryId": "uuid istniejącej kategorii lub null",
+                      "newCategoryName": "string lub null",
+                      "newCategoryColor": "hex lub null",
                       "statusId": "uuid",
-                      "estimatedDuration": liczba_w_minutach,
-                      "dueDateTime": "format ISO-8601 lub null"
+                      "estimatedDuration": 30,
+                      "dueDateTime": "ISO-8601 lub null"
                     }
                   ],
                   "events": [
                     {
                       "title": "string",
-                      "startDateTime": "format ISO-8601",
-                      "endDateTime": "format ISO-8601",
+                      "startDateTime": "ISO-8601",
+                      "endDateTime": "ISO-8601",
                       "allDay": false
                     }
                   ]
                 }
 
+                TEKST UŻYTKOWNIKA:
                 """);
 
-        sb.append("TEKST UŻYTKOWNIKA:\n").append(userText);
+        sb.append(userText);
 
         return sb.toString();
     }

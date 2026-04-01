@@ -43,4 +43,9 @@ public class CategoryRepositoryAdapter implements CategoryRepository {
     public void delete(TaskCategory category) {
         categoryJpaRepository.delete(TaskCategoryEntityMapper.from(category));
     }
+
+    @Override
+    public int count(UserId userId) {
+        return categoryJpaRepository.findCategoryCount(userId.value());
+    }
 }

@@ -30,6 +30,8 @@ public class CategoryService implements CreateCategoryUseCase, EditCategoryUseCa
         User user = userRepository.findById(currentUser.requireAuthenticated().id())
                 .orElseThrow(() -> new UserException("User not found"));
 
+        if(categoryRepository.count(user.getId()) >= 20) throw new CategoryException("Category limit is exists");
+
         TaskCategory category = TaskCategory.create(command.name(), command.color(), user.getId());
         categoryRepository.save(category);
 

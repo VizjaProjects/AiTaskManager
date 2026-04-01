@@ -73,7 +73,12 @@ export const eventApi = {
 };
 
 export const aiApi = {
-  generatePlan: (data: GenerateAiPlanRequest) => api.post("/ai/plan", data),
+  generatePlan: (data: GenerateAiPlanRequest) =>
+    api.post("/ai/plan", data, {
+      headers: {
+        "X-Time-Zone": Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+    }),
 
   getPendingProposals: () =>
     api.get<{ tasks: Task[]; events: CalendarEvent[] }>("/ai/proposals"),

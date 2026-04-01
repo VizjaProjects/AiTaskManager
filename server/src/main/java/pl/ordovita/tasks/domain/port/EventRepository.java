@@ -15,6 +15,6 @@ public interface EventRepository {
     Optional<Event> findById(EventId id);
     List<Event> findAllByCalendarId(CalendarId calendarId);
     List<Event> findByCalendarIdAndStatus(CalendarId calendarId, EventStatus status);
-    Optional<Event> findByTaskId(TaskId taskId);
+    List<Event> findByTaskId(TaskId taskId);
     void delete(Event event);
 }

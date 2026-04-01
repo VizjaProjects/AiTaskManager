@@ -1,12 +1,14 @@
 import { Tabs } from "expo-router";
 import { Platform } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useThemeStore } from "@/lib/stores";
 
 const ACTIVE_COLOR = "#4d41df";
 const INACTIVE_COLOR = "#777587";
 
 export default function AppLayout() {
   const isDesktop = Platform.OS === "web";
+  const mode = useThemeStore((s) => s.mode);
 
   return (
     <Tabs
@@ -17,7 +19,7 @@ export default function AppLayout() {
         tabBarStyle: isDesktop
           ? { display: "none" }
           : {
-              backgroundColor: "#ffffff",
+              backgroundColor: mode === "dark" ? "#1a1d2e" : "#ffffff",
               borderTopWidth: 0,
               height: 72,
               paddingBottom: 8,
