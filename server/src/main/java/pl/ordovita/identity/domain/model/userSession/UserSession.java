@@ -56,8 +56,8 @@ public class UserSession {
         this.userId = userId;
     }
 
-    public static UserSession create(String refreshToken, String deviceName, String userSessionIp, Instant expiresAt, Status status, UserId userId) {
-        return new UserSession(UserSessionId.generate(),
+    public static UserSession create(UserSessionId id, String refreshToken, String deviceName, String userSessionIp, Instant expiresAt, Status status, UserId userId) {
+        return new UserSession(id,
                 refreshToken,
                 deviceName,
                 userSessionIp,

@@ -12,7 +12,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Button, Input } from "@/components/atoms";
+import { Button, Input, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
 
@@ -68,13 +68,13 @@ export default function RegisterScreen() {
           className="px-8"
         >
           <View className="max-w-md w-full self-center gap-8">
-            <View className="items-center gap-2">
-              <MaterialIcons name="auto-awesome" size={48} color="#4d41df" />
-              <Text className="text-on-surface font-headline text-3xl text-center">
+            <View className="items-center gap-3">
+              <OrdovitaLogo size="lg" />
+              <Text className="text-on-surface font-headline text-xl text-center">
                 Utwórz konto
               </Text>
               <Text className="text-on-surface-variant font-body text-sm text-center">
-                Dołącz do AI Task Manager
+                Dołącz do Ordovita
               </Text>
             </View>
 
@@ -146,6 +146,8 @@ export default function RegisterScreen() {
                     value={value}
                     onChangeText={onChange}
                     error={errors.confirmPassword?.message}
+                    returnKeyType="go"
+                    onSubmitEditing={handleSubmit(onSubmit)}
                   />
                 )}
               />
@@ -168,6 +170,24 @@ export default function RegisterScreen() {
                 </Text>
               </TouchableOpacity>
             </View>
+
+            <Text className="text-on-surface-variant font-body text-xs text-center leading-5">
+              Rejestrując się, akceptujesz{" "}
+              <Text
+                className="text-primary underline"
+                onPress={() => router.push("/terms-of-service" as never)}
+              >
+                Regulamin
+              </Text>{" "}
+              oraz{" "}
+              <Text
+                className="text-primary underline"
+                onPress={() => router.push("/privacy-policy" as never)}
+              >
+                Politykę Prywatności
+              </Text>
+              .
+            </Text>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

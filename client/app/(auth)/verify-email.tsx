@@ -34,6 +34,10 @@ export default function VerifyEmailScreen() {
     if (text && index < CODE_LENGTH - 1) {
       inputs.current[index + 1]?.focus();
     }
+    if (text && index === CODE_LENGTH - 1) {
+      const full = next.join("");
+      if (full.length === CODE_LENGTH) submitCode(full);
+    }
   }
 
   function handleKeyPress(key: string, index: number) {
@@ -42,8 +46,7 @@ export default function VerifyEmailScreen() {
     }
   }
 
-  async function onSubmit() {
-    const fullCode = code.join("");
+  async function submitCode(fullCode: string) {
     if (fullCode.length !== CODE_LENGTH) return;
     setLoading(true);
     setError(null);
@@ -121,7 +124,7 @@ export default function VerifyEmailScreen() {
                 label="Zweryfikuj"
                 loading={loading}
                 fullWidth
-                onPress={onSubmit}
+                onPress={() => submitCode(code.join(""))}
                 disabled={code.join("").length !== CODE_LENGTH}
               />
             </>

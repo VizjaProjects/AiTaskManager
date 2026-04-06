@@ -4,18 +4,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.ordovita.identity.application.port.in.ChangeFullNameUseCase;
 import pl.ordovita.identity.application.port.in.ChangePasswordUseCase;
+import pl.ordovita.identity.application.service.DeleteAccountService;
 import pl.ordovita.identity.presentation.dto.ChangeFullNameRequest;
 import pl.ordovita.identity.presentation.dto.ChangeFullNameResponse;
 import pl.ordovita.identity.presentation.dto.ChangePasswordRequest;
 import pl.ordovita.identity.presentation.dto.ChangePasswordResponse;
 
 import java.time.Instant;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/api/user")
@@ -24,6 +23,7 @@ public class UserController {
 
     private final ChangePasswordUseCase changePasswordUseCase;
     private final ChangeFullNameUseCase changeFullNameUseCase;
+    private final DeleteAccountService deleteAccountService;
 
     @PutMapping("/change/password")
     public ResponseEntity<ChangePasswordResponse> changePassword(@Valid @RequestBody ChangePasswordRequest request, HttpServletRequest httpRequest) {
@@ -42,5 +42,11 @@ public class UserController {
         changeFullNameUseCase.changeFullName(command);
 
         return ResponseEntity.ok().body(new ChangeFullNameResponse(command.fullName(),Instant.now()));
+    }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<Map<String, String>> deleteAccount() {
+        deleteAccountService.deleteAccount();
+        return ResponseEntity.ok(Map.of("message", "Account deleted successfully"));
     }
 }

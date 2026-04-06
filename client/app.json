@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AI Task Manager",
-    "slug": "ai-task-manager",
+    "name": "Ordovita",
+    "slug": "ordovita",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -38,4 +38,6 @@ export const userApi = {
 
   changeFullName: (data: ChangeFullNameRequest) =>
     api.put("/user/change/fullname", data),
+
+  deleteAccount: () => api.delete("/user/account"),
 };

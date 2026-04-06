@@ -1,0 +1,63 @@
+services:
+  backend:
+    image: ${DOCKER_USERNAME}/ordovita-backend:latest
+    container_name: ordovita-backend
+    restart: unless-stopped
+    environment:
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      SPRING_PROFILES_ACTIVE: prod
+    networks:
+      - internal
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- --spider http://localhost:8080/swagger-ui/index.html || exit 1",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+
+  frontend:
+    image: ${DOCKER_USERNAME}/ordovita-frontend:latest
+    container_name: ordovita-frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - internal
+      - web
+    labels:
+      - "traefik.enable=true"
+
+      # Main domain
+      - "traefik.http.routers.ordovita.rule=Host(`ordovita.pl`)"
+      - "traefik.http.routers.ordovita.entrypoints=websecure"
+      - "traefik.http.routers.ordovita.tls.certresolver=my-resolver"
+      - "traefik.http.routers.ordovita.service=ordovita"
+      - "traefik.http.services.ordovita.loadbalancer.server.port=80"
+
+      # www redirect
+      - "traefik.http.routers.ordovita-www.rule=Host(`www.ordovita.pl`)"
+      - "traefik.http.routers.ordovita-www.entrypoints=websecure"
+      - "traefik.http.routers.ordovita-www.tls.certresolver=my-resolver"
+      - "traefik.http.routers.ordovita-www.middlewares=ordovita-www-redirect"
+      - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.regex=^https://www\\.(.*)"
+      - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.replacement=https://$${1}"
+      - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.permanent=true"
+
+networks:
+  internal:
+    driver: bridge
+  web:
+    external: true
+    name: traefik_proxy_network

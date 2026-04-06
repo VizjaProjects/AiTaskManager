@@ -100,6 +100,8 @@ export default function ForgotPasswordScreen() {
                       value={value}
                       onChangeText={onChange}
                       error={errors.email?.message}
+                      returnKeyType="go"
+                      onSubmitEditing={handleSubmit(onSubmit)}
                     />
                   )}
                 />

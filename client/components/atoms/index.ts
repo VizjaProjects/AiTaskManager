@@ -6,3 +6,4 @@ export { Avatar } from "./Avatar";
 export { EmptyState } from "./EmptyState";
 export { Skeleton, TaskCardSkeleton, StatCardSkeleton } from "./Skeleton";
 export { InlineDatePicker } from "./InlineDatePicker";
+export { OrdovitaLogo } from "./OrdovitaLogo";

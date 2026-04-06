@@ -11,6 +11,12 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+let onRefreshFailed: (() => void) | null = null;
+
+export function setOnRefreshFailed(cb: () => void) {
+  onRefreshFailed = cb;
+}
+
 async function getAccessToken(): Promise<string | null> {
   if (Platform.OS === "web") {
     return typeof window !== "undefined"
@@ -98,6 +104,7 @@ api.interceptors.response.use(
     } catch (refreshError) {
       processQueue(refreshError, null);
       await clearTokens();
+      onRefreshFailed?.();
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
@@ -105,4 +112,4 @@ api.interceptors.response.use(
   },
 );
 
-export { getAccessToken, setAccessToken, clearTokens };
+export { getAccessToken, setAccessToken, clearTokens, setOnRefreshFailed };

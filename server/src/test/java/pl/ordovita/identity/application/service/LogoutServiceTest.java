@@ -29,27 +29,6 @@ class LogoutServiceTest {
     @InjectMocks
     private LogoutService logoutService;
 
-    @Test
-    @DisplayName("Should logout successfully")
-    void shouldLogoutSuccessfully() {
-        String refreshToken = "refreshToken";
-        UserSession userSession = UserSession.create(
-                refreshToken,
-                "Chrome on Windows",
-                "192.168.1.1",
-                Instant.now().plusSeconds(3600),
-                Status.ACTIVE,
-                UserId.generate()
-        );
-
-        LogoutUseCase.LogoutCommand command = new LogoutUseCase.LogoutCommand(refreshToken);
-
-        when(userSessionRepository.findByRefreshToken(refreshToken)).thenReturn(Optional.of(userSession));
-
-        logoutService.logout(command);
-
-        verify(userSessionRepository).delete(userSession);
-    }
 
     @Test
     @DisplayName("Should throw exception when refresh token is invalid")

@@ -12,7 +12,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Button, Input } from "@/components/atoms";
+import { Button, Input, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
 
@@ -55,11 +55,8 @@ export default function LoginScreen() {
           className="px-8"
         >
           <View className="max-w-md w-full self-center gap-8">
-            <View className="items-center gap-2">
-              <MaterialIcons name="auto-awesome" size={48} color="#4d41df" />
-              <Text className="text-on-surface font-headline text-3xl text-center">
-                AI Task Manager
-              </Text>
+            <View className="items-center gap-3">
+              <OrdovitaLogo size="lg" />
               <Text className="text-on-surface-variant font-body text-sm text-center">
                 Zaloguj się, aby zarządzać swoimi zadaniami
               </Text>
@@ -104,6 +101,8 @@ export default function LoginScreen() {
                     value={value}
                     onChangeText={onChange}
                     error={errors.password?.message}
+                    returnKeyType="go"
+                    onSubmitEditing={handleSubmit(onSubmit)}
                   />
                 )}
               />
@@ -132,6 +131,24 @@ export default function LoginScreen() {
               <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
                 <Text className="text-primary font-headline text-sm">
                   Zarejestruj się
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View className="flex-row items-center justify-center gap-3 mt-2">
+              <TouchableOpacity
+                onPress={() => router.push("/privacy-policy" as never)}
+              >
+                <Text className="text-on-surface-variant font-body text-xs underline">
+                  Polityka prywatności
+                </Text>
+              </TouchableOpacity>
+              <Text className="text-on-surface-variant text-xs">•</Text>
+              <TouchableOpacity
+                onPress={() => router.push("/terms-of-service" as never)}
+              >
+                <Text className="text-on-surface-variant font-body text-xs underline">
+                  Regulamin
                 </Text>
               </TouchableOpacity>
             </View>

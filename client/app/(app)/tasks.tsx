@@ -55,20 +55,25 @@ function KanbanTaskCard({
   task,
   category,
   onPress,
+  isCompleted,
 }: {
   task: Task;
   category?: Category;
   onPress: () => void;
+  isCompleted?: boolean;
 }) {
   return (
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
       className="bg-surface-container-lowest rounded-2xl overflow-hidden"
-      style={{
-        borderLeftWidth: 4,
-        borderLeftColor: PRIORITY_COLORS[task.priority],
-      }}
+      style={[
+        {
+          borderLeftWidth: 4,
+          borderLeftColor: PRIORITY_COLORS[task.priority],
+        },
+        isCompleted ? { opacity: 0.6 } : undefined,
+      ]}
     >
       <View className="p-4 gap-2.5">
         <View className="flex-row items-center gap-2 flex-wrap">
@@ -83,6 +88,9 @@ function KanbanTaskCard({
         <Text
           className="font-headline text-on-surface text-sm"
           numberOfLines={2}
+          style={
+            isCompleted ? { textDecorationLine: "line-through" } : undefined
+          }
         >
           {task.title}
         </Text>
@@ -90,6 +98,9 @@ function KanbanTaskCard({
           <Text
             className="text-on-surface-variant font-body text-xs"
             numberOfLines={2}
+            style={
+              isCompleted ? { textDecorationLine: "line-through" } : undefined
+            }
           >
             {task.description}
           </Text>
@@ -233,6 +244,17 @@ export default function TasksScreen() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(loadColumnOrder);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
+
+  const isDoneStatus = useCallback(
+    (statusId: string) => {
+      const status = statuses?.find((s) => s.statusId === statusId);
+      if (!status) return false;
+      const name = status.name.toLowerCase();
+      return name === "done" || name === "zakończone" || name === "ukończone";
+    },
+    [statuses],
+  );
 
   useEffect(() => {
     if (params.taskId && tasks) {
@@ -283,8 +305,17 @@ export default function TasksScreen() {
       );
     if (selectedStatusIds.size > 0)
       result = result.filter((t) => selectedStatusIds.has(t.statusId));
+    if (!showCompleted)
+      result = result.filter((t) => !isDoneStatus(t.statusId));
     return result;
-  }, [tasks, selectedPriorities, selectedCategoryIds, selectedStatusIds]);
+  }, [
+    tasks,
+    selectedPriorities,
+    selectedCategoryIds,
+    selectedStatusIds,
+    showCompleted,
+    isDoneStatus,
+  ]);
 
   const groupedByStatus = useMemo(() => {
     const groups = new Map<string, Task[]>();
@@ -838,6 +869,26 @@ export default function TasksScreen() {
               <Text className="text-xs font-label text-primary">Wyczyść</Text>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            onPress={() => setShowCompleted((v) => !v)}
+            className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+              showCompleted
+                ? "bg-primary/10 border-primary"
+                : "bg-surface-container-high border-outline-variant"
+            }`}
+          >
+            <MaterialIcons
+              name={showCompleted ? "visibility" : "visibility-off"}
+              size={14}
+              color={showCompleted ? "#4d41df" : "#777587"}
+            />
+            <Text
+              className={`text-xs font-label ${showCompleted ? "text-primary" : "text-on-surface-variant"}`}
+            >
+              Ukończone
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {!tasks?.length ? (
@@ -936,6 +987,7 @@ export default function TasksScreen() {
                               : undefined
                           }
                           onPress={() => setSelectedTask(task)}
+                          isCompleted={isDoneStatus(task.statusId)}
                         />
                       </DraggableCard>
                     ))}
@@ -992,6 +1044,7 @@ export default function TasksScreen() {
                           : undefined
                       }
                       onPress={() => setSelectedTask(task)}
+                      isCompleted={isDoneStatus(task.statusId)}
                     />
                   ))}
                 </View>
@@ -1038,6 +1091,7 @@ export default function TasksScreen() {
                             : undefined
                         }
                         onPress={() => setSelectedTask(task)}
+                        isCompleted={isDoneStatus(task.statusId)}
                       />
                     ))}
                   </View>

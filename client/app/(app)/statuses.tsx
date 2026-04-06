@@ -62,6 +62,8 @@ export default function StatusesScreen() {
                 placeholder="np. Do zrobienia, W trakcie..."
                 value={name}
                 onChangeText={setName}
+                returnKeyType="go"
+                onSubmitEditing={handleCreate}
               />
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
                 Kolor

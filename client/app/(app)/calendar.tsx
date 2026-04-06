@@ -1038,21 +1038,23 @@ export default function CalendarScreen() {
                         }}
                         activeOpacity={0.7}
                         className="absolute rounded-md px-1.5 py-1 overflow-hidden"
-                        dataSet={{
-                          eventId: evt.eventId,
-                          eventTitle: evt.title,
-                          eventColor: color,
-                          eventDuration: String(
-                            (new Date(evt.endDateTime).getTime() -
-                              new Date(evt.startDateTime).getTime()) /
-                              3600000,
-                          ),
-                        }}
+                        {...({
+                          dataSet: {
+                            eventId: evt.eventId,
+                            eventTitle: evt.title,
+                            eventColor: color,
+                            eventDuration: String(
+                              (new Date(evt.endDateTime).getTime() -
+                                new Date(evt.startDateTime).getTime()) /
+                                3600000,
+                            ),
+                          },
+                        } as any)}
                         style={{
                           top: pos.top,
                           height: pos.height,
-                          left: leftPct,
-                          width: widthPct,
+                          left: leftPct as any,
+                          width: widthPct as any,
                           paddingHorizontal: 3,
                           backgroundColor:
                             draggingEventId === evt.eventId
@@ -1063,7 +1065,9 @@ export default function CalendarScreen() {
                           borderStyle: isProposed ? "dashed" : "solid",
                           zIndex: 2,
                           opacity: draggingEventId === evt.eventId ? 0.4 : 1,
-                          cursor: "grab",
+                          ...(Platform.OS === "web"
+                            ? { cursor: "grab" as any }
+                            : {}),
                         }}
                       >
                         {isProposed && (

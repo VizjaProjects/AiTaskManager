@@ -6,6 +6,7 @@ import {
   Platform,
   useWindowDimensions,
   Switch,
+  Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
@@ -34,6 +35,7 @@ export default function ProfileScreen() {
   const [nameSuccess, setNameSuccess] = useState(false);
   const [passSuccess, setPassSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const nameForm = useForm<ChangeFullNameFormData>({
     resolver: zodResolver(changeFullNameSchema),
@@ -72,6 +74,36 @@ export default function ProfileScreen() {
       setError(e.response?.data?.message ?? "Błąd zmiany hasła");
     } finally {
       setPassLoading(false);
+    }
+  }
+
+  function handleDeleteAccount() {
+    if (Platform.OS === "web") {
+      const confirmed = window.confirm(
+        "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna — wszystkie dane zostaną trwale usunięte.",
+      );
+      if (confirmed) performDeleteAccount();
+    } else {
+      Alert.alert(
+        "Usuń konto",
+        "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna — wszystkie dane zostaną trwale usunięte.",
+        [
+          { text: "Anuluj", style: "cancel" },
+          { text: "Usuń", style: "destructive", onPress: performDeleteAccount },
+        ],
+      );
+    }
+  }
+
+  async function performDeleteAccount() {
+    setDeleteLoading(true);
+    try {
+      await userApi.deleteAccount();
+      logout();
+    } catch (e: any) {
+      setError(e.response?.data?.message ?? "Błąd usuwania konta");
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -279,10 +311,14 @@ export default function ProfileScreen() {
           </View>
           <MaterialIcons name="chevron-right" size={20} color="#777587" />
         </TouchableOpacity>
-        <TouchableOpacity className="flex-row items-center gap-3 py-2">
+        <TouchableOpacity
+          className="flex-row items-center gap-3 py-2"
+          onPress={handleDeleteAccount}
+          disabled={deleteLoading}
+        >
           <MaterialIcons name="delete-forever" size={20} color="#ba1a1a" />
           <Text className="text-error font-body text-sm">
-            Deactivate Account
+            {deleteLoading ? "Usuwanie..." : "Deactivate Account"}
           </Text>
         </TouchableOpacity>
       </View>

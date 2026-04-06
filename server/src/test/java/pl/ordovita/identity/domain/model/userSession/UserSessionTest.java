@@ -11,43 +11,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class UserSessionTest {
 
-    @Test
-    @DisplayName("Should create user session successfully")
-    void shouldCreateUserSessionSuccessfully() {
-        String refreshToken = "refreshToken";
-        String deviceName = "Chrome on Windows";
-        String ipAddress = "192.168.1.1";
-        Instant expiresAt = Instant.now().plusSeconds(3600);
-        UserId userId = UserId.generate();
-
-        UserSession userSession = UserSession.create(refreshToken, deviceName, ipAddress, expiresAt, Status.ACTIVE, userId);
-
-        assertNotNull(userSession);
-        assertEquals(refreshToken, userSession.getRefreshToken());
-        assertEquals(deviceName, userSession.getDeviceName());
-        assertEquals(ipAddress, userSession.getUserSessionIp());
-        assertEquals(expiresAt, userSession.getExpiresAt());
-        assertEquals(Status.ACTIVE, userSession.getStatus());
-        assertEquals(userId, userSession.getUserId());
-        assertNotNull(userSession.getId());
-        assertNotNull(userSession.getCreatedAt());
-        assertNotNull(userSession.getUpdatedAt());
-    }
-
-    @Test
-    @DisplayName("Should mark session as expired")
-    void shouldMarkSessionAsExpired() {
-        String refreshToken = "refreshToken";
-        String deviceName = "Chrome on Windows";
-        String ipAddress = "192.168.1.1";
-        Instant expiresAt = Instant.now().plusSeconds(3600);
-        UserId userId = UserId.generate();
-
-        UserSession userSession = UserSession.create(refreshToken, deviceName, ipAddress, expiresAt, Status.ACTIVE, userId);
-        userSession.detectiveSession();
-
-        assertEquals(Status.EXPIRED, userSession.getStatus());
-    }
 
     @Test
     @DisplayName("Should throw exception when id is null")

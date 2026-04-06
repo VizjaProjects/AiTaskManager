@@ -40,6 +40,7 @@ public class SessionManager implements SessionManagerUseCase {
         Instant expiresAt = tokenGenerator.calculateRefreshTokenExpiration();
 
         UserSession userSession = UserSession.create(
+                sessionId,
                 refreshToken,
                 deviceName,
                 ipAddress,
@@ -57,7 +58,7 @@ public class SessionManager implements SessionManagerUseCase {
     public void setRefreshTokenCookie(String refreshToken, HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE, refreshToken)
                 .httpOnly(true)
-                .secure(false)
+                .secure(true)
                 .path("/")
                 .maxAge(REFRESH_TOKEN_MAX_AGE)
                 .sameSite("Strict")

@@ -110,6 +110,7 @@ public class TaskService implements CreateTaskUseCase, EditTaskUseCase, DeleteTa
             throw new TaskException("Task does not belong to current user");
         }
 
+        eventRepository.findByTaskId(taskId).forEach(eventRepository::delete);
         taskRepository.delete(task);
     }
 

@@ -8,6 +8,7 @@ import pl.ordovita.identity.infrastructure.jpa.userSesion.UserSessionEntity;
 import pl.ordovita.identity.infrastructure.jpa.userSesion.UserSessionJpaRepository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,6 +47,14 @@ public class UserSessionRepositoryAdapter implements UserSessionRepository {
     @Override
     public void delete(UserSession session) {
         repository.delete(UserSessionMapper.from(session));
+    }
+
+    @Override
+    public List<UserSession> findAllByDeviceNameAndUserSessionIp(String deviceName, String userSessionIp) {
+        return repository.findAllByDeviceNameAndUserSessionIp(deviceName, userSessionIp)
+                .stream()
+                .map(UserSessionMapper::toDomain)
+                .toList();
     }
 
     @Override

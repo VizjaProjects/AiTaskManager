@@ -782,6 +782,15 @@ export default function AiTaskScreen() {
                   textAlignVertical="top"
                   value={text}
                   onChangeText={setText}
+                  onKeyPress={(e: any) => {
+                    if (
+                      e.nativeEvent.key === "Enter" &&
+                      !e.nativeEvent.shiftKey
+                    ) {
+                      e.preventDefault();
+                      handleGenerate();
+                    }
+                  }}
                 />
                 {speechSupported && (
                   <TouchableOpacity

@@ -70,6 +70,8 @@ export default function CategoriesScreen() {
                 placeholder="np. Praca, Osobiste..."
                 value={name}
                 onChangeText={setName}
+                returnKeyType="go"
+                onSubmitEditing={handleCreate}
               />
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
                 Kolor

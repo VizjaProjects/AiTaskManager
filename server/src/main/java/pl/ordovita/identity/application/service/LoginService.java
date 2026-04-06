@@ -6,7 +6,6 @@ import pl.ordovita.identity.application.port.in.DeviceManagerUseCase;
 import pl.ordovita.identity.application.port.in.LoginUseCase;
 import pl.ordovita.identity.application.port.out.PasswordHasher;
 import pl.ordovita.identity.domain.exception.UserException;
-import pl.ordovita.identity.domain.model.token.TokenMetadata;
 import pl.ordovita.identity.domain.model.token.TokenPair;
 import pl.ordovita.identity.domain.model.user.Email;
 import pl.ordovita.identity.domain.model.user.RawPassword;
@@ -14,8 +13,6 @@ import pl.ordovita.identity.domain.model.user.User;
 import pl.ordovita.identity.domain.model.userSession.UserSession;
 import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.identity.domain.port.UserSessionRepository;
-
-import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -54,19 +51,10 @@ public class LoginService implements LoginUseCase {
     private TokenPair handleUserSession(User user, LoginCommand command) {
         String deviceName = deviceManagerUseCase.parseDeviceName(command.request());
         String ipAddress = deviceManagerUseCase.getClientIp(command.request());
-        boolean sessionExists = userSessionRepository.existsByDeviceNameAndUserSessionIpAndExpiresAtAfter(deviceName,
-                ipAddress,
-                Instant.now());
 
-        if (sessionExists) {
-            UserSession existingSession = userSessionRepository.findByUserSessionIp(ipAddress).orElseThrow(() -> new UserException(
-                    "User session not found"));
-
-            sessionManager.setRefreshTokenCookie(existingSession.getRefreshToken(), command.response());
-            return TokenPair.of(sessionManager.tokenGenerator.generateAccessToken(new TokenMetadata(user.getId(),
-                    user.getEmail(),
-                    user.getRole(),
-                    existingSession.getId())), existingSession.getRefreshToken());
+        java.util.List<UserSession> existingSessions = userSessionRepository.findAllByDeviceNameAndUserSessionIp(deviceName, ipAddress);
+        for (UserSession session : existingSessions) {
+            userSessionRepository.delete(session);
         }
 
         return sessionManager.createNewSession(user, deviceName, ipAddress, command.response());

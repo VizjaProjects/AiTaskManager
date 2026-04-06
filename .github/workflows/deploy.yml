@@ -1,0 +1,177 @@
+name: Ordovita — Build, Publish & Deploy
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "server/src/**"
+      - "server/build.gradle"
+      - "server/settings.gradle"
+      - "server/Dockerfile"
+      - "client/app/**"
+      - "client/components/**"
+      - "client/lib/**"
+      - "client/package.json"
+      - "client/package-lock.json"
+      - "client/Dockerfile"
+      - "client/nginx.conf"
+      - "client/tailwind.config.js"
+      - "client/tsconfig.json"
+      - "docker-compose-prod.yml"
+
+jobs:
+  # ── 1. Detect what changed ──
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      compose: ${{ steps.filter.outputs.compose }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'client/app/**'
+              - 'client/components/**'
+              - 'client/lib/**'
+              - 'client/package.json'
+              - 'client/package-lock.json'
+              - 'client/Dockerfile'
+              - 'client/nginx.conf'
+              - 'client/tailwind.config.js'
+              - 'client/tsconfig.json'
+            backend:
+              - 'server/src/**'
+              - 'server/build.gradle'
+              - 'server/settings.gradle'
+              - 'server/Dockerfile'
+            compose:
+              - 'docker-compose-prod.yml'
+
+  # ── 2. Build & push frontend image ──
+  build-frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./client
+          file: ./client/Dockerfile
+          push: true
+          build-args: |
+            EXPO_PUBLIC_API_URL=
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
+            ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:${{ github.sha }}
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+  # ── 3. Build & push backend image ──
+  build-backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Run tests
+        working-directory: ./server
+        run: ./gradlew test --no-daemon
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./server
+          file: ./server/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest
+            ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:${{ github.sha }}
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+  # ── 4. Deploy to VPS ──
+  deploy:
+    needs: [changes, build-frontend, build-backend]
+    if: |
+      always() &&
+      (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
+      (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
+      (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.compose == 'true')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy docker-compose to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: "docker-compose-prod.yml"
+          target: "/home/${{ secrets.VPS_USERNAME }}/ordovita"
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+
+            echo "${{ secrets.DOCKER_TOKEN }}" | docker login docker.io -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+            cd /home/${{ secrets.VPS_USERNAME }}/ordovita
+
+            export DOCKER_USERNAME="${{ secrets.DOCKER_USERNAME }}"
+            export DB_URL="${{ secrets.DB_URL }}"
+            export DB_USERNAME="${{ secrets.DB_USERNAME }}"
+            export DB_PASSWORD="${{ secrets.DB_PASSWORD }}"
+            export JWT_SECRET="${{ secrets.JWT_SECRET }}"
+            export MAIL_HOST="${{ secrets.MAIL_HOST }}"
+            export MAIL_USERNAME="${{ secrets.MAIL_USERNAME }}"
+            export MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}"
+            export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+
+            docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
+            docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest
+
+            docker compose -f docker-compose-prod.yml up -d --remove-orphans
+
+            docker image prune -f

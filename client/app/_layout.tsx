@@ -16,6 +16,7 @@ import {
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/lib/stores";
 import { useThemeStore } from "@/lib/stores";
+import { setOnRefreshFailed } from "@/lib/api";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,11 +36,19 @@ function AuthGate() {
   }, [hydrate]);
 
   useEffect(() => {
+    setOnRefreshFailed(() => {
+      useAuthStore.getState().logout();
+    });
+  }, []);
+
+  useEffect(() => {
     if (isLoading) return;
 
     const inAuthGroup = segments[0] === "(auth)";
+    const isPublicPage =
+      segments[0] === "privacy-policy" || segments[0] === "terms-of-service";
 
-    if (!isAuthenticated && !inAuthGroup) {
+    if (!isAuthenticated && !inAuthGroup && !isPublicPage) {
       router.replace("/(auth)/login");
     } else if (isAuthenticated && inAuthGroup) {
       router.replace("/(app)/dashboard");

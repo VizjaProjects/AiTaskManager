@@ -5,6 +5,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { cssInterop } from "nativewind";
 import { NavItem } from "../molecules/NavItem";
 import { Avatar } from "../atoms/Avatar";
+import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
 
 cssInterop(LinearGradient, { className: "style" });
@@ -33,13 +34,10 @@ export function SideNavBar() {
     <View className="w-64 h-full bg-surface-container-lowest border-r-0 px-4 py-6 justify-between">
       <View>
         <TouchableOpacity
-          className="flex-row items-center gap-2 px-4 mb-8"
+          className="px-4 mb-8"
           onPress={() => router.push("/(app)/dashboard")}
         >
-          <MaterialIcons name="auto-awesome" size={24} color="#4d41df" />
-          <Text className="text-primary font-headline text-lg">
-            AI Task Manager
-          </Text>
+          <OrdovitaLogo size="md" />
         </TouchableOpacity>
 
         <ScrollView showsVerticalScrollIndicator={false}>
