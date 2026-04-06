@@ -13,6 +13,11 @@ services:
       MAIL_PASSWORD: ${MAIL_PASSWORD}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       SPRING_PROFILES_ACTIVE: prod
+      JAVA_TOOL_OPTIONS: "-Xmx512m -Xms256m"
+    deploy:
+      resources:
+        limits:
+          memory: 768M
     networks:
       - internal
     healthcheck:
@@ -46,12 +51,11 @@ services:
       - "traefik.http.routers.ordovita.service=ordovita"
       - "traefik.http.services.ordovita.loadbalancer.server.port=80"
 
-      # www redirect
+      # www redirect (HTTP only — no separate TLS cert needed)
       - "traefik.http.routers.ordovita-www.rule=Host(`www.ordovita.pl`)"
-      - "traefik.http.routers.ordovita-www.entrypoints=websecure"
-      - "traefik.http.routers.ordovita-www.tls.certresolver=my-resolver"
+      - "traefik.http.routers.ordovita-www.entrypoints=web"
       - "traefik.http.routers.ordovita-www.middlewares=ordovita-www-redirect"
-      - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.regex=^https://www\\.(.*)"
+      - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.regex=^https?://www\\.(.*)"
       - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.replacement=https://$${1}"
       - "traefik.http.middlewares.ordovita-www-redirect.redirectregex.permanent=true"
 
