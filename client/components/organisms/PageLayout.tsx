@@ -28,7 +28,7 @@ export function PageLayout({ title, showSearch, children }: PageLayoutProps) {
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <TopAppBar title={title} showSearch={showSearch} />
-      <View className="flex-1 px-4 py-2">{children}</View>
+      <View className="flex-1 px-4 py-2 overflow-hidden">{children}</View>
     </SafeAreaView>
   );
 }

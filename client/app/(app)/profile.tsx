@@ -233,13 +233,13 @@ export default function ProfileScreen() {
           </Text>
         </View>
         <TouchableOpacity className="flex-row items-center justify-between py-3">
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3 flex-1 mr-3">
             <MaterialIcons
               name={mode === "dark" ? "dark-mode" : "light-mode"}
               size={22}
               color="#4d41df"
             />
-            <View>
+            <View className="flex-1">
               <Text className="text-on-surface font-headline text-sm">
                 Interface Theme
               </Text>
@@ -248,7 +248,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
           </View>
-          <View className="flex-row bg-surface-container-low rounded-full p-0.5">
+          <View className="flex-row bg-surface-container-low rounded-full p-0.5 shrink-0">
             <TouchableOpacity
               onPress={() => setMode("light")}
               className={`px-3 py-1.5 rounded-full ${mode === "light" ? "bg-primary" : ""}`}
@@ -272,9 +272,9 @@ export default function ProfileScreen() {
           </View>
         </TouchableOpacity>
         <View className="flex-row items-center justify-between py-3">
-          <View className="flex-row items-center gap-3">
+          <View className="flex-row items-center gap-3 flex-1 mr-3">
             <MaterialIcons name="auto-awesome" size={22} color="#006b58" />
-            <View>
+            <View className="flex-1">
               <Text className="text-on-surface font-headline text-sm">
                 AI Smart Suggestions
               </Text>

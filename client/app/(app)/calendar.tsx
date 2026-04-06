@@ -450,7 +450,9 @@ export default function CalendarScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewType, setViewType] = useState<ViewType>("week");
+  const [viewType, setViewType] = useState<ViewType>(
+    Platform.OS === "web" && width >= 1024 ? "week" : "day",
+  );
   const [showCreate, setShowCreate] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   const [dragSel, setDragSel] = useState<DragSelection | null>(null);
@@ -500,6 +502,11 @@ export default function CalendarScreen() {
     [weekStart],
   );
   weekDaysRef.current = weekDays;
+
+  const displayDays = useMemo(
+    () => (viewType === "day" ? [selectedDate] : weekDays),
+    [viewType, selectedDate, weekDays],
+  );
 
   const weekNumber = useMemo(() => {
     const d = new Date(selectedDate);
@@ -934,8 +941,10 @@ export default function CalendarScreen() {
         style={{ borderBottomWidth: 1, borderBottomColor: gridBorderColor }}
       >
         <View className="w-14" />
-        {weekDays.map((day, i) => {
+        {displayDays.map((day, i) => {
           const isToday = isSameDay(day, today);
+          const dayOfWeek = day.getDay();
+          const dayLabel = WEEK_DAYS_SHORT[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
           return (
             <TouchableOpacity
               key={i}
@@ -951,7 +960,7 @@ export default function CalendarScreen() {
                   isToday ? "text-primary" : "text-on-surface-variant"
                 }`}
               >
-                {WEEK_DAYS_SHORT[i]}
+                {dayLabel}
               </Text>
               <Text
                 className={`text-lg font-headline mt-0.5 ${
@@ -987,7 +996,7 @@ export default function CalendarScreen() {
                 </Text>
               </View>
               <View className="flex-1 flex-row">
-                {weekDays.map((_, colIdx) => (
+                {displayDays.map((_, colIdx) => (
                   <View
                     key={colIdx}
                     className="flex-1"
@@ -1007,7 +1016,7 @@ export default function CalendarScreen() {
             className="absolute flex-row"
             style={{ left: 56, right: 0, top: 0, bottom: 0 }}
           >
-            {weekDays.map((day, colIdx) => {
+            {displayDays.map((day, colIdx) => {
               const dayEvts = getEventsForDay(day);
               const laidOut = layoutOverlappingEvents(dayEvts);
               return (
@@ -1104,8 +1113,8 @@ export default function CalendarScreen() {
                 pointerEvents="none"
                 style={{
                   position: "absolute",
-                  left: `${(dragPreview.colIdx / 7) * 100}%`,
-                  width: `${100 / 7}%`,
+                  left: `${(dragPreview.colIdx / displayDays.length) * 100}%`,
+                  width: `${100 / displayDays.length}%`,
                   top: dragPreview.top,
                   height: dragPreview.height,
                   zIndex: 20,
@@ -1167,8 +1176,8 @@ export default function CalendarScreen() {
                 pointerEvents="none"
                 style={{
                   position: "absolute",
-                  left: `${(dragSel.colIdx / 7) * 100}%`,
-                  width: `${100 / 7}%`,
+                  left: `${(dragSel.colIdx / displayDays.length) * 100}%`,
+                  width: `${100 / displayDays.length}%`,
                   top: (dragSel.startHour - 7) * HOUR_HEIGHT,
                   height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
                   backgroundColor: "rgba(77, 65, 223, 0.12)",
@@ -1189,10 +1198,16 @@ export default function CalendarScreen() {
   return (
     <PageLayout title="Good morning">
       <View className="flex-1 gap-4">
-        <View className="flex-row items-center justify-between">
-          <View className="flex-row items-center gap-4">
-            <Text className="text-on-surface font-headline text-xl">
-              Week {weekNumber}
+        <View className="flex-row items-center justify-between flex-wrap gap-2">
+          <View className="flex-row items-center gap-3 flex-wrap">
+            <Text className="text-on-surface font-headline text-lg">
+              {viewType === "day"
+                ? selectedDate.toLocaleDateString("pl-PL", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })
+                : `Week ${weekNumber}`}
             </Text>
             <View className="flex-row bg-surface-container-low rounded-full p-0.5">
               {(["day", "week", "month"] as ViewType[]).map((v) => (
@@ -1223,12 +1238,14 @@ export default function CalendarScreen() {
               setCreateEndM("00");
               setShowCreate(true);
             }}
-            className="bg-primary rounded-xl px-4 py-2.5 flex-row items-center gap-2"
+            className="bg-primary rounded-xl px-3 py-2 flex-row items-center gap-1"
           >
             <MaterialIcons name="add" size={18} color="#fff" />
-            <Text className="text-white font-headline text-sm">
-              + New Event
-            </Text>
+            {isDesktop && (
+              <Text className="text-white font-headline text-sm">
+                + New Event
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
 

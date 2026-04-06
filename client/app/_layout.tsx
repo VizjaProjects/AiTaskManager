@@ -87,6 +87,13 @@ export default function RootLayout() {
     }
   }, [mode]);
 
+  useEffect(() => {
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      const el = document.getElementById("ordovita-legal-links");
+      if (el) el.remove();
+    }
+  }, []);
+
   if (!fontsLoaded) return null;
 
   return (

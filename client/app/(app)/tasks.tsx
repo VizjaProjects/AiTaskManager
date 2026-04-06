@@ -5,6 +5,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
@@ -213,6 +214,7 @@ function DropColumn({
           ? "bg-primary/10 border-2 border-dashed border-primary"
           : "bg-surface-container-low/50"
       }`}
+      style={{ alignSelf: "stretch" }}
     >
       {children}
     </View>
@@ -222,6 +224,8 @@ function DropColumn({
 export default function TasksScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === "web" && width >= 1024;
   const { data: tasks, isLoading, refetch } = useTasks();
   const { data: categories } = useCategories();
   const { data: statuses } = useTaskStatuses();
@@ -912,6 +916,7 @@ export default function TasksScreen() {
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
+            style={{ flex: 1 }}
           >
             {orderedStatuses.map((status, colIdx) => {
               const statusTasks = groupedByStatus.get(status.statusId) ?? [];
@@ -976,6 +981,7 @@ export default function TasksScreen() {
                   <ScrollView
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ gap: 10 }}
+                    style={{ flex: 1 }}
                   >
                     {statusTasks.map((task) => (
                       <DraggableCard key={task.taskId} taskId={task.taskId}>
@@ -1124,8 +1130,8 @@ export default function TasksScreen() {
             setCreateStatusId(orderedStatuses[0]?.statusId);
             setShowCreate(true);
           }}
-          className="absolute bottom-6 right-6 bg-secondary rounded-2xl px-6 py-4 flex-row items-center gap-2 shadow-lg"
-          style={{ elevation: 8 }}
+          className="absolute right-6 bg-secondary rounded-2xl px-6 py-4 flex-row items-center gap-2 shadow-lg"
+          style={{ elevation: 8, bottom: isDesktop ? 24 : 88 }}
         >
           <MaterialIcons name="auto-awesome" size={20} color="#fff" />
           <Text className="text-white font-headline text-sm">
