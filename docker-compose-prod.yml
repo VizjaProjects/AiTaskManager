@@ -43,6 +43,7 @@ services:
       - web
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=traefik_proxy_network"
 
       # Main domain
       - "traefik.http.routers.ordovita.rule=Host(`ordovita.pl`)"
