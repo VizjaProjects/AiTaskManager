@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import pl.ordovita.tasks.domain.model.event.Event;
 import pl.ordovita.tasks.domain.model.event.EventStatus;
 
 import java.util.List;
@@ -21,4 +22,7 @@ public interface EventJpaRepository extends JpaRepository<EventEntity, UUID> {
 
     @Query("FROM EventEntity e WHERE e.taskId.id = :taskId")
     List<EventEntity> findByTaskId(@Param("taskId") UUID taskId);
+
+    @Query("FROM EventEntity e WHERE e.taskId.id = :taskId")
+    Optional<EventEntity> findEventByTaskId(@Param("taskId") UUID taskId);
 }

@@ -315,7 +315,11 @@ function EditTaskModal({
                       style={{ backgroundColor: c.color }}
                     />
                     <Text
-                      className="text-xs font-label"
+                      className={`text-xs font-label ${
+                        categoryId === c.categoryId
+                          ? ""
+                          : "text-on-surface-variant"
+                      }`}
                       style={
                         categoryId === c.categoryId
                           ? { color: c.color }
@@ -635,8 +639,12 @@ export default function AiTaskScreen() {
   async function handleGenerate() {
     if (text.length < 10) return;
     if (isListening) toggleSpeech();
-    await generatePlan.mutateAsync({ text });
-    setText("");
+    try {
+      await generatePlan.mutateAsync({ text });
+      setText("");
+    } catch {
+      // keep text on error so user can retry
+    }
   }
 
   const speechSupported =
@@ -775,6 +783,7 @@ export default function AiTaskScreen() {
                     minHeight: 120,
                     borderWidth: isListening ? 2 : 0,
                     borderColor: isListening ? "#dc2626" : "transparent",
+                    opacity: generatePlan.isPending ? 0.5 : 1,
                   }}
                   placeholder="Np. Muszę przygotować prezentację na piątek, spotkanie z klientem w środę o 14..."
                   placeholderTextColor="#777587"
@@ -782,6 +791,7 @@ export default function AiTaskScreen() {
                   textAlignVertical="top"
                   value={text}
                   onChangeText={setText}
+                  editable={!generatePlan.isPending}
                   onKeyPress={(e: any) => {
                     if (
                       e.nativeEvent.key === "Enter" &&
@@ -795,6 +805,7 @@ export default function AiTaskScreen() {
                 {speechSupported && (
                   <TouchableOpacity
                     onPress={toggleSpeech}
+                    disabled={generatePlan.isPending}
                     className="absolute right-3 top-3 items-center justify-center rounded-full"
                     style={{
                       width: 36,
@@ -802,6 +813,7 @@ export default function AiTaskScreen() {
                       backgroundColor: isListening
                         ? "#dc2626"
                         : "rgba(77, 65, 223, 0.1)",
+                      opacity: generatePlan.isPending ? 0.4 : 1,
                     }}
                   >
                     <MaterialIcons

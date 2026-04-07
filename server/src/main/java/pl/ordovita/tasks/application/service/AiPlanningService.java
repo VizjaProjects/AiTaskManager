@@ -23,6 +23,7 @@ import pl.ordovita.tasks.application.port.in.GenerateAiPlanUseCase;
 import pl.ordovita.tasks.application.port.in.GetCategoriesUseCase;
 import pl.ordovita.tasks.application.port.in.GetTaskStatusesUseCase;
 import pl.ordovita.tasks.domain.exception.CalendarException;
+import pl.ordovita.tasks.domain.model.aiStatistic.AiStatistic;
 import pl.ordovita.tasks.domain.model.calendar.Calendar;
 import pl.ordovita.tasks.domain.model.category.CategoryId;
 import pl.ordovita.tasks.domain.model.event.Event;
@@ -32,10 +33,7 @@ import pl.ordovita.tasks.domain.model.task.Task;
 import pl.ordovita.tasks.domain.model.task.TaskPriority;
 import pl.ordovita.tasks.domain.model.task.TaskSource;
 import pl.ordovita.tasks.domain.model.category.TaskCategory;
-import pl.ordovita.tasks.domain.port.CalendarRepository;
-import pl.ordovita.tasks.domain.port.CategoryRepository;
-import pl.ordovita.tasks.domain.port.EventRepository;
-import pl.ordovita.tasks.domain.port.TaskRepository;
+import pl.ordovita.tasks.domain.port.*;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -60,6 +58,7 @@ public class AiPlanningService implements GenerateAiPlanUseCase {
     private final EventRepository eventRepository;
     private final CalendarRepository calendarRepository;
     private final CategoryRepository categoryRepository;
+    private final AiStatisticRepository aiStatisticRepository;
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .registerModule(new JavaTimeModule());
@@ -82,8 +81,6 @@ public class AiPlanningService implements GenerateAiPlanUseCase {
 
         log.info("Sending AI plan request for user {}", user.getId().value());
         AiResponse aiResponse = aiClient.ask(new AiRequest(prompt));
-
-        log.info("Sending prompt to AI {}", prompt);
 
         AiPlanJson plan = parseResponse(aiResponse.content());
 
@@ -131,6 +128,9 @@ public class AiPlanningService implements GenerateAiPlanUseCase {
                         saved.getStartDateTime(), saved.getEndDateTime(), saved.isAllDay()));
             }
         }
+
+        AiStatistic aiStatistic = AiStatistic.create(command.userText(),aiResponse.tokenCount(),user.getId());
+        aiStatisticRepository.save(aiStatistic);
 
         log.info("AI plan generated: {} tasks, {} events, {} new categories",
                 generatedTasks.size(), generatedEvents.size(), generatedCategories.size());

@@ -246,3 +246,12 @@ export interface AcceptAiEventRequest {
   allDay: boolean;
   status: EventStatus;
 }
+
+export interface AiStatistic {
+  aiStatisticId: UUID;
+  promptText: string;
+  inputTokens: number;
+  userId: UUID;
+  createdAt: string;
+  updatedAt: string;
+}

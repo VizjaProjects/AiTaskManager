@@ -1,5 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { taskApi, categoryApi, taskStatusApi, eventApi, aiApi } from "../api";
+import {
+  taskApi,
+  categoryApi,
+  taskStatusApi,
+  eventApi,
+  aiApi,
+  aiStatisticApi,
+} from "../api";
 import type {
   CreateTaskRequest,
   EditTaskRequest,
@@ -234,5 +241,23 @@ export function useRejectAiEvent() {
   return useMutation({
     mutationFn: (eventId: string) => aiApi.rejectEvent(eventId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["aiProposals"] }),
+  });
+}
+
+export function useAiStatistics() {
+  return useQuery({
+    queryKey: ["aiStatistics"],
+    queryFn: async () => {
+      const { data } = await aiStatisticApi.getMy();
+      return data.statistics;
+    },
+  });
+}
+
+export function useDeleteAiStatistic() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => aiStatisticApi.delete(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["aiStatistics"] }),
   });
 }

@@ -5,10 +5,13 @@ import { SearchBar } from "@/components/molecules";
 import { TaskCard } from "@/components/molecules";
 import { EmptyState } from "@/components/atoms";
 import { useTasks, useCategories, useEvents } from "@/lib/hooks";
+import { getCategoryDisplayColor } from "@/lib/utils";
+import { useThemeStore } from "@/lib/stores";
 import type { Category } from "@/lib/types";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const { data: tasks } = useTasks();
   const { data: categories } = useCategories();
   const { data: events } = useEvents();
@@ -106,7 +109,12 @@ export default function SearchScreen() {
                   >
                     <View
                       className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: cat.color }}
+                      style={{
+                        backgroundColor: getCategoryDisplayColor(
+                          cat.color,
+                          isDark,
+                        ),
+                      }}
                     />
                     <Text className="text-on-surface font-headline text-sm">
                       {cat.name}

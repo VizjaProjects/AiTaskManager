@@ -17,10 +17,12 @@ import type { Task, Category, TaskStatus, CalendarEvent } from "@/lib/types";
 import { TaskPriority, TaskSource, EventStatus } from "@/lib/types";
 import {
   PRIORITY_COLORS,
+  PRIORITY_COLORS_DARK,
   formatDate,
   formatDateTime,
   formatDuration,
   isOverdue,
+  getCategoryDisplayColor,
 } from "@/lib/utils";
 import {
   useEditTask,
@@ -30,6 +32,7 @@ import {
   useTaskStatuses,
   useEvents,
 } from "@/lib/hooks";
+import { useThemeStore } from "@/lib/stores/theme";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -48,6 +51,9 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const editTask = useEditTask();
   const deleteTask = useDeleteTask();
+  const themeMode = useThemeStore((s) => s.mode);
+  const isDark = themeMode === "dark";
+  const pColors = isDark ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
   const { data: allEvents } = useEvents();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
@@ -130,7 +136,7 @@ export function TaskDetailModal({
                 parseInt(dueHour) || 0,
                 parseInt(dueMin) || 0,
               ).toISOString()
-            : task.dueDateTime || undefined,
+            : undefined,
         },
       },
       {
@@ -295,7 +301,11 @@ export function TaskDetailModal({
                             style={{ backgroundColor: c.color }}
                           />
                           <Text
-                            className="text-xs font-label"
+                            className={`text-xs font-label ${
+                              categoryId === c.categoryId
+                                ? ""
+                                : "text-on-surface-variant"
+                            }`}
                             style={
                               categoryId === c.categoryId
                                 ? { color: c.color }
@@ -311,7 +321,12 @@ export function TaskDetailModal({
                     <View className="flex-row items-center gap-2">
                       <View
                         className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: cat.color }}
+                        style={{
+                          backgroundColor: getCategoryDisplayColor(
+                            cat.color,
+                            isDark,
+                          ),
+                        }}
                       />
                       <Text className="text-on-surface font-body text-sm">
                         {cat.name}
@@ -394,7 +409,7 @@ export function TaskDetailModal({
                           }`}
                           style={
                             priority === p
-                              ? { backgroundColor: PRIORITY_COLORS[p] }
+                              ? { backgroundColor: pColors[p] }
                               : undefined
                           }
                         >
@@ -414,12 +429,12 @@ export function TaskDetailModal({
                     <View
                       className="px-3 py-1.5 rounded-lg self-start"
                       style={{
-                        backgroundColor: `${PRIORITY_COLORS[task.priority]}15`,
+                        backgroundColor: `${pColors[task.priority]}25`,
                       }}
                     >
                       <Text
                         className="text-sm font-headline"
-                        style={{ color: PRIORITY_COLORS[task.priority] }}
+                        style={{ color: pColors[task.priority] }}
                       >
                         {task.priority}
                       </Text>
@@ -688,6 +703,9 @@ export function CreateTaskModal({
   statuses,
 }: CreateTaskModalProps) {
   const createTask = useCreateTask();
+  const cThemeMode = useThemeStore((s) => s.mode);
+  const cPColors =
+    cThemeMode === "dark" ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [priority, setPriority] = useState<TaskPriority>(TaskPriority.MEDIUM);
@@ -779,7 +797,7 @@ export function CreateTaskModal({
                   }`}
                   style={
                     priority === p
-                      ? { backgroundColor: PRIORITY_COLORS[p] }
+                      ? { backgroundColor: cPColors[p] }
                       : undefined
                   }
                 >
@@ -866,7 +884,11 @@ export function CreateTaskModal({
                     style={{ backgroundColor: c.color }}
                   />
                   <Text
-                    className="text-xs font-label"
+                    className={`text-xs font-label ${
+                      categoryId === c.categoryId
+                        ? ""
+                        : "text-on-surface-variant"
+                    }`}
                     style={
                       categoryId === c.categoryId
                         ? { color: c.color }

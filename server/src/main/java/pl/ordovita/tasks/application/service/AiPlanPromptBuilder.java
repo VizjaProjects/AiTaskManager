@@ -43,7 +43,6 @@ final class AiPlanPromptBuilder {
                    System użyje tej wartości do obliczenia czasu zakończenia wpisu w kalendarzu (start + estimatedDuration).
                 4. Jako priorytet (`priority`) wybierz: CRITICAL, HIGH, MEDIUM lub LOW.
                 5. Dla `statusId` wybierz z dostępnych poniżej ten, który oznacza "Do zrobienia" / "To Do" lub podobny.
-                6. Jeżeli użytkownik dodał opis przy zadaniu, dodaj go do description (postaraja się go uspójnić i ujednolicić)
 
                 === ZASADY TWORZENIA WYDARZEŃ ===
 

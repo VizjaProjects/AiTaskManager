@@ -6,4 +6,11 @@ export {
   setOnRefreshFailed,
 } from "./client";
 export { authApi, userApi } from "./auth";
-export { taskApi, categoryApi, taskStatusApi, eventApi, aiApi } from "./tasks";
+export {
+  taskApi,
+  categoryApi,
+  taskStatusApi,
+  eventApi,
+  aiApi,
+  aiStatisticApi,
+} from "./tasks";

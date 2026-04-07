@@ -12,13 +12,16 @@ import pl.ordovita.tasks.application.port.in.EditEventUseCase;
 import pl.ordovita.tasks.application.port.in.GetUserEventsUseCase;
 import pl.ordovita.tasks.domain.exception.CalendarException;
 import pl.ordovita.tasks.domain.exception.EventException;
+import pl.ordovita.tasks.domain.exception.TaskException;
 import pl.ordovita.tasks.domain.model.calendar.Calendar;
 import pl.ordovita.tasks.domain.model.event.Event;
 import pl.ordovita.tasks.domain.model.event.EventId;
 import pl.ordovita.tasks.domain.model.event.EventStatus;
+import pl.ordovita.tasks.domain.model.task.Task;
 import pl.ordovita.tasks.domain.model.task.TaskId;
 import pl.ordovita.tasks.domain.port.CalendarRepository;
 import pl.ordovita.tasks.domain.port.EventRepository;
+import pl.ordovita.tasks.domain.port.TaskRepository;
 
 import java.util.List;
 
@@ -30,6 +33,7 @@ public class EventService implements CreateEventUseCase, EditEventUseCase, Delet
     private final CalendarRepository calendarRepository;
     private final UserRepository userRepository;
     private final CurrentUser currentUser;
+    private final TaskRepository taskRepository;
 
     @Override
     public CreateEventResult createEvent(CreateEventCommand command) {
@@ -82,6 +86,12 @@ public class EventService implements CreateEventUseCase, EditEventUseCase, Delet
         EventId eventId = new EventId(command.eventId());
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new EventException("Event with id " + eventId + " not found"));
+
+        if(event.getTaskId() != null) {
+            Task task = taskRepository.findById(event.getTaskId()).orElseThrow(() -> new TaskException("Task with id " + event.getTaskId() + " not found"));
+            task.deleteDueDateTime();
+            taskRepository.save(task);
+        }
 
         if (!event.getCalendarId().equals(calendar.getId())) {
             throw new EventException("Event does not belong to current user");

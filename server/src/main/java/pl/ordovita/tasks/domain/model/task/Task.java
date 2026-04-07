@@ -75,6 +75,12 @@ public class Task {
         return this;
     }
 
+    public void deleteDueDateTime() {
+        this.dueDateTime = null;
+        this.updatedAt = Instant.now();
+
+    }
+
     public TaskId getId() {
         return id;
     }

@@ -467,7 +467,18 @@ export default function CalendarScreen() {
     ((colIdx: number, startH: number, endH: number) => void) | null
   >(null);
   const [draggingEventId, setDraggingEventId] = useState<string | null>(null);
+  const [resizingEventId, setResizingEventId] = useState<string | null>(null);
+  const justFinishedDragRef = useRef(false);
   const [dragPreview, setDragPreview] = useState<{
+    colIdx: number;
+    top: number;
+    height: number;
+    title: string;
+    color: string;
+    startLabel: string;
+    endLabel: string;
+  } | null>(null);
+  const [resizePreview, setResizePreview] = useState<{
     colIdx: number;
     top: number;
     height: number;
@@ -639,7 +650,8 @@ export default function CalendarScreen() {
     const el = gridRef.current as unknown as HTMLElement;
     el.style.userSelect = "none";
 
-    let mode: "idle" | "pending" | "grid-drag" | "event-drag" = "idle";
+    let mode: "idle" | "pending" | "grid-drag" | "event-drag" | "event-resize" =
+      "idle";
     let startX = 0;
     let startY = 0;
     let startCol = 0;
@@ -649,6 +661,7 @@ export default function CalendarScreen() {
     let draggedEvtTitle = "";
     let draggedEvtColor = "";
     let draggedEvtDurationH = 1;
+    let isResizeHandle = false;
     const THRESHOLD = 6;
 
     function getPos(e: MouseEvent) {
@@ -665,12 +678,18 @@ export default function CalendarScreen() {
     function onMouseDown(e: MouseEvent) {
       if (e.button !== 0) return;
       const target = e.target as HTMLElement;
-      const eventEl = target.closest("[data-event-id]") as HTMLElement | null;
+      const resizeHandle = target.closest(
+        "[data-resize-handle]",
+      ) as HTMLElement | null;
+      const eventEl = (resizeHandle ?? target).closest(
+        "[data-event-id]",
+      ) as HTMLElement | null;
       startX = e.clientX;
       startY = e.clientY;
       const pos = getPos(e);
       startCol = pos.colIdx;
       startH = pos.hour;
+      isResizeHandle = !!resizeHandle;
       if (eventEl) {
         draggedEvtId = eventEl.getAttribute("data-event-id");
         draggedEvtHeight = eventEl.offsetHeight;
@@ -692,7 +711,11 @@ export default function CalendarScreen() {
       const dist = Math.sqrt(dx * dx + dy * dy);
 
       if (mode === "pending" && dist >= THRESHOLD) {
-        if (draggedEvtId) {
+        if (draggedEvtId && isResizeHandle) {
+          mode = "event-resize";
+          el.style.cursor = "ns-resize";
+          setResizingEventId(draggedEvtId);
+        } else if (draggedEvtId) {
           mode = "event-drag";
           el.style.cursor = "grabbing";
           setDraggingEventId(draggedEvtId);
@@ -738,6 +761,39 @@ export default function CalendarScreen() {
         });
         e.preventDefault();
       }
+
+      if (mode === "event-resize" && draggedEvtId) {
+        const pos = getPos(e);
+        const rawEndHour = 7 + pos.y / HOUR_HEIGHT;
+        const snapEndHour = Math.round(rawEndHour * 4) / 4;
+        const evts = (window as any).__calendarEvents as
+          | CalendarEvent[]
+          | undefined;
+        const evt = evts?.find((ev) => ev.eventId === draggedEvtId);
+        if (evt) {
+          const evtStart = new Date(evt.startDateTime);
+          const evtStartH = evtStart.getHours() + evtStart.getMinutes() / 60;
+          const minEndH = evtStartH + 0.25;
+          const clampedEndH = Math.max(minEndH, Math.min(24, snapEndHour));
+          const newHeight = (clampedEndH - evtStartH) * HOUR_HEIGHT;
+          const topPx = (evtStartH - 7) * HOUR_HEIGHT;
+          const fmtH = (h: number) => {
+            const hh = Math.floor(h);
+            const mm = Math.round((h % 1) * 60);
+            return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+          };
+          setResizePreview({
+            colIdx: startCol,
+            top: topPx,
+            height: newHeight,
+            title: draggedEvtTitle,
+            color: draggedEvtColor,
+            startLabel: fmtH(evtStartH),
+            endLabel: fmtH(clampedEndH),
+          });
+        }
+        e.preventDefault();
+      }
     }
 
     function onMouseUp(e: MouseEvent) {
@@ -757,6 +813,10 @@ export default function CalendarScreen() {
           (Math.round(pos.y / (HOUR_HEIGHT / 4)) * (HOUR_HEIGHT / 4)) /
             HOUR_HEIGHT;
         const evtId = draggedEvtId;
+        justFinishedDragRef.current = true;
+        setTimeout(() => {
+          justFinishedDragRef.current = false;
+        }, 50);
         setDraggingEventId(null);
         setDragPreview(null);
         // Move the event
@@ -787,13 +847,51 @@ export default function CalendarScreen() {
             });
           }
         }
+      } else if (prevMode === "event-resize" && draggedEvtId) {
+        const pos = getPos(e);
+        const rawEndHour = 7 + pos.y / HOUR_HEIGHT;
+        const snapEndHour = Math.round(rawEndHour * 4) / 4;
+        const evtId = draggedEvtId;
+        justFinishedDragRef.current = true;
+        setTimeout(() => {
+          justFinishedDragRef.current = false;
+        }, 50);
+        setResizingEventId(null);
+        setResizePreview(null);
+        const evts = (window as any).__calendarEvents as
+          | CalendarEvent[]
+          | undefined;
+        const evt = evts?.find((ev) => ev.eventId === evtId);
+        if (evt) {
+          const evtStart = new Date(evt.startDateTime);
+          const evtStartH = evtStart.getHours() + evtStart.getMinutes() / 60;
+          const minEndH = evtStartH + 0.25;
+          const clampedEndH = Math.max(minEndH, Math.min(24, snapEndHour));
+          const newEnd = new Date(evtStart);
+          const endHH = Math.floor(clampedEndH);
+          const endMM = Math.round((clampedEndH % 1) * 60);
+          newEnd.setHours(endHH, endMM, 0, 0);
+          editEvent.mutate({
+            eventId: evt.eventId,
+            data: {
+              title: evt.title,
+              startDateTime: evt.startDateTime,
+              endDateTime: newEnd.toISOString(),
+              allDay: evt.allDay,
+              status: evt.status,
+            },
+          });
+        }
       } else {
         // click without drag
         setDraggingEventId(null);
         setDragPreview(null);
+        setResizingEventId(null);
+        setResizePreview(null);
       }
 
       draggedEvtId = null;
+      isResizeHandle = false;
     }
 
     el.addEventListener("mousedown", onMouseDown);
@@ -1043,7 +1141,12 @@ export default function CalendarScreen() {
                       <TouchableOpacity
                         key={evt.eventId}
                         onPress={() => {
-                          if (!draggingEventId) setEditingEvent(evt);
+                          if (
+                            !draggingEventId &&
+                            !resizingEventId &&
+                            !justFinishedDragRef.current
+                          )
+                            setEditingEvent(evt);
                         }}
                         activeOpacity={0.7}
                         className="absolute rounded-md px-1.5 py-1 overflow-hidden"
@@ -1066,14 +1169,19 @@ export default function CalendarScreen() {
                           width: widthPct as any,
                           paddingHorizontal: 3,
                           backgroundColor:
-                            draggingEventId === evt.eventId
+                            draggingEventId === evt.eventId ||
+                            resizingEventId === evt.eventId
                               ? `${color}10`
                               : `${color}20`,
                           borderLeftWidth: 3,
                           borderLeftColor: color,
                           borderStyle: isProposed ? "dashed" : "solid",
                           zIndex: 2,
-                          opacity: draggingEventId === evt.eventId ? 0.4 : 1,
+                          opacity:
+                            draggingEventId === evt.eventId ||
+                            resizingEventId === evt.eventId
+                              ? 0
+                              : 1,
                           ...(Platform.OS === "web"
                             ? { cursor: "grab" as any }
                             : {}),
@@ -1100,6 +1208,20 @@ export default function CalendarScreen() {
                         >
                           {startTime} - {endTime}
                         </Text>
+                        {/* Resize handle at bottom edge */}
+                        {Platform.OS === "web" && (
+                          <View
+                            {...({ dataSet: { resizeHandle: "true" } } as any)}
+                            style={{
+                              position: "absolute",
+                              bottom: 0,
+                              left: 0,
+                              right: 0,
+                              height: 6,
+                              cursor: "ns-resize" as any,
+                            }}
+                          />
+                        )}
                       </TouchableOpacity>
                     );
                   })}
@@ -1167,6 +1289,68 @@ export default function CalendarScreen() {
                     {dragPreview.startLabel} – {dragPreview.endLabel}
                   </Text>
                 </View>
+              </View>
+            )}
+
+            {/* Resize preview – ghost card */}
+            {resizePreview && (
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  left: `${(resizePreview.colIdx / displayDays.length) * 100}%`,
+                  width: `${100 / displayDays.length}%`,
+                  top: resizePreview.top,
+                  height: resizePreview.height,
+                  zIndex: 20,
+                }}
+              >
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: `${resizePreview.color}25`,
+                    borderLeftWidth: 3,
+                    borderLeftColor: resizePreview.color,
+                    borderRadius: 6,
+                    paddingHorizontal: 6,
+                    paddingVertical: 4,
+                    borderWidth: 1,
+                    borderColor: `${resizePreview.color}50`,
+                    overflow: "hidden",
+                  }}
+                >
+                  <Text
+                    style={{
+                      fontSize: 10,
+                      fontWeight: "700",
+                      color: resizePreview.color,
+                    }}
+                    numberOfLines={1}
+                  >
+                    {resizePreview.title}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 9,
+                      color: resizePreview.color,
+                      opacity: 0.8,
+                    }}
+                  >
+                    {resizePreview.startLabel} – {resizePreview.endLabel}
+                  </Text>
+                </View>
+                {/* Bottom edge indicator */}
+                <View
+                  style={{
+                    position: "absolute",
+                    bottom: -1,
+                    left: 0,
+                    right: 0,
+                    height: 2,
+                    backgroundColor: resizePreview.color,
+                    borderRadius: 1,
+                  }}
+                />
               </View>
             )}
 

@@ -7,6 +7,13 @@ export const PRIORITY_COLORS: Record<TaskPriority, string> = {
   [TaskPriority.LOW]: "#3b82f6",
 };
 
+export const PRIORITY_COLORS_DARK: Record<TaskPriority, string> = {
+  [TaskPriority.CRITICAL]: "#f87171",
+  [TaskPriority.HIGH]: "#fb7185",
+  [TaskPriority.MEDIUM]: "#fbbf24",
+  [TaskPriority.LOW]: "#60a5fa",
+};
+
 export const PRIORITY_BG: Record<TaskPriority, string> = {
   [TaskPriority.CRITICAL]: "bg-red-600",
   [TaskPriority.HIGH]: "bg-rose-500",
@@ -22,17 +29,17 @@ export const PRIORITY_BORDER: Record<TaskPriority, string> = {
 };
 
 export const PRIORITY_BADGE_BG: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "bg-red-600/10",
-  [TaskPriority.HIGH]: "bg-rose-500/10",
-  [TaskPriority.MEDIUM]: "bg-amber-500/10",
-  [TaskPriority.LOW]: "bg-blue-500/10",
+  [TaskPriority.CRITICAL]: "bg-red-600/10 dark:bg-red-600/25",
+  [TaskPriority.HIGH]: "bg-rose-500/10 dark:bg-rose-500/25",
+  [TaskPriority.MEDIUM]: "bg-amber-500/10 dark:bg-amber-500/25",
+  [TaskPriority.LOW]: "bg-blue-500/10 dark:bg-blue-500/25",
 };
 
 export const PRIORITY_TEXT: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "text-red-600",
-  [TaskPriority.HIGH]: "text-rose-500",
-  [TaskPriority.MEDIUM]: "text-amber-500",
-  [TaskPriority.LOW]: "text-blue-500",
+  [TaskPriority.CRITICAL]: "text-red-600 dark:text-red-400",
+  [TaskPriority.HIGH]: "text-rose-500 dark:text-rose-400",
+  [TaskPriority.MEDIUM]: "text-amber-500 dark:text-amber-400",
+  [TaskPriority.LOW]: "text-blue-500 dark:text-blue-400",
 };
 
 export const DEFAULT_CATEGORY_COLORS = [
@@ -49,6 +56,29 @@ export const DEFAULT_CATEGORY_COLORS = [
   "#f97316",
   "#78716c",
 ];
+
+const CATEGORY_COLOR_DARK_MAP: Record<string, string> = {
+  "#dc2626": "#f87171",
+  "#f43f5e": "#fb7185",
+  "#a855f7": "#c084fc",
+  "#4d41df": "#818cf8",
+  "#3b82f6": "#60a5fa",
+  "#06b6d4": "#22d3ee",
+  "#006b58": "#34d399",
+  "#10b981": "#34d399",
+  "#84cc16": "#a3e635",
+  "#f59e0b": "#fbbf24",
+  "#f97316": "#fb923c",
+  "#78716c": "#a8a29e",
+};
+
+export function getCategoryDisplayColor(
+  color: string,
+  isDark: boolean,
+): string {
+  if (!isDark) return color;
+  return CATEGORY_COLOR_DARK_MAP[color.toLowerCase()] ?? color;
+}
 
 export function formatDate(iso: string): string {
   const date = new Date(iso);

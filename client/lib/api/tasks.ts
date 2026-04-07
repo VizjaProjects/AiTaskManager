@@ -15,6 +15,7 @@ import type {
   Category,
   TaskStatus,
   CalendarEvent,
+  AiStatistic,
 } from "../types";
 
 export const taskApi = {
@@ -97,4 +98,10 @@ export const aiApi = {
 
   rejectEvent: (eventId: string) =>
     api.delete(`/ai/proposals/events/${encodeURIComponent(eventId)}`),
+};
+
+export const aiStatisticApi = {
+  getMy: () => api.get<{ statistics: AiStatistic[] }>("/ai-statistic/my"),
+
+  delete: (id: string) => api.delete(`/ai-statistic/${encodeURIComponent(id)}`),
 };

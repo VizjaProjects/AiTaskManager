@@ -8,12 +8,14 @@ import {
   useCreateCategory,
   useDeleteCategory,
 } from "@/lib/hooks";
-import { DEFAULT_CATEGORY_COLORS } from "@/lib/utils";
+import { DEFAULT_CATEGORY_COLORS, getCategoryDisplayColor } from "@/lib/utils";
+import { useThemeStore } from "@/lib/stores";
 
 export default function CategoriesScreen() {
   const { data: categories, isLoading } = useCategories();
   const createCategory = useCreateCategory();
   const deleteCategory = useDeleteCategory();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState("");
   const [selectedColor, setSelectedColor] = useState(
@@ -126,7 +128,9 @@ export default function CategoriesScreen() {
             <View className="flex-row items-center gap-4">
               <View
                 className="w-10 h-10 rounded-full"
-                style={{ backgroundColor: cat.color }}
+                style={{
+                  backgroundColor: getCategoryDisplayColor(cat.color, isDark),
+                }}
               />
               <View className="flex-1">
                 <Text className="text-on-surface font-headline text-base">

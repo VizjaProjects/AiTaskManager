@@ -11,10 +11,12 @@ import pl.ordovita.tasks.application.port.in.DeleteTaskUseCase;
 import pl.ordovita.tasks.application.port.in.EditTaskUseCase;
 import pl.ordovita.tasks.application.port.in.GetAllUserTasksUseCase;
 import pl.ordovita.tasks.domain.exception.CalendarException;
+import pl.ordovita.tasks.domain.exception.EventException;
 import pl.ordovita.tasks.domain.exception.TaskException;
 import pl.ordovita.tasks.domain.model.calendar.Calendar;
 import pl.ordovita.tasks.domain.model.category.CategoryId;
 import pl.ordovita.tasks.domain.model.event.Event;
+import pl.ordovita.tasks.domain.model.event.EventStatus;
 import pl.ordovita.tasks.domain.model.event.ProposedBy;
 import pl.ordovita.tasks.domain.model.status.TaskStatusId;
 import pl.ordovita.tasks.domain.model.task.Task;
@@ -84,14 +86,18 @@ public class TaskService implements CreateTaskUseCase, EditTaskUseCase, DeleteTa
 
 
         Task updatedTask = taskRepository.save(task);
-
-        if(command.dueDateTime() != null) {
-            Calendar calendar = calendarRepository.findByUserId(user.getId()).orElseThrow(() -> new CalendarException("Calendar not found for user"));
-
+        Calendar calendar = calendarRepository.findByUserId(user.getId()).orElseThrow(() -> new CalendarException("Calendar not found for user"));
+        if(command.dueDateTime() != null && task.getDueDateTime() == null) {
             Event event = Event.create(taskId,task.getTitle(),(command.dueDateTime().minusSeconds(command.estimatedDuration() * 60L)), command.dueDateTime(), false, ProposedBy.USER, calendar.getId());
             eventRepository.save(event);
 
+        } else if (task.getDueDateTime() != null && command.dueDateTime() != null ) {
+            Event event = eventRepository.findEventByTaskId(taskId).orElseThrow(() -> new EventException("Event not found for task with id " + taskId));
 
+            event.edit(command.title(),(command.dueDateTime().minusSeconds(command.estimatedDuration() * 60L)), command.dueDateTime(),false,
+                    EventStatus.ACCEPTED);
+            
+            eventRepository.save(event);
         }
 
         return new EditTaskResult(updatedTask.getId().value(), updatedTask.getUpdatedAt());

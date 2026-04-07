@@ -21,6 +21,7 @@ const NAV_ITEMS: Array<{
   { icon: "checklist", label: "Tasks", path: "/(app)/tasks" },
   { icon: "category", label: "Categories", path: "/(app)/categories" },
   { icon: "toggle-on", label: "Statuses", path: "/(app)/statuses" },
+  { icon: "bar-chart", label: "Statistics", path: "/(app)/statistics" },
   { icon: "settings", label: "Settings", path: "/(app)/profile" },
 ];
 

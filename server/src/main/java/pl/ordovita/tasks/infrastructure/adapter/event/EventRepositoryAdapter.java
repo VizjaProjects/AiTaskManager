@@ -50,4 +50,8 @@ public class EventRepositoryAdapter implements EventRepository {
     public void delete(Event event) {
         eventJpaRepository.delete(EventEntityMapper.from(event));
     }
+    @Override
+    public Optional<Event> findEventByTaskId(TaskId taskId) {
+        return eventJpaRepository.findEventByTaskId(taskId.value()).map(EventEntityMapper::toDomain);
+    }
 }

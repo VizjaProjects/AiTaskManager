@@ -7,8 +7,16 @@ import {
   Platform,
   useWindowDimensions,
 } from "react-native";
+import { createPortal } from "react-dom";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import {
+  useState,
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  type RefObject,
+} from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PageLayout } from "@/components/organisms";
 import {
@@ -29,10 +37,17 @@ import {
 } from "@/lib/hooks";
 import { TaskPriority, TaskSource } from "@/lib/types";
 import type { Task, Category, TaskStatus } from "@/lib/types";
-import { PRIORITY_COLORS, formatDate, formatDuration } from "@/lib/utils";
+import {
+  PRIORITY_COLORS,
+  formatDate,
+  formatDuration,
+  getCategoryDisplayColor,
+} from "@/lib/utils";
+import { useThemeStore } from "@/lib/stores";
 
 type ViewMode = "kanban" | "list";
 type ListGrouping = "status" | "category-status";
+type ColumnSort = "default" | "updated" | "category" | "priority";
 
 const COLUMN_ORDER_KEY = "kanban-column-order";
 
@@ -230,6 +245,7 @@ export default function TasksScreen() {
   const { data: categories } = useCategories();
   const { data: statuses } = useTaskStatuses();
   const editTask = useEditTask();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
   const [listGrouping, setListGrouping] = useState<ListGrouping>("status");
@@ -243,12 +259,46 @@ export default function TasksScreen() {
     new Set(),
   );
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const priorityBtnRef = useRef<View>(null);
+  const categoryBtnRef = useRef<View>(null);
+  const statusBtnRef = useRef<View>(null);
+
+  const openDropdownAt = useCallback(
+    (name: string, ref: RefObject<View | null>) => {
+      if (openDropdown === name) {
+        setOpenDropdown(null);
+        setDropdownPos(null);
+        return;
+      }
+      if (Platform.OS === "web" && ref.current) {
+        const el = ref.current as unknown as HTMLElement;
+        const rect = el.getBoundingClientRect();
+        setDropdownPos({ top: rect.bottom + 4, left: rect.left });
+      }
+      setOpenDropdown(name);
+    },
+    [openDropdown],
+  );
+
   const [showCreate, setShowCreate] = useState(false);
   const [createStatusId, setCreateStatusId] = useState<string | undefined>();
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(loadColumnOrder);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [columnSorts, setColumnSorts] = useState<Record<string, ColumnSort>>(
+    {},
+  );
+  const [openSortMenu, setOpenSortMenu] = useState<string | null>(null);
+  const [sortMenuPos, setSortMenuPos] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const sortBtnRefs = useRef<Record<string, HTMLElement | null>>({});
 
   const isDoneStatus = useCallback(
     (statusId: string) => {
@@ -331,6 +381,44 @@ export default function TasksScreen() {
     });
     return groups;
   }, [filteredTasks, orderedStatuses]);
+
+  const PRIORITY_ORDER: Record<string, number> = {
+    CRITICAL: 0,
+    HIGH: 1,
+    MEDIUM: 2,
+    LOW: 3,
+  };
+
+  const sortColumnTasks = useCallback(
+    (tasks: Task[], sort: ColumnSort): Task[] => {
+      if (sort === "default") return tasks;
+      return [...tasks].sort((a, b) => {
+        switch (sort) {
+          case "updated":
+            return (
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+          case "priority":
+            return (
+              (PRIORITY_ORDER[a.priority] ?? 9) -
+              (PRIORITY_ORDER[b.priority] ?? 9)
+            );
+          case "category": {
+            const catA = a.categoryId
+              ? (categoryMap.get(a.categoryId)?.name ?? "")
+              : "zzz";
+            const catB = b.categoryId
+              ? (categoryMap.get(b.categoryId)?.name ?? "")
+              : "zzz";
+            return catA.localeCompare(catB);
+          }
+          default:
+            return 0;
+        }
+      });
+    },
+    [categoryMap],
+  );
 
   const groupedByCategoryStatus = useMemo(() => {
     const result: Array<{
@@ -483,20 +571,361 @@ export default function TasksScreen() {
         </View>
 
         {/* Close dropdown overlay */}
-        {openDropdown && (
-          <TouchableOpacity
-            activeOpacity={1}
-            onPress={() => setOpenDropdown(null)}
-            style={{
-              position: "fixed" as any,
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              zIndex: 10,
-            }}
-          />
-        )}
+        {(openDropdown || openSortMenu) &&
+          Platform.OS === "web" &&
+          createPortal(
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={() => {
+                setOpenDropdown(null);
+                setDropdownPos(null);
+                setOpenSortMenu(null);
+                setSortMenuPos(null);
+              }}
+              style={{
+                position: "fixed" as any,
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 99990,
+              }}
+            />,
+            document.body,
+          )}
+
+        {/* Portaled dropdown panels */}
+        {openDropdown === "priority" &&
+          dropdownPos &&
+          Platform.OS === "web" &&
+          createPortal(
+            <View
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              style={{
+                position: "fixed" as any,
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                minWidth: 160,
+                zIndex: 99999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  if (selectedPriorities.size === priorities.length) {
+                    setSelectedPriorities(new Set());
+                  } else {
+                    setSelectedPriorities(new Set(priorities));
+                  }
+                }}
+                className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+              >
+                <MaterialIcons
+                  name={
+                    selectedPriorities.size === priorities.length
+                      ? "check-box"
+                      : "check-box-outline-blank"
+                  }
+                  size={18}
+                  color={
+                    selectedPriorities.size === priorities.length
+                      ? "#4d41df"
+                      : "#777587"
+                  }
+                />
+                <Text className="text-xs font-label text-on-surface-variant">
+                  Zaznacz wszystko
+                </Text>
+              </TouchableOpacity>
+              {priorities.map((p) => {
+                const active = selectedPriorities.has(p);
+                return (
+                  <TouchableOpacity
+                    key={p}
+                    onPress={() => {
+                      setSelectedPriorities((prev) => {
+                        const next = new Set(prev);
+                        if (active) next.delete(p);
+                        else next.add(p);
+                        return next;
+                      });
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                  >
+                    <MaterialIcons
+                      name={active ? "check-box" : "check-box-outline-blank"}
+                      size={18}
+                      color={active ? PRIORITY_COLORS[p] : "#777587"}
+                    />
+                    <View
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: PRIORITY_COLORS[p] }}
+                    />
+                    <Text
+                      className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                    >
+                      {p}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>,
+            document.body,
+          )}
+
+        {openDropdown === "category" &&
+          dropdownPos &&
+          Platform.OS === "web" &&
+          createPortal(
+            <View
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              style={{
+                position: "fixed" as any,
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                minWidth: 200,
+                zIndex: 99999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  const allIds = new Set(
+                    (categories ?? []).map((c) => c.categoryId),
+                  );
+                  if (selectedCategoryIds.size === allIds.size) {
+                    setSelectedCategoryIds(new Set());
+                  } else {
+                    setSelectedCategoryIds(allIds);
+                  }
+                }}
+                className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+              >
+                <MaterialIcons
+                  name={
+                    selectedCategoryIds.size === (categories?.length ?? 0)
+                      ? "check-box"
+                      : "check-box-outline-blank"
+                  }
+                  size={18}
+                  color={
+                    selectedCategoryIds.size === (categories?.length ?? 0)
+                      ? "#4d41df"
+                      : "#777587"
+                  }
+                />
+                <Text className="text-xs font-label text-on-surface-variant">
+                  Zaznacz wszystko
+                </Text>
+              </TouchableOpacity>
+              {categories?.map((cat) => {
+                const active = selectedCategoryIds.has(cat.categoryId);
+                return (
+                  <TouchableOpacity
+                    key={cat.categoryId}
+                    onPress={() => {
+                      setSelectedCategoryIds((prev) => {
+                        const next = new Set(prev);
+                        if (active) next.delete(cat.categoryId);
+                        else next.add(cat.categoryId);
+                        return next;
+                      });
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                  >
+                    <MaterialIcons
+                      name={active ? "check-box" : "check-box-outline-blank"}
+                      size={18}
+                      color={
+                        active
+                          ? getCategoryDisplayColor(cat.color, isDark)
+                          : "#777587"
+                      }
+                    />
+                    <View
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{
+                        backgroundColor: getCategoryDisplayColor(
+                          cat.color,
+                          isDark,
+                        ),
+                      }}
+                    />
+                    <Text
+                      className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                    >
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>,
+            document.body,
+          )}
+
+        {openDropdown === "status" &&
+          dropdownPos &&
+          Platform.OS === "web" &&
+          createPortal(
+            <View
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              style={{
+                position: "fixed" as any,
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                minWidth: 200,
+                zIndex: 99999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  const allIds = new Set(
+                    (statuses ?? []).map((s) => s.statusId),
+                  );
+                  if (selectedStatusIds.size === allIds.size) {
+                    setSelectedStatusIds(new Set());
+                  } else {
+                    setSelectedStatusIds(allIds);
+                  }
+                }}
+                className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+              >
+                <MaterialIcons
+                  name={
+                    selectedStatusIds.size === (statuses?.length ?? 0)
+                      ? "check-box"
+                      : "check-box-outline-blank"
+                  }
+                  size={18}
+                  color={
+                    selectedStatusIds.size === (statuses?.length ?? 0)
+                      ? "#4d41df"
+                      : "#777587"
+                  }
+                />
+                <Text className="text-xs font-label text-on-surface-variant">
+                  Zaznacz wszystko
+                </Text>
+              </TouchableOpacity>
+              {statuses?.map((s) => {
+                const active = selectedStatusIds.has(s.statusId);
+                return (
+                  <TouchableOpacity
+                    key={s.statusId}
+                    onPress={() => {
+                      setSelectedStatusIds((prev) => {
+                        const next = new Set(prev);
+                        if (active) next.delete(s.statusId);
+                        else next.add(s.statusId);
+                        return next;
+                      });
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                  >
+                    <MaterialIcons
+                      name={active ? "check-box" : "check-box-outline-blank"}
+                      size={18}
+                      color={active ? s.color : "#777587"}
+                    />
+                    <View
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: s.color }}
+                    />
+                    <Text
+                      className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                    >
+                      {s.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>,
+            document.body,
+          )}
+
+        {/* Portaled sort menu */}
+        {openSortMenu &&
+          sortMenuPos &&
+          Platform.OS === "web" &&
+          createPortal(
+            <View
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              style={{
+                position: "fixed" as any,
+                top: sortMenuPos.top,
+                left: sortMenuPos.left,
+                minWidth: 180,
+                zIndex: 99999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+              }}
+            >
+              {(
+                [
+                  { key: "default", label: "Domyślne", icon: "remove" },
+                  {
+                    key: "updated",
+                    label: "Ostatnio zmienione",
+                    icon: "update",
+                  },
+                  { key: "priority", label: "Priorytet", icon: "flag" },
+                  { key: "category", label: "Kategoria", icon: "folder" },
+                ] as const
+              ).map((opt) => {
+                const currentSort = columnSorts[openSortMenu] ?? "default";
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    onPress={() => {
+                      setColumnSorts((prev) => ({
+                        ...prev,
+                        [openSortMenu]: opt.key,
+                      }));
+                      setOpenSortMenu(null);
+                      setSortMenuPos(null);
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                  >
+                    <MaterialIcons
+                      name={opt.icon as any}
+                      size={16}
+                      color={currentSort === opt.key ? "#4d41df" : "#777587"}
+                    />
+                    <Text
+                      className={`text-xs font-label ${
+                        currentSort === opt.key
+                          ? "text-primary"
+                          : "text-on-surface-variant"
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                    {currentSort === opt.key && (
+                      <MaterialIcons
+                        name="check"
+                        size={14}
+                        color="#4d41df"
+                        style={{ marginLeft: "auto" as any }}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>,
+            document.body,
+          )}
 
         {/* Filters */}
         <View
@@ -504,11 +933,12 @@ export default function TasksScreen() {
           style={{ zIndex: 20 }}
         >
           {/* Priority dropdown */}
-          <View style={{ position: "relative", zIndex: 30 }}>
+          <View
+            ref={priorityBtnRef}
+            style={{ position: "relative", zIndex: 30 }}
+          >
             <TouchableOpacity
-              onPress={() =>
-                setOpenDropdown(openDropdown === "priority" ? null : "priority")
-              }
+              onPress={() => openDropdownAt("priority", priorityBtnRef)}
               className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                 selectedPriorities.size > 0
                   ? "bg-primary/10 border-primary"
@@ -536,95 +966,16 @@ export default function TasksScreen() {
                 color="#777587"
               />
             </TouchableOpacity>
-            {openDropdown === "priority" && (
-              <View
-                className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
-                style={{
-                  position: "absolute",
-                  top: "100%",
-                  left: 0,
-                  marginTop: 4,
-                  minWidth: 160,
-                  elevation: 8,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 4 },
-                  shadowOpacity: 0.15,
-                  shadowRadius: 12,
-                  zIndex: 50,
-                }}
-              >
-                <TouchableOpacity
-                  onPress={() => {
-                    if (selectedPriorities.size === priorities.length) {
-                      setSelectedPriorities(new Set());
-                    } else {
-                      setSelectedPriorities(new Set(priorities));
-                    }
-                  }}
-                  className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
-                >
-                  <MaterialIcons
-                    name={
-                      selectedPriorities.size === priorities.length
-                        ? "check-box"
-                        : "check-box-outline-blank"
-                    }
-                    size={18}
-                    color={
-                      selectedPriorities.size === priorities.length
-                        ? "#4d41df"
-                        : "#777587"
-                    }
-                  />
-                  <Text className="text-xs font-label text-on-surface-variant">
-                    Zaznacz wszystko
-                  </Text>
-                </TouchableOpacity>
-                {priorities.map((p) => {
-                  const active = selectedPriorities.has(p);
-                  return (
-                    <TouchableOpacity
-                      key={p}
-                      onPress={() => {
-                        setSelectedPriorities((prev) => {
-                          const next = new Set(prev);
-                          if (active) next.delete(p);
-                          else next.add(p);
-                          return next;
-                        });
-                      }}
-                      className="flex-row items-center gap-2.5 px-3 py-2.5"
-                    >
-                      <MaterialIcons
-                        name={active ? "check-box" : "check-box-outline-blank"}
-                        size={18}
-                        color={active ? PRIORITY_COLORS[p] : "#777587"}
-                      />
-                      <View
-                        className="w-2.5 h-2.5 rounded-full"
-                        style={{ backgroundColor: PRIORITY_COLORS[p] }}
-                      />
-                      <Text
-                        className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
-                      >
-                        {p}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
           </View>
 
           {/* Category dropdown */}
           {(categories?.length ?? 0) > 0 && (
-            <View style={{ position: "relative", zIndex: 29 }}>
+            <View
+              ref={categoryBtnRef}
+              style={{ position: "relative", zIndex: 29 }}
+            >
               <TouchableOpacity
-                onPress={() =>
-                  setOpenDropdown(
-                    openDropdown === "category" ? null : "category",
-                  )
-                }
+                onPress={() => openDropdownAt("category", categoryBtnRef)}
                 className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                   selectedCategoryIds.size > 0
                     ? "bg-primary/10 border-primary"
@@ -652,99 +1003,17 @@ export default function TasksScreen() {
                   color="#777587"
                 />
               </TouchableOpacity>
-              {openDropdown === "category" && (
-                <View
-                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: 4,
-                    minWidth: 200,
-                    elevation: 8,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 12,
-                    zIndex: 50,
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={() => {
-                      const allIds = new Set(
-                        (categories ?? []).map((c) => c.categoryId),
-                      );
-                      if (selectedCategoryIds.size === allIds.size) {
-                        setSelectedCategoryIds(new Set());
-                      } else {
-                        setSelectedCategoryIds(allIds);
-                      }
-                    }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
-                  >
-                    <MaterialIcons
-                      name={
-                        selectedCategoryIds.size === (categories?.length ?? 0)
-                          ? "check-box"
-                          : "check-box-outline-blank"
-                      }
-                      size={18}
-                      color={
-                        selectedCategoryIds.size === (categories?.length ?? 0)
-                          ? "#4d41df"
-                          : "#777587"
-                      }
-                    />
-                    <Text className="text-xs font-label text-on-surface-variant">
-                      Zaznacz wszystko
-                    </Text>
-                  </TouchableOpacity>
-                  {categories?.map((cat) => {
-                    const active = selectedCategoryIds.has(cat.categoryId);
-                    return (
-                      <TouchableOpacity
-                        key={cat.categoryId}
-                        onPress={() => {
-                          setSelectedCategoryIds((prev) => {
-                            const next = new Set(prev);
-                            if (active) next.delete(cat.categoryId);
-                            else next.add(cat.categoryId);
-                            return next;
-                          });
-                        }}
-                        className="flex-row items-center gap-2.5 px-3 py-2.5"
-                      >
-                        <MaterialIcons
-                          name={
-                            active ? "check-box" : "check-box-outline-blank"
-                          }
-                          size={18}
-                          color={active ? cat.color : "#777587"}
-                        />
-                        <View
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: cat.color }}
-                        />
-                        <Text
-                          className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
-                        >
-                          {cat.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
             </View>
           )}
 
           {/* Status dropdown */}
           {(statuses?.length ?? 0) > 0 && (
-            <View style={{ position: "relative", zIndex: 28 }}>
+            <View
+              ref={statusBtnRef}
+              style={{ position: "relative", zIndex: 28 }}
+            >
               <TouchableOpacity
-                onPress={() =>
-                  setOpenDropdown(openDropdown === "status" ? null : "status")
-                }
+                onPress={() => openDropdownAt("status", statusBtnRef)}
                 className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                   selectedStatusIds.size > 0
                     ? "bg-primary/10 border-primary"
@@ -772,89 +1041,6 @@ export default function TasksScreen() {
                   color="#777587"
                 />
               </TouchableOpacity>
-              {openDropdown === "status" && (
-                <View
-                  className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    marginTop: 4,
-                    minWidth: 200,
-                    elevation: 8,
-                    shadowColor: "#000",
-                    shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.15,
-                    shadowRadius: 12,
-                    zIndex: 50,
-                  }}
-                >
-                  <TouchableOpacity
-                    onPress={() => {
-                      const allIds = new Set(
-                        (statuses ?? []).map((s) => s.statusId),
-                      );
-                      if (selectedStatusIds.size === allIds.size) {
-                        setSelectedStatusIds(new Set());
-                      } else {
-                        setSelectedStatusIds(allIds);
-                      }
-                    }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
-                  >
-                    <MaterialIcons
-                      name={
-                        selectedStatusIds.size === (statuses?.length ?? 0)
-                          ? "check-box"
-                          : "check-box-outline-blank"
-                      }
-                      size={18}
-                      color={
-                        selectedStatusIds.size === (statuses?.length ?? 0)
-                          ? "#4d41df"
-                          : "#777587"
-                      }
-                    />
-                    <Text className="text-xs font-label text-on-surface-variant">
-                      Zaznacz wszystko
-                    </Text>
-                  </TouchableOpacity>
-                  {statuses?.map((s) => {
-                    const active = selectedStatusIds.has(s.statusId);
-                    return (
-                      <TouchableOpacity
-                        key={s.statusId}
-                        onPress={() => {
-                          setSelectedStatusIds((prev) => {
-                            const next = new Set(prev);
-                            if (active) next.delete(s.statusId);
-                            else next.add(s.statusId);
-                            return next;
-                          });
-                        }}
-                        className="flex-row items-center gap-2.5 px-3 py-2.5"
-                      >
-                        <MaterialIcons
-                          name={
-                            active ? "check-box" : "check-box-outline-blank"
-                          }
-                          size={18}
-                          color={active ? s.color : "#777587"}
-                        />
-                        <View
-                          className="w-2.5 h-2.5 rounded-full"
-                          style={{ backgroundColor: s.color }}
-                        />
-                        <Text
-                          className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
-                        >
-                          {s.name}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
             </View>
           )}
 
@@ -919,7 +1105,10 @@ export default function TasksScreen() {
             style={{ flex: 1 }}
           >
             {orderedStatuses.map((status, colIdx) => {
-              const statusTasks = groupedByStatus.get(status.statusId) ?? [];
+              const rawTasks = groupedByStatus.get(status.statusId) ?? [];
+              const colSort = columnSorts[status.statusId] ?? "default";
+              const statusTasks = sortColumnTasks(rawTasks, colSort);
+              const isSortOpen = openSortMenu === status.statusId;
               return (
                 <DropColumn
                   key={status.statusId}
@@ -968,13 +1157,41 @@ export default function TasksScreen() {
                           />
                         </TouchableOpacity>
                       )}
-                      <TouchableOpacity className="p-1">
-                        <MaterialIcons
-                          name="more-horiz"
-                          size={18}
-                          color="#777587"
-                        />
-                      </TouchableOpacity>
+                      <View>
+                        <TouchableOpacity
+                          className="p-1"
+                          ref={(el: any) => {
+                            if (Platform.OS === "web" && el) {
+                              sortBtnRefs.current[status.statusId] =
+                                el as unknown as HTMLElement;
+                            }
+                          }}
+                          onPress={() => {
+                            if (isSortOpen) {
+                              setOpenSortMenu(null);
+                              setSortMenuPos(null);
+                            } else {
+                              const el = sortBtnRefs.current[status.statusId];
+                              if (el) {
+                                const rect = el.getBoundingClientRect();
+                                setSortMenuPos({
+                                  top: rect.bottom + 4,
+                                  left: rect.right - 180,
+                                });
+                              }
+                              setOpenSortMenu(status.statusId);
+                            }
+                          }}
+                        >
+                          <MaterialIcons
+                            name="sort"
+                            size={18}
+                            color={
+                              colSort !== "default" ? "#4d41df" : "#777587"
+                            }
+                          />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
 
@@ -1070,7 +1287,12 @@ export default function TasksScreen() {
                 <View className="flex-row items-center gap-2 px-1">
                   <View
                     className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: catGroup.categoryColor }}
+                    style={{
+                      backgroundColor: getCategoryDisplayColor(
+                        catGroup.categoryColor,
+                        isDark,
+                      ),
+                    }}
                   />
                   <Text className="font-headline text-on-surface text-base">
                     {catGroup.categoryName}

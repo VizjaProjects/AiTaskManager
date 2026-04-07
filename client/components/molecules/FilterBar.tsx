@@ -1,6 +1,7 @@
 import { View, ScrollView, TouchableOpacity, Text } from "react-native";
 import { TaskPriority } from "@/lib/types";
-import { PRIORITY_COLORS } from "@/lib/utils";
+import { PRIORITY_COLORS, getCategoryDisplayColor } from "@/lib/utils";
+import { useThemeStore } from "@/lib/stores";
 
 interface FilterBarProps {
   selectedPriority: TaskPriority | null;
@@ -18,6 +19,7 @@ export function FilterBar({
   onSelectCategory,
 }: FilterBarProps) {
   const priorities = Object.values(TaskPriority);
+  const isDark = useThemeStore((s) => s.mode) === "dark";
 
   return (
     <ScrollView
@@ -66,7 +68,9 @@ export function FilterBar({
           >
             <View
               className="w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: cat.color }}
+              style={{
+                backgroundColor: getCategoryDisplayColor(cat.color, isDark),
+              }}
             />
             <Text
               className={`text-xs font-label ${
