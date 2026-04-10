@@ -170,6 +170,7 @@ jobs:
             export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
             export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+            export OAUTH2_FRONTEND_URL=""
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest
