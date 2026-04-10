@@ -87,6 +87,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String path = request.getServletPath();
 
         return path.startsWith("/v1/api/auth/") || path.startsWith("/v1/api/emailVerification") || path.startsWith(
-                "/swagger-ui/");
+                "/swagger-ui/") || path.startsWith("/oauth2/") || path.startsWith("/login/oauth2/");
     }
 }

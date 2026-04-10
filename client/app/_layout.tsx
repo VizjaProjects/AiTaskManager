@@ -48,7 +48,8 @@ function AuthGate() {
     const isPublicPage =
       !segments[0] ||
       segments[0] === "privacy-policy" ||
-      segments[0] === "terms-of-service";
+      segments[0] === "terms-of-service" ||
+      segments[0] === "oauth-callback";
 
     if (!isAuthenticated && !inAuthGroup && !isPublicPage) {
       router.replace("/(auth)/login");

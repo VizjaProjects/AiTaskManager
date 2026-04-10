@@ -75,6 +75,22 @@ public class User {
         return user;
     }
 
+    public static User createOAuthUser(String fullName, Email email) {
+        return new User(
+                UserId.generate(),
+                fullName,
+                email,
+                Role.USER,
+                (HashedPassword) null,
+                Instant.now(),
+                Instant.now(),
+                null,
+                true,
+                true,
+                Instant.now()
+        );
+    }
+
     public void passwordChanged(String device, String ipAddress) {
         this.registerEvent(new PasswordChangedEvent(this.email,Instant.now(),device,ipAddress));
     }

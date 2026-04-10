@@ -103,9 +103,4 @@ public class AuthController {
 
         return ResponseEntity.ok().body(new RemindPasswordResponse(command.token(), command.email(), Instant.now()));
     }
-
-    @GetMapping("/o-auth")
-    public String get() {
-        return "SSSS";
-    }
 }

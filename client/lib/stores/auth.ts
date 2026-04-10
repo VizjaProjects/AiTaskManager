@@ -41,6 +41,13 @@ interface AuthState {
   isLoading: boolean;
 
   login: (email: string, password: string) => Promise<void>;
+  loginWithOAuth: (
+    token: string,
+    userId: string,
+    email: string,
+    fullName: string,
+    role: string,
+  ) => Promise<void>;
   register: (
     fullName: string,
     email: string,
@@ -71,6 +78,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       role: data.role,
     };
 
+    storeUser(user);
+    set({ user, isAuthenticated: true, isLoading: false });
+  },
+
+  loginWithOAuth: async (token, userId, email, fullName, role) => {
+    await setAccessToken(token);
+    const user: User = {
+      userId,
+      email,
+      fullName,
+      role: role as Role,
+    };
     storeUser(user);
     set({ user, isAuthenticated: true, isLoading: false });
   },

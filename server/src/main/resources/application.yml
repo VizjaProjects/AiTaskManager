@@ -8,6 +8,8 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, profile, email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
 
   mail:
     host: ${MAIL_HOST}
@@ -60,4 +62,5 @@ ai:
     api-key: ${GEMINI_API_KEY}
     model: gemini-3-flash-preview
 
-
+oauth2:
+  frontend-url: ${OAUTH2_FRONTEND_URL:http://localhost:3000}

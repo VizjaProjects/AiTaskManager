@@ -30,7 +30,7 @@ public class UserEntity {
     @Column(nullable = false)
     private Role role;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(nullable = false)
