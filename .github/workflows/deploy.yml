@@ -168,6 +168,8 @@ jobs:
             export MAIL_USERNAME="${{ secrets.MAIL_USERNAME }}"
             export MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}"
             export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+            export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
+            export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest
