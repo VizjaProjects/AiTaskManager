@@ -15,6 +15,9 @@ import { useState } from "react";
 import { Button, Input, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
+import { Linking } from "react-native";
+
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -159,6 +162,31 @@ export default function RegisterScreen() {
               fullWidth
               onPress={handleSubmit(onSubmit)}
             />
+
+            <View className="flex-row items-center gap-3">
+              <View className="flex-1 h-px bg-outline-variant" />
+              <Text className="text-on-surface-variant font-body text-xs">
+                lub
+              </Text>
+              <View className="flex-1 h-px bg-outline-variant" />
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                const url = `${API_URL}/oauth2/authorization/google`;
+                if (Platform.OS === "web") {
+                  window.location.href = url;
+                } else {
+                  Linking.openURL(url);
+                }
+              }}
+              className="flex-row items-center justify-center gap-3 bg-surface-container-high border border-outline-variant rounded-xl px-4 py-3"
+            >
+              <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
+              <Text className="text-on-surface font-headline text-sm">
+                Kontynuuj z Google
+              </Text>
+            </TouchableOpacity>
 
             <View className="flex-row items-center justify-center gap-1">
               <Text className="text-on-surface-variant font-body text-sm">
