@@ -2,12 +2,12 @@ package pl.ordovita.shared.infrastructure.ai;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "ai.gemini")
-public record GeminiProperties(String apiKey, String model) {
+@ConfigurationProperties(prefix = "ai.groq")
+public record GroqProperties(String apiKey, String model) {
 
-    public GeminiProperties {
+    public GroqProperties {
         if (model == null || model.isBlank()) {
-            model = "gemini-3-flash-preview";
+            model = "openai/gpt-oss-120b";
         }
     }
 }

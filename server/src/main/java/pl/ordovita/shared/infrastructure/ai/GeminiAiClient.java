@@ -2,17 +2,12 @@ package pl.ordovita.shared.infrastructure.ai;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import pl.ordovita.identity.domain.port.CurrentUser;
-import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.shared.domain.ai.AiClient;
 import pl.ordovita.shared.domain.ai.AiRequest;
 import pl.ordovita.shared.domain.ai.AiResponse;
 
 @Slf4j
-@Component
-
 public class GeminiAiClient implements AiClient {
 
     private final RestClient restClient;
@@ -47,7 +42,12 @@ public class GeminiAiClient implements AiClient {
             throw new AiClientException("Empty response from Gemini API");
         }
 
-        String content = response.candidates().getFirst().content().parts().getFirst().text();
+        String content = response.candidates().getFirst().content().parts().stream()
+                .filter(part -> !part.isThought())
+                .map(GeminiApiResponse.Part::text)
+                .filter(text -> text != null && !text.isBlank())
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new AiClientException("No content parts in Gemini response"));
         log.debug("Received response from Gemini ({} chars)", content.length());
 
         return new AiResponse(content, inputTokens, request.prompt());

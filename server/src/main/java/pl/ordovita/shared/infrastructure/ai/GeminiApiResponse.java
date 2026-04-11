@@ -14,5 +14,9 @@ record GeminiApiResponse(List<Candidate> candidates) {
     record Content(List<Part> parts) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record Part(String text) {}
+    record Part(String text, Boolean thought) {
+        boolean isThought() {
+            return Boolean.TRUE.equals(thought);
+        }
+    }
 }

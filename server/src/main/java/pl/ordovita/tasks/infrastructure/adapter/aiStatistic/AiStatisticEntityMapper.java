@@ -16,6 +16,7 @@ public class AiStatisticEntityMapper {
                 statistic.getPromptText(),
                 statistic.getInputTokens(),
                 userEntity,
+                statistic.getCreatedAt(),
                 statistic.getCreatedAt()
         );
     }

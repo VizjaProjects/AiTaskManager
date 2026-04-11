@@ -66,6 +66,17 @@ final class AiPlanPromptBuilder {
                 - Wszystkie daty i czasy w formacie ISO-8601 UTC (np. 2026-03-26T15:00:00Z).
                 - Aktualny czas podany jest poniżej — używaj go do określania dat względnych ("jutro", "w piątek", "za tydzień").
 
+                === WAŻNE: OBLICZANIE DAT WZGLĘDNYCH ===
+
+                Gdy użytkownik podaje datę względną (np. "w poniedziałek", "we wtorek", "w piątek"):
+                1. Sprawdź AKTUALNY CZAS podany poniżej — ustal dzień tygodnia.
+                2. Oblicz, ile dni dzieli aktualny dzień od podanego dnia tygodnia (ZAWSZE w przód, nigdy wstecz).
+                   - Jeśli dziś jest środa, a użytkownik mówi "w poniedziałek" → to najbliższy poniedziałek = za 5 dni.
+                   - Jeśli dziś jest poniedziałek, a użytkownik mówi "w poniedziałek" → to NASTĘPNY poniedziałek = za 7 dni.
+                3. Dodaj obliczoną liczbę dni do aktualnej daty — to jest wynik.
+                4. ZAWSZE zweryfikuj wynik: sprawdź, czy obliczona data faktycznie wypada w podany dzień tygodnia.
+                   Jeśli nie — przelicz ponownie.
+
                 """);
 
         sb.append("AKTUALNY CZAS: ").append(now).append("\n\n");

@@ -168,6 +168,8 @@ jobs:
             export MAIL_USERNAME="${{ secrets.MAIL_USERNAME }}"
             export MAIL_PASSWORD="${{ secrets.MAIL_PASSWORD }}"
             export GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+            export GROQ_API_KEY="${{ secrets.GROQ_API_KEY }}"
+            export AI_PROVIDER="${{ secrets.AI_PROVIDER }}"
             export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
             export OAUTH2_FRONTEND_URL=""

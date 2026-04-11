@@ -61,9 +61,13 @@ path:
   email-template: templates/identity
 
 ai:
+  provider: ${AI_PROVIDER:groq}
   gemini:
-    api-key: ${GEMINI_API_KEY}
-    model: gemini-3-flash-preview
+    api-key: ${GEMINI_API_KEY:none}
+    model: gemma-4-26b-a4b-it
+  groq:
+    api-key: ${GROQ_API_KEY:none}
+    model: openai/gpt-oss-120b
 
 oauth2:
   frontend-url: ${OAUTH2_FRONTEND_URL:http://localhost:3000}

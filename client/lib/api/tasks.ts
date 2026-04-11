@@ -76,6 +76,7 @@ export const eventApi = {
 export const aiApi = {
   generatePlan: (data: GenerateAiPlanRequest) =>
     api.post("/ai/plan", data, {
+      timeout: 120000,
       headers: {
         "X-Time-Zone": Intl.DateTimeFormat().resolvedOptions().timeZone,
       },
