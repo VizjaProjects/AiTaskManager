@@ -37,7 +37,7 @@ export default function OAuthCallbackScreen() {
           params.fullName,
           params.role,
         );
-        router.replace("/(app)/dashboard");
+        router.replace("/(app)/survey-onboarding");
       } else {
         router.replace("/(auth)/login");
       }

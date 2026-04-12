@@ -15,4 +15,5 @@ public interface SurveyRepository {
     Set<Survey> getAllSurveys();
     Set<Survey> findAllActiveSurveys();
     Set<UserResponseResult> getAllUserResponseResults(UserId userId);
+    void deleteSurveyWithAllData(SurveyId surveyId);
 }

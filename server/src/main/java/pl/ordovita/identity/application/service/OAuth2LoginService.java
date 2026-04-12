@@ -9,9 +9,14 @@ import pl.ordovita.identity.application.port.in.OAuth2LoginUseCase;
 import pl.ordovita.identity.domain.model.token.TokenPair;
 import pl.ordovita.identity.domain.model.user.Email;
 import pl.ordovita.identity.domain.model.user.User;
+import pl.ordovita.identity.domain.model.user.UserId;
 import pl.ordovita.identity.domain.model.userSession.UserSession;
 import pl.ordovita.identity.domain.port.UserRepository;
 import pl.ordovita.identity.domain.port.UserSessionRepository;
+import pl.ordovita.tasks.domain.model.calendar.Calendar;
+import pl.ordovita.tasks.domain.model.status.TaskStatus;
+import pl.ordovita.tasks.domain.port.CalendarRepository;
+import pl.ordovita.tasks.domain.port.TaskStatusRepository;
 
 import java.util.List;
 
@@ -24,6 +29,8 @@ public class OAuth2LoginService implements OAuth2LoginUseCase {
     private final UserSessionRepository userSessionRepository;
     private final SessionManager sessionManager;
     private final DeviceManagerUseCase deviceManagerUseCase;
+    private final CalendarRepository calendarRepository;
+    private final TaskStatusRepository taskStatusRepository;
 
     @Override
     public OAuth2LoginResult loginWithOAuth2(OAuth2LoginCommand command) {
@@ -32,7 +39,16 @@ public class OAuth2LoginService implements OAuth2LoginUseCase {
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     User newUser = User.createOAuthUser(command.fullName(), email);
-                    return userRepository.save(newUser);
+                    User savedUser = userRepository.save(newUser);
+
+                    UserId userId = savedUser.getId();
+                    calendarRepository.save(Calendar.create(userId, true));
+                    taskStatusRepository.save(TaskStatus.create("To Do", "#3B82F6", userId));
+                    taskStatusRepository.save(TaskStatus.create("In Progress", "#F59E0B", userId));
+                    taskStatusRepository.save(TaskStatus.create("Completed", "#10B981", userId));
+                    taskStatusRepository.save(TaskStatus.create("Cancelled", "#EF4444", userId));
+
+                    return savedUser;
                 });
 
         if (!user.canLogin()) {

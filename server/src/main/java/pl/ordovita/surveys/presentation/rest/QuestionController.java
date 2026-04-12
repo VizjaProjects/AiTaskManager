@@ -31,7 +31,7 @@ public class QuestionController {
     @PostMapping("/{surveyId}")
     public ResponseEntity<QuestionResponse> create(@Valid @RequestBody QuestionRequest request, @PathVariable UUID surveyId) {
 
-        CreateQuestionSurveyUseCase.CreateQuestionSurveyCommand command = new  CreateQuestionSurveyUseCase.CreateQuestionSurveyCommand(request.questionText(),surveyId,request.questionType(),request.optionTextValue(),request.isRequired());
+        CreateQuestionSurveyUseCase.CreateQuestionSurveyCommand command = new  CreateQuestionSurveyUseCase.CreateQuestionSurveyCommand(request.questionText(),surveyId,request.questionType(),request.optionTextValue(),request.isRequired(),request.hint());
         CreateQuestionSurveyUseCase.CreateQuestionSurveyResult  result = questionSurveyUseCase.create(command);
 
         return ResponseEntity.status(201).body(new QuestionResponse(result.questionId(),result.surveyId(),result.createdAt()));
@@ -57,7 +57,7 @@ public class QuestionController {
 
     @PutMapping("/edit/{questionId}")
     public ResponseEntity<EditQuestionUseCase.EditQuestionResult> editQuestion(@PathVariable UUID questionId, @Valid @RequestBody EditQuestionRequest request) {
-        EditQuestionUseCase.EditQuestionCommand command = new EditQuestionUseCase.EditQuestionCommand(questionId,request.questionText(),request.questionType(),request.isRequired());
+        EditQuestionUseCase.EditQuestionCommand command = new EditQuestionUseCase.EditQuestionCommand(questionId,request.questionText(),request.questionType(),request.isRequired(),request.hint());
         EditQuestionUseCase.EditQuestionResult result = editQuestionUseCase.edit(command);
 
         return ResponseEntity.status(201).body(result);

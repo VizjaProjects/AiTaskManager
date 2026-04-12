@@ -22,6 +22,7 @@ public class QuestionEntityMapper {
                 question.getQuestionText(),
                 question.getQuestionType(),
                 question.isRequired(),
+                question.getHint(),
                 question.getCreatedAt(),
                 question.getUpdatedAt()
 
@@ -43,6 +44,7 @@ public class QuestionEntityMapper {
                 questionEntity.getQuestionText(),
                 questionEntity.getQuestionType(),
                 questionEntity.isRequired(),
+                questionEntity.getHint(),
                 questionEntity.getCreatedAt(),
                 questionEntity.getUpdatedAt());
     }

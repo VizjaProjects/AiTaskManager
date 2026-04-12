@@ -9,7 +9,6 @@ import {
   Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
@@ -25,7 +24,6 @@ import {
 } from "@/lib/schemas";
 
 export default function ProfileScreen() {
-  const router = useRouter();
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const { user, logout, setUser } = useAuthStore();
@@ -300,7 +298,7 @@ export default function ProfileScreen() {
           Account Control
         </Text>
         <TouchableOpacity
-          onPress={logout}
+          onPress={() => logout()}
           className="flex-row items-center justify-between py-3"
         >
           <View className="flex-row items-center gap-3">

@@ -100,14 +100,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
-    try {
-      await authApi.logout();
-    } catch {
-      // ignore
-    }
+    set({ user: null, isAuthenticated: false, isLoading: false });
     await clearTokens();
     removeUser();
-    set({ user: null, isAuthenticated: false, isLoading: false });
+    authApi.logout().catch(() => {});
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   },
 
   setUser: (user) => set({ user, isAuthenticated: true }),

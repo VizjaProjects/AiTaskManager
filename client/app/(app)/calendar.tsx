@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation } from "expo-router";
+import { useNavigation, useLocalSearchParams } from "expo-router";
 import { PageLayout } from "@/components/organisms";
 import { Button, Input, InlineDatePicker } from "@/components/atoms";
 import {
@@ -435,6 +435,7 @@ export default function CalendarScreen() {
   const editEvent = useEditEvent();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
+  const params = useLocalSearchParams();
   const themeMode = useThemeStore((s) => s.mode);
 
   useEffect(() => {
@@ -443,6 +444,13 @@ export default function CalendarScreen() {
     });
     return unsubscribe;
   }, [navigation, queryClient]);
+
+  useEffect(() => {
+    if (params.eventId && events) {
+      const e = events.find((ev) => ev.eventId === params.eventId);
+      if (e) setEditingEvent(e);
+    }
+  }, [params.eventId, events]);
 
   const isDark = themeMode === "dark";
   const gridBorderColor = isDark ? "#464560" : "#c7c4d8";

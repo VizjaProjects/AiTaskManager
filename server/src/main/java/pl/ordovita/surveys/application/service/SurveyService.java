@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import pl.ordovita.surveys.application.port.in.ChangeVisibleUseCase;
 import pl.ordovita.surveys.application.port.in.CreateSurveyUseCase;
+import pl.ordovita.surveys.application.port.in.DeleteSurveyUseCase;
 import pl.ordovita.surveys.application.port.in.EditSurveyUseCase;
 import pl.ordovita.surveys.application.port.in.GetAllSurveysUseCase;
 import pl.ordovita.surveys.domain.exception.SurveyException;
@@ -16,7 +17,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
-public class SurveyService implements CreateSurveyUseCase, ChangeVisibleUseCase, EditSurveyUseCase, GetAllSurveysUseCase {
+public class SurveyService implements CreateSurveyUseCase, ChangeVisibleUseCase, EditSurveyUseCase, GetAllSurveysUseCase, DeleteSurveyUseCase {
 
     private final SurveyRepository surveyRepository;
 
@@ -68,5 +69,13 @@ public class SurveyService implements CreateSurveyUseCase, ChangeVisibleUseCase,
     @Override
     public GetAllSurveysResult getAllSurveys() {
         return new GetAllSurveysResult(surveyRepository.getAllSurveys());
+    }
+
+    @Override
+    public void deleteSurvey(DeleteSurveyCommand command) {
+        SurveyId surveyId = new SurveyId(command.surveyId());
+        surveyRepository.findById(surveyId)
+                .orElseThrow(() -> new SurveyException("Survey with id " + surveyId + " not found"));
+        surveyRepository.deleteSurveyWithAllData(surveyId);
     }
 }

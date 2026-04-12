@@ -7,6 +7,7 @@ import { NavItem } from "../molecules/NavItem";
 import { Avatar } from "../atoms/Avatar";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { Role } from "@/lib/types";
 
 cssInterop(LinearGradient, { className: "style" });
 
@@ -52,6 +53,30 @@ export function SideNavBar() {
                 onPress={() => router.push(item.path as never)}
               />
             ))}
+            {user?.role === Role.ADMIN && (
+              <>
+                <View className="h-px bg-outline-variant/15 my-3 mx-2" />
+                <NavItem
+                  icon="poll"
+                  label="Surveys"
+                  active={pathname.startsWith("/admin-survey")}
+                  onPress={() => router.push("/(app)/admin-surveys" as never)}
+                />
+              </>
+            )}
+            {user?.role === Role.USER && (
+              <>
+                <View className="h-px bg-outline-variant/15 my-3 mx-2" />
+                <NavItem
+                  icon="assignment"
+                  label="Ankiety"
+                  active={
+                    pathname === "/surveys" || pathname.startsWith("/survey")
+                  }
+                  onPress={() => router.push("/(app)/surveys" as never)}
+                />
+              </>
+            )}
           </View>
 
           <TouchableOpacity

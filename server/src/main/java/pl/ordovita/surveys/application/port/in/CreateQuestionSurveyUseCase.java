@@ -8,7 +8,7 @@ import java.util.UUID;
 
 public interface CreateQuestionSurveyUseCase {
 
-    record CreateQuestionSurveyCommand(String questionText, UUID surveyUUID, QuestionType questionType, List<String> optionTextValue,  boolean isRequired){}
+    record CreateQuestionSurveyCommand(String questionText, UUID surveyUUID, QuestionType questionType, List<String> optionTextValue, boolean isRequired, String hint){}
     record CreateQuestionSurveyResult(UUID surveyId, UUID questionId, Instant createdAt){}
 
     CreateQuestionSurveyResult create(CreateQuestionSurveyCommand command);

@@ -12,10 +12,11 @@ public class Question {
     private String questionText;
     private QuestionType questionType;
     private boolean isRequired;
+    private String hint;
     private final Instant createdAt;
     private Instant updatedAt;
 
-    public Question(QuestionId id, SurveyId surveyId, String questionText, QuestionType questionType,  boolean isRequired, Instant createdAt, Instant updatedAt) {
+    public Question(QuestionId id, SurveyId surveyId, String questionText, QuestionType questionType, boolean isRequired, String hint, Instant createdAt, Instant updatedAt) {
         if(id == null) throw new QuestionException("id cannot be null");
         if(questionText == null) throw new QuestionException("questionText cannot be null");
         if(questionType == null) throw new QuestionException("questionType cannot be null");
@@ -26,20 +27,22 @@ public class Question {
         this.questionText = questionText;
         this.questionType = questionType;
         this.isRequired = isRequired;
+        this.hint = hint;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public static Question create(String questionText, SurveyId surveyId, QuestionType questionType, boolean isRequired) {
-        return new Question(QuestionId.generate(), surveyId, questionText, questionType, isRequired, Instant.now(), Instant.now());
+    public static Question create(String questionText, SurveyId surveyId, QuestionType questionType, boolean isRequired, String hint) {
+        return new Question(QuestionId.generate(), surveyId, questionText, questionType, isRequired, hint, Instant.now(), Instant.now());
     }
 
-    public void edit(String questionText, QuestionType questionType, boolean isRequired) {
+    public void edit(String questionText, QuestionType questionType, boolean isRequired, String hint) {
         if(questionText == null) throw new QuestionException("questionText cannot be null");
         if(questionType == null) throw new QuestionException("questionType cannot be null");
         this.questionText = questionText;
         this.questionType = questionType;
         this.isRequired = isRequired;
+        this.hint = hint;
         this.updatedAt = Instant.now();
     }
 
@@ -69,6 +72,10 @@ public class Question {
 
     public boolean isRequired() {
         return isRequired;
+    }
+
+    public String getHint() {
+        return hint;
     }
 
     public Instant getCreatedAt() {

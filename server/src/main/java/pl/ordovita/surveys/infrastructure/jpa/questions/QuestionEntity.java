@@ -38,6 +38,8 @@ public class QuestionEntity {
     @Column(nullable = false)
     private boolean isRequired;
 
+    private String hint;
+
     @Column(nullable = false)
     private Instant createdAt;
 

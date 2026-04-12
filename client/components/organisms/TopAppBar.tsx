@@ -12,6 +12,8 @@ import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Avatar } from "../atoms/Avatar";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
+import { NotificationsDrawer } from "./NotificationsDrawer";
+import { SearchModal } from "./SearchModal";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
 
 const DRAWER_NAV_ITEMS: Array<{
@@ -40,7 +42,8 @@ export function TopAppBar({ title, showSearch = true }: TopAppBarProps) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const { mode, toggle } = useThemeStore();
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
 
   return (
     <>
@@ -66,7 +69,7 @@ export function TopAppBar({ title, showSearch = true }: TopAppBarProps) {
           {showSearch && (
             <TouchableOpacity
               className="p-2 rounded-full"
-              onPress={() => router.push("/(app)/search" as never)}
+              onPress={() => setSearchOpen(true)}
             >
               <MaterialIcons name="search" size={22} color="#777587" />
             </TouchableOpacity>
@@ -74,7 +77,7 @@ export function TopAppBar({ title, showSearch = true }: TopAppBarProps) {
 
           <TouchableOpacity
             className="p-2 rounded-full"
-            onPress={() => router.push("/(app)/notifications" as never)}
+            onPress={() => setNotificationsOpen(true)}
           >
             <MaterialIcons
               name="notifications-none"
@@ -92,6 +95,12 @@ export function TopAppBar({ title, showSearch = true }: TopAppBarProps) {
           )}
         </View>
       </View>
+
+      <NotificationsDrawer
+        visible={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
+      <SearchModal visible={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Mobile drawer */}
       {!isDesktop && (

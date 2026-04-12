@@ -4,5 +4,5 @@ import pl.ordovita.surveys.domain.model.questions.QuestionType;
 
 import java.util.UUID;
 
-public record QuestionsResult(UUID questionId, String questionText, QuestionType questionType) {
+public record QuestionsResult(UUID questionId, String questionText, QuestionType questionType, String hint) {
 }

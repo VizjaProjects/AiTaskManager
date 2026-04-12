@@ -161,6 +161,7 @@ export function TaskDetailModal({
     const doneStatus = statuses.find(
       (s) =>
         s.name.toLowerCase() === "done" ||
+        s.name.toLowerCase() === "completed" ||
         s.name.toLowerCase() === "zakończone" ||
         s.name.toLowerCase() === "ukończone",
     );
@@ -377,16 +378,48 @@ export function TaskDetailModal({
                       ))}
                     </View>
                   ) : status ? (
-                    <View
-                      className="px-3 py-1.5 rounded-lg self-start"
-                      style={{ backgroundColor: `${status.color}15` }}
-                    >
-                      <Text
-                        className="text-sm font-headline"
-                        style={{ color: status.color }}
-                      >
-                        {status.name}
-                      </Text>
+                    <View className="flex-row gap-2 flex-wrap">
+                      {statuses.map((s) => (
+                        <TouchableOpacity
+                          key={s.statusId}
+                          disabled={editTask.isPending}
+                          onPress={() => {
+                            if (s.statusId === task.statusId) return;
+                            editTask.mutate({
+                              taskId: task.taskId,
+                              data: {
+                                title: task.title,
+                                description: task.description,
+                                priority: task.priority,
+                                statusId: s.statusId,
+                                categoryId: task.categoryId ?? undefined,
+                                estimatedDuration: task.estimatedDuration,
+                                dueDateTime: task.dueDateTime ?? undefined,
+                              },
+                            });
+                          }}
+                          className={`px-3 py-1.5 rounded-full border ${
+                            task.statusId === s.statusId
+                              ? "border-transparent"
+                              : "border-outline-variant"
+                          }`}
+                          style={
+                            task.statusId === s.statusId
+                              ? { backgroundColor: s.color }
+                              : undefined
+                          }
+                        >
+                          <Text
+                            className={`text-xs font-label ${
+                              task.statusId === s.statusId
+                                ? "text-white"
+                                : "text-on-surface-variant"
+                            }`}
+                          >
+                            {s.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
                     </View>
                   ) : null}
                 </View>

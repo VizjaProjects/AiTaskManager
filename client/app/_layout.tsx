@@ -17,6 +17,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore } from "@/lib/stores";
 import { useThemeStore } from "@/lib/stores";
 import { setOnRefreshFailed } from "@/lib/api";
+import { Role } from "@/lib/types";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,7 +30,7 @@ const queryClient = new QueryClient({
 function AuthGate() {
   const segments = useSegments();
   const router = useRouter();
-  const { isAuthenticated, isLoading, hydrate } = useAuthStore();
+  const { isAuthenticated, isLoading, hydrate, user } = useAuthStore();
 
   useEffect(() => {
     hydrate();
@@ -38,8 +39,15 @@ function AuthGate() {
   useEffect(() => {
     setOnRefreshFailed(() => {
       useAuthStore.getState().logout();
+      queryClient.clear();
     });
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      queryClient.clear();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -54,7 +62,11 @@ function AuthGate() {
     if (!isAuthenticated && !inAuthGroup && !isPublicPage) {
       router.replace("/(auth)/login");
     } else if (isAuthenticated && inAuthGroup) {
-      router.replace("/(app)/dashboard");
+      const dest =
+        user?.role === Role.ADMIN
+          ? "/(app)/dashboard"
+          : "/(app)/survey-onboarding";
+      router.replace(dest);
     }
   }, [isAuthenticated, isLoading, segments, router]);
 

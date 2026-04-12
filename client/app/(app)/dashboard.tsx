@@ -1,6 +1,15 @@
-import { View, ScrollView, RefreshControl } from "react-native";
+import {
+  View,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useMemo, useCallback } from "react";
+import { MaterialIcons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { cssInterop } from "nativewind";
 import { PageLayout } from "@/components/organisms";
 import { StatCard, TaskCard, EventCard } from "@/components/molecules";
 import { StatCardSkeleton, TaskCardSkeleton } from "@/components/atoms";
@@ -9,8 +18,73 @@ import {
   useEvents,
   useAiProposals,
   useCategories,
+  useActiveSurveys,
+  useMyResponses,
 } from "@/lib/hooks";
 import type { Category } from "@/lib/types";
+
+cssInterop(LinearGradient, { className: "style" });
+
+function SurveyBanner() {
+  const router = useRouter();
+  const { data: surveys } = useActiveSurveys();
+  const { data: myResponses } = useMyResponses();
+
+  const pendingCount = useMemo(() => {
+    if (!surveys || !myResponses) return 0;
+    const answeredIds = new Set(
+      (myResponses as any[]).map((r: any) => r.questionId),
+    );
+    // Count unanswered across ALL active surveys (approximate — questions loaded separately)
+    // For the banner we simply count surveys that have at least one response missing
+    return surveys.length;
+  }, [surveys, myResponses]);
+
+  const incompleteSurveys = useMemo(() => {
+    if (!surveys) return 0;
+    const answeredSurveyIds = new Set(
+      (myResponses ?? ([] as any[])).map((r: any) => r.surveyId),
+    );
+    // A survey is "incomplete" if user has NO responses for it at all,
+    // or we can't tell without question data — count surveys user hasn't fully answered
+    return surveys.filter((s) => !answeredSurveyIds.has(s.surveyId)).length;
+  }, [surveys, myResponses]);
+
+  if (!surveys || surveys.length === 0 || incompleteSurveys === 0) return null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(app)/surveys" as never)}
+      activeOpacity={0.85}
+    >
+      <LinearGradient
+        colors={["#4d41df", "#6c63ff"]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 0 }}
+        className="rounded-2xl p-5 flex-row items-center gap-4"
+      >
+        <View className="w-11 h-11 rounded-xl bg-white/20 items-center justify-center">
+          <MaterialIcons name="assignment" size={24} color="#fff" />
+        </View>
+        <View className="flex-1">
+          <Text className="text-white font-headline text-base">
+            Masz ankiety do wypełnienia
+          </Text>
+          <Text className="text-white/70 font-body text-sm mt-1">
+            {incompleteSurveys}{" "}
+            {incompleteSurveys === 1
+              ? "ankieta czeka"
+              : incompleteSurveys < 5
+                ? "ankiety czekają"
+                : "ankiet czeka"}{" "}
+            na Twoje odpowiedzi
+          </Text>
+        </View>
+        <MaterialIcons name="arrow-forward" size={22} color="#fff" />
+      </LinearGradient>
+    </TouchableOpacity>
+  );
+}
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -93,6 +167,8 @@ export default function DashboardScreen() {
         }
         contentContainerStyle={{ gap: 24, paddingBottom: 32 }}
       >
+        <SurveyBanner />
+
         <View className="flex-row flex-wrap gap-4">
           {isLoading ? (
             <>

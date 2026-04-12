@@ -14,3 +14,9 @@ export {
   aiApi,
   aiStatisticApi,
 } from "./tasks";
+export {
+  surveyApi,
+  questionApi,
+  questionOptionApi,
+  userResponseApi,
+} from "./surveys";

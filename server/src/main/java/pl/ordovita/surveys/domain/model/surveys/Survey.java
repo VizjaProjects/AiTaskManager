@@ -3,7 +3,6 @@ package pl.ordovita.surveys.domain.model.surveys;
 import pl.ordovita.surveys.domain.exception.SurveyException;
 
 import java.time.Instant;
-import java.util.Objects;
 
 public class Survey {
     
@@ -29,7 +28,7 @@ public class Survey {
     }
 
     public static Survey create(String title, String description) {
-        return new Survey(SurveyId.generate(), title, description, Instant.now(), Instant.now(),true);
+        return new Survey(SurveyId.generate(), title, description, Instant.now(), Instant.now(), false);
     }
 
     public void changeVisibility(boolean isVisible) {
@@ -39,8 +38,6 @@ public class Survey {
     }
 
     public Survey editSurveyTitleAndDescription(String title, String description){
-        if(Objects.equals(this.title, title)) throw new SurveyException("Survey title  cannot be same as previous title");
-        if(Objects.equals(this.description, description)) throw new SurveyException("Survey description cannot be same as previous description");
         this.title = title;
         this.description = description;
         this.updatedAt = Instant.now();

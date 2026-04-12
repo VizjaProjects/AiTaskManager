@@ -6,5 +6,5 @@ import pl.ordovita.surveys.domain.model.questions.QuestionType;
 import java.util.List;
 
 
-public record QuestionRequest(@NonNull String questionText, @NonNull  QuestionType questionType, @NonNull  List<String> optionTextValue, boolean isRequired) {
+public record QuestionRequest(@NonNull String questionText, @NonNull  QuestionType questionType, @NonNull  List<String> optionTextValue, boolean isRequired, String hint) {
 }

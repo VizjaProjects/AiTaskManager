@@ -41,7 +41,8 @@ public class QuestionUseService implements CreateQuestionSurveyUseCase, GetAllSu
         Question question = Question.create(command.questionText(),
                 survey.getId(),
                 command.questionType(),
-                command.isRequired());
+                command.isRequired(),
+                command.hint());
 
         questionRepository.save(question);
 
@@ -74,7 +75,8 @@ public class QuestionUseService implements CreateQuestionSurveyUseCase, GetAllSu
 
         Set<QuestionsResult> questionResponses = questionSet.stream().map(question -> new QuestionsResult(question.getId().value(),
                 question.getQuestionText(),
-                question.getQuestionType())).collect(Collectors.toSet());
+                question.getQuestionType(),
+                question.getHint())).collect(Collectors.toSet());
 
 
         return new GetAllSurveyQuestionsResult(questionResponses);
@@ -94,7 +96,7 @@ public class QuestionUseService implements CreateQuestionSurveyUseCase, GetAllSu
         QuestionId questionId = new QuestionId(command.questionId());
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new QuestionException("Question with id " + questionId + " not found"));
 
-        question.edit(command.questionText(),command.questionType(),command.isRequired());
+        question.edit(command.questionText(),command.questionType(),command.isRequired(),command.hint());
         Question updatedQuestion = questionRepository.save(question);
         return new EditQuestionResult(updatedQuestion.getId().value(), updatedQuestion.getUpdatedAt());
     }

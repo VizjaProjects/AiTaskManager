@@ -305,7 +305,12 @@ export default function TasksScreen() {
       const status = statuses?.find((s) => s.statusId === statusId);
       if (!status) return false;
       const name = status.name.toLowerCase();
-      return name === "done" || name === "zakończone" || name === "ukończone";
+      return (
+        name === "done" ||
+        name === "completed" ||
+        name === "zakończone" ||
+        name === "ukończone"
+      );
     },
     [statuses],
   );
@@ -1105,6 +1110,7 @@ export default function TasksScreen() {
             style={{ flex: 1 }}
           >
             {orderedStatuses.map((status, colIdx) => {
+              if (!showCompleted && isDoneStatus(status.statusId)) return null;
               const rawTasks = groupedByStatus.get(status.statusId) ?? [];
               const colSort = columnSorts[status.statusId] ?? "default";
               const statusTasks = sortColumnTasks(rawTasks, colSort);
@@ -1241,6 +1247,7 @@ export default function TasksScreen() {
             contentContainerStyle={{ gap: 16, paddingBottom: 32 }}
           >
             {orderedStatuses.map((status) => {
+              if (!showCompleted && isDoneStatus(status.statusId)) return null;
               const statusTasks = groupedByStatus.get(status.statusId) ?? [];
               if (statusTasks.length === 0) return null;
               return (

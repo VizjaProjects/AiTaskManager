@@ -85,6 +85,12 @@ export default function AppLayout() {
       <Tabs.Screen name="statistics" options={{ href: null }} />
       <Tabs.Screen name="search" options={{ href: null }} />
       <Tabs.Screen name="notifications" options={{ href: null }} />
+      <Tabs.Screen name="admin-surveys" options={{ href: null }} />
+      <Tabs.Screen name="admin-survey-builder" options={{ href: null }} />
+      <Tabs.Screen name="admin-survey-responses" options={{ href: null }} />
+      <Tabs.Screen name="survey-onboarding" options={{ href: null }} />
+      <Tabs.Screen name="surveys" options={{ href: null }} />
+      <Tabs.Screen name="my-responses" options={{ href: null }} />
     </Tabs>
   );
 }

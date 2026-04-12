@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.ordovita.surveys.application.port.in.ChangeVisibleUseCase;
 import pl.ordovita.surveys.application.port.in.CreateSurveyUseCase;
+import pl.ordovita.surveys.application.port.in.DeleteSurveyUseCase;
 import pl.ordovita.surveys.application.port.in.EditSurveyUseCase;
 import pl.ordovita.surveys.application.port.in.GetAllSurveysUseCase;
 import pl.ordovita.surveys.presentation.dto.survey.ChangeSurveyVisibleRequest;
@@ -25,6 +26,7 @@ public class SurveyController {
     private final ChangeVisibleUseCase changeVisibleUseCase;
     private final EditSurveyUseCase editSurveyUseCase;
     private final GetAllSurveysUseCase getAllSurveysUseCase;
+    private final DeleteSurveyUseCase deleteSurveyUseCase;
 
     @PostMapping("/createSurvey")
     public ResponseEntity<SurveyResponse> createSurvey(@Valid @RequestBody SurveyRequest surveyRequest) {
@@ -61,5 +63,11 @@ public class SurveyController {
     @GetMapping("/all")
     ResponseEntity<GetAllSurveysUseCase.GetAllSurveysResult> allSurveys() {
         return ResponseEntity.ok().body(getAllSurveysUseCase.getAllSurveys());
+    }
+
+    @DeleteMapping("/delete/{surveyId}")
+    public ResponseEntity<Void> deleteSurvey(@NonNull @PathVariable UUID surveyId) {
+        deleteSurveyUseCase.deleteSurvey(new DeleteSurveyUseCase.DeleteSurveyCommand(surveyId));
+        return ResponseEntity.noContent().build();
     }
 }
