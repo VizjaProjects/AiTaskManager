@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useAuthStore } from "@/lib/stores";
+import { authApi } from "@/lib/api";
+
+function firstParam(value?: string | string[]): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
 
 export default function OAuthCallbackScreen() {
   const router = useRouter();
@@ -11,6 +16,7 @@ export default function OAuthCallbackScreen() {
     email?: string;
     fullName?: string;
     role?: string;
+    code?: string;
     error?: string;
   }>();
 
@@ -21,6 +27,25 @@ export default function OAuthCallbackScreen() {
       if (params.error) {
         router.replace("/(auth)/login");
         return;
+      }
+
+      const code = firstParam(params.code);
+      if (code) {
+        try {
+          const { data } = await authApi.exchangeDesktopOAuthCode(code);
+          await loginWithOAuth(
+            data.accessToken,
+            data.userId,
+            data.email,
+            data.fullName,
+            data.role,
+          );
+          router.replace("/(app)/survey-onboarding");
+          return;
+        } catch {
+          router.replace("/(auth)/login");
+          return;
+        }
       }
 
       if (

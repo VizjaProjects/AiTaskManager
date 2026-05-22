@@ -4,11 +4,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.ordovita.identity.application.port.in.*;
 import pl.ordovita.identity.application.port.out.PasswordHasher;
+import pl.ordovita.identity.application.service.DesktopOAuthCodeService;
 import pl.ordovita.identity.presentation.dto.*;
 
 import java.time.Instant;
@@ -26,6 +28,7 @@ public class AuthController {
     private final RefreshTokenUseCase refreshTokenUseCase;
     private final SessionManagerUseCase sessionManagerUseCase;
     private final RemindPasswordUseCase remindPasswordUseCase;
+    private final DesktopOAuthCodeService desktopOAuthCodeService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
@@ -38,12 +41,10 @@ public class AuthController {
 
         LoginUseCase.LoginResult loginResult = loginUseCase.login(command);
 
-        return ResponseEntity.ok(new LoginResponse(loginResult.tokenPair().accessToken().value(),
-                "Bearer",
-                loginResult.userInfo().userId(),
-                loginResult.userInfo().email(),
-                loginResult.userInfo().fullName(),
-                loginResult.userInfo().role().name()));
+        return ResponseEntity.ok(toLoginResponse(
+                loginResult.tokenPair().accessToken().value(),
+                loginResult.userInfo()
+        ));
     }
 
 
@@ -85,6 +86,20 @@ public class AuthController {
         return ResponseEntity.ok(new TokenResponse(tokenPair.accessToken().value(), "Bearer"));
     }
 
+    @PostMapping("/oauth2/desktop/exchange")
+    public ResponseEntity<LoginResponse> exchangeDesktopOAuthCode(
+            @Valid @RequestBody DesktopOAuthExchangeRequest request,
+            HttpServletResponse httpResponse) {
+
+        var payload = desktopOAuthCodeService.consume(request.code());
+        sessionManagerUseCase.setRefreshTokenCookie(payload.tokenPair().refreshToken(), httpResponse);
+
+        return ResponseEntity.ok(toLoginResponse(
+                payload.tokenPair().accessToken().value(),
+                payload.userInfo()
+        ));
+    }
+
     @PostMapping("/send/remindPasswordRequest/{email}")
     public ResponseEntity<RequestRemindPasswordResponse> remindPasswordRequest(@PathVariable @Email String email, HttpServletRequest request) {
 
@@ -102,5 +117,19 @@ public class AuthController {
         remindPasswordUseCase.remindPassword(command, httpRequest);
 
         return ResponseEntity.ok().body(new RemindPasswordResponse(command.token(), command.email(), Instant.now()));
+    }
+
+    private LoginResponse toLoginResponse(String accessToken, LoginUseCase.UserInfo userInfo) {
+        return new LoginResponse(
+                accessToken,
+                "Bearer",
+                userInfo.userId(),
+                userInfo.email(),
+                userInfo.fullName(),
+                userInfo.role().name()
+        );
+    }
+
+    public record DesktopOAuthExchangeRequest(@NotBlank String code) {
     }
 }

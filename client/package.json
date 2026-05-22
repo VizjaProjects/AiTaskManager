@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "desktop:dev": "node electron/dev.cjs",
+    "desktop:export": "node electron/export.cjs",
+    "desktop:pack": "node electron/build.cjs --dir",
+    "desktop:dist": "node electron/build.cjs --nsis"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -42,9 +46,47 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
-    "@types/react-dom": "^19.2.3",
+    "@types/react-dom": "~19.1.0",
     "babel-preset-expo": "^55.0.13",
+    "electron": "^42.2.0",
+    "electron-builder": "^26.8.1",
     "typescript": "~5.9.2"
+  },
+  "build": {
+    "appId": "pl.ordovita.desktop",
+    "productName": "Ordovita",
+    "directories": {
+      "output": "desktop-dist"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "assets/**/*",
+      "package.json"
+    ],
+    "extraMetadata": {
+      "main": "electron/main.cjs"
+    },
+    "win": {
+      "signAndEditExecutable": false,
+      "icon": "assets/icon.png",
+      "target": [
+        "nsis"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "protocols": [
+      {
+        "name": "Ordovita OAuth",
+        "schemes": [
+          "aitaskmanager"
+        ]
+      }
+    ]
   },
   "private": true
 }

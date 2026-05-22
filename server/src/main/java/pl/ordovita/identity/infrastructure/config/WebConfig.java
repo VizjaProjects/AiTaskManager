@@ -19,6 +19,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import pl.ordovita.identity.application.port.in.OAuth2LoginUseCase;
+import pl.ordovita.identity.application.service.DesktopOAuthCodeService;
 import pl.ordovita.identity.infrastructure.jwt.JwtAuthenticationEntryPoint;
 import pl.ordovita.identity.infrastructure.jwt.JwtAuthenticationFilter;
 import pl.ordovita.identity.infrastructure.security.CorsConfig;
@@ -32,9 +33,13 @@ public class WebConfig {
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
+    private final DesktopOAuthCodeService desktopOAuthCodeService;
 
     @Value("${oauth2.frontend-url:http://localhost:3000}")
     private String frontendUrl;
+
+    @Value("${oauth2.desktop-redirect-url:aitaskmanager://oauth-callback}")
+    private String desktopRedirectUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -71,7 +76,12 @@ public class WebConfig {
 
     @Bean
     public AuthenticationSuccessHandler authenticationSuccessHandler() {
-        return new CustomAuthenticationSuccessHandler(oAuth2LoginUseCase, frontendUrl);
+        return new CustomAuthenticationSuccessHandler(
+                oAuth2LoginUseCase,
+                desktopOAuthCodeService,
+                frontendUrl,
+                desktopRedirectUrl
+        );
     }
 
     @Bean

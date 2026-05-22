@@ -1,9 +1,18 @@
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  Linking,
+  Platform,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
+
+const WINDOWS_INSTALLER_URL = "/downloads/Ordovita-Setup.exe";
 
 export default function Index() {
   const router = useRouter();
@@ -12,6 +21,15 @@ export default function Index() {
   if (isAuthenticated) {
     router.replace("/(app)/dashboard");
     return null;
+  }
+
+  function downloadWindowsInstaller() {
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.location.href = WINDOWS_INSTALLER_URL;
+      return;
+    }
+
+    Linking.openURL(`https://ordovita.pl${WINDOWS_INSTALLER_URL}`);
   }
 
   return (
@@ -73,6 +91,12 @@ export default function Index() {
                 variant="outline"
                 fullWidth
                 onPress={() => router.push("/(auth)/register")}
+              />
+              <Button
+                label="Pobierz aplikacje Windows"
+                variant="secondary"
+                fullWidth
+                onPress={downloadWindowsInstaller}
               />
 
               <View className="pt-2 gap-3">

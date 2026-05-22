@@ -20,6 +20,9 @@ export const authApi = {
 
   refresh: () => api.put<TokenResponse>("/auth/refresh"),
 
+  exchangeDesktopOAuthCode: (code: string) =>
+    api.post<LoginResponse>("/auth/oauth2/desktop/exchange", { code }),
+
   requestPasswordReset: (email: string) =>
     api.post(`/auth/send/remindPasswordRequest/${encodeURIComponent(email)}`),
 

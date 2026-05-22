@@ -6,6 +6,9 @@ node_modules/
 # Expo
 .expo/
 dist/
+desktop-dist/
+downloads/*.exe
+!downloads/.gitkeep
 web-build/
 expo-env.d.ts
 

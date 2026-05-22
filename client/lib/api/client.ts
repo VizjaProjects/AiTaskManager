@@ -112,4 +112,4 @@ api.interceptors.response.use(
   },
 );
 
-export { getAccessToken, setAccessToken, clearTokens, setOnRefreshFailed };
+export { getAccessToken, setAccessToken, clearTokens };

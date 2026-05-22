@@ -39,6 +39,7 @@ export function TopAppBar({ title, showSearch = true }: TopAppBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
+  const { mode, toggle } = useThemeStore();
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const [drawerOpen, setDrawerOpen] = useState(false);

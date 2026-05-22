@@ -5,6 +5,7 @@ on:
   push:
     branches: [main]
     paths:
+      - ".github/workflows/deploy.yml"
       - "server/src/**"
       - "server/build.gradle"
       - "server/settings.gradle"
@@ -12,6 +13,8 @@ on:
       - "client/app/**"
       - "client/components/**"
       - "client/lib/**"
+      - "client/electron/**"
+      - "client/assets/**"
       - "client/package.json"
       - "client/package-lock.json"
       - "client/Dockerfile"
@@ -36,9 +39,12 @@ jobs:
         with:
           filters: |
             frontend:
+              - '.github/workflows/deploy.yml'
               - 'client/app/**'
               - 'client/components/**'
               - 'client/lib/**'
+              - 'client/electron/**'
+              - 'client/assets/**'
               - 'client/package.json'
               - 'client/package-lock.json'
               - 'client/Dockerfile'
@@ -53,13 +59,58 @@ jobs:
             compose:
               - 'docker-compose-prod.yml'
 
-  # ── 2. Build & push frontend image ──
-  build-frontend:
+  # ── 2. Build Windows desktop installer ──
+  build-desktop:
     needs: changes
     if: needs.changes.outputs.frontend == 'true'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: ./client
+        run: npm ci --legacy-peer-deps
+
+      - name: Build Windows installer
+        working-directory: ./client
+        run: npm run desktop:dist
+
+      - name: Prepare installer artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path client/downloads | Out-Null
+          $installer = Get-ChildItem "client/desktop-dist" -Filter "Ordovita Setup *.exe" | Select-Object -First 1
+          if (-not $installer) { throw "Installer not found in client/desktop-dist" }
+          Copy-Item $installer.FullName "client/downloads/Ordovita-Setup.exe"
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ordovita-windows-installer
+          path: client/downloads/Ordovita-Setup.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  # ── 3. Build & push frontend image ──
+  build-frontend:
+    needs: [changes, build-desktop]
+    if: needs.changes.outputs.frontend == 'true' && needs.build-desktop.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Download desktop installer
+        uses: actions/download-artifact@v4
+        with:
+          name: ordovita-windows-installer
+          path: client/downloads
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -85,7 +136,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
 
-  # ── 3. Build & push backend image ──
+  # ── 4. Build & push backend image ──
   build-backend:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
@@ -125,11 +176,12 @@ jobs:
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
 
-  # ── 4. Deploy to VPS ──
+  # ── 5. Deploy to VPS ──
   deploy:
-    needs: [changes, build-frontend, build-backend]
+    needs: [changes, build-desktop, build-frontend, build-backend]
     if: |
       always() &&
+      (needs.build-desktop.result == 'success' || needs.build-desktop.result == 'skipped') &&
       (needs.build-frontend.result == 'success' || needs.build-frontend.result == 'skipped') &&
       (needs.build-backend.result == 'success' || needs.build-backend.result == 'skipped') &&
       (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.backend == 'true' || needs.changes.outputs.compose == 'true')
@@ -172,7 +224,8 @@ jobs:
             export AI_PROVIDER="${{ secrets.AI_PROVIDER }}"
             export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
-            export OAUTH2_FRONTEND_URL=""
+            export OAUTH2_FRONTEND_URL="https://ordovita.pl"
+            export OAUTH2_DESKTOP_REDIRECT_URL="aitaskmanager://oauth-callback"
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest

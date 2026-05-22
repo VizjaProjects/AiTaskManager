@@ -15,9 +15,7 @@ import { useState } from "react";
 import { Button, Input, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
-import { Linking } from "react-native";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
+import { startGoogleOAuth } from "@/lib/oauth";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -172,14 +170,11 @@ export default function RegisterScreen() {
             </View>
 
             <TouchableOpacity
-              onPress={() => {
-                const url = `${API_URL}/oauth2/authorization/google`;
-                if (Platform.OS === "web") {
-                  window.location.href = url;
-                } else {
-                  Linking.openURL(url);
-                }
-              }}
+              onPress={() =>
+                startGoogleOAuth().catch(() =>
+                  setError("Nie udało się rozpocząć logowania Google"),
+                )
+              }
               className="flex-row items-center justify-center gap-3 bg-surface-container-high border border-outline-variant rounded-xl px-4 py-3"
             >
               <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />

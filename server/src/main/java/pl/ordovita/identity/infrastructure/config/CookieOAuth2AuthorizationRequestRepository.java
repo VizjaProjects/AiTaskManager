@@ -12,11 +12,15 @@ import java.util.Base64;
 public class CookieOAuth2AuthorizationRequestRepository implements AuthorizationRequestRepository<OAuth2AuthorizationRequest> {
 
     private static final String COOKIE_NAME = "oauth2_auth_request";
+    static final String CLIENT_COOKIE_NAME = "oauth2_client";
+    static final String CLIENT_DESKTOP_VALUE = "desktop";
+    static final String CLIENT_DESKTOP_ATTRIBUTE = "oauth2_client_desktop";
     private static final int COOKIE_MAX_AGE = 180;
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
     public OAuth2AuthorizationRequest loadAuthorizationRequest(HttpServletRequest request) {
+        markDesktopClient(request);
         return getCookieValue(request);
     }
 
@@ -35,6 +39,14 @@ public class CookieOAuth2AuthorizationRequestRepository implements Authorization
             cookie.setHttpOnly(true);
             cookie.setMaxAge(COOKIE_MAX_AGE);
             response.addCookie(cookie);
+
+            if (CLIENT_DESKTOP_VALUE.equalsIgnoreCase(request.getParameter("client"))) {
+                Cookie clientCookie = new Cookie(CLIENT_COOKIE_NAME, CLIENT_DESKTOP_VALUE);
+                clientCookie.setPath("/");
+                clientCookie.setHttpOnly(true);
+                clientCookie.setMaxAge(COOKIE_MAX_AGE);
+                response.addCookie(clientCookie);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to serialize OAuth2 authorization request", e);
         }
@@ -42,11 +54,33 @@ public class CookieOAuth2AuthorizationRequestRepository implements Authorization
 
     @Override
     public OAuth2AuthorizationRequest removeAuthorizationRequest(HttpServletRequest request, HttpServletResponse response) {
+        markDesktopClient(request);
         OAuth2AuthorizationRequest authorizationRequest = loadAuthorizationRequest(request);
         if (authorizationRequest != null) {
             removeCookie(response);
         }
         return authorizationRequest;
+    }
+
+    private void markDesktopClient(HttpServletRequest request) {
+        if (isDesktopClient(request)) {
+            request.setAttribute(CLIENT_DESKTOP_ATTRIBUTE, true);
+        }
+    }
+
+    private boolean isDesktopClient(HttpServletRequest request) {
+        if (request.getCookies() == null) {
+            return false;
+        }
+
+        for (Cookie cookie : request.getCookies()) {
+            if (CLIENT_COOKIE_NAME.equals(cookie.getName())
+                    && CLIENT_DESKTOP_VALUE.equals(cookie.getValue())) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private OAuth2AuthorizationRequest getCookieValue(HttpServletRequest request) {
@@ -71,5 +105,11 @@ public class CookieOAuth2AuthorizationRequestRepository implements Authorization
         cookie.setHttpOnly(true);
         cookie.setMaxAge(0);
         response.addCookie(cookie);
+
+        Cookie clientCookie = new Cookie(CLIENT_COOKIE_NAME, "");
+        clientCookie.setPath("/");
+        clientCookie.setHttpOnly(true);
+        clientCookie.setMaxAge(0);
+        response.addCookie(clientCookie);
     }
 }
