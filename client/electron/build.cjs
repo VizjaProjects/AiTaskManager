@@ -76,12 +76,12 @@ prepareMacIcon();
 
 if (isMac) {
   const builderArgs = ["electron-builder", "--mac"];
-  if (arch) builderArgs.push(`--${arch}`);
   if (mode === "dmg") {
     builderArgs.push("dmg");
   } else {
     builderArgs.push("--dir");
   }
+  if (arch) builderArgs.push(`--${arch}`);
   run("npx", builderArgs);
 } else if (mode === "nsis") {
   run("npx", ["electron-builder", "--win", "nsis"]);
