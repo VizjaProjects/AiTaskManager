@@ -3,7 +3,7 @@ const http = require("http");
 const https = require("https");
 const path = require("path");
 const { URL } = require("url");
-const { app, BrowserWindow, Menu, ipcMain, shell } = require("electron");
+const { app, BrowserWindow, Menu, ipcMain, session, shell } = require("electron");
 
 const PROTOCOL = "aitaskmanager";
 const DEFAULT_BACKEND_ORIGIN = "https://ordovita.pl";
@@ -26,6 +26,20 @@ const backendOrigin = normalizeOrigin(
 const devRendererOrigin = process.env.ORDOVITA_ELECTRON_RENDERER_URL
   ? normalizeOrigin(process.env.ORDOVITA_ELECTRON_RENDERER_URL)
   : "";
+
+function contentSecurityPolicy() {
+  return [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "frame-ancestors 'none'",
+    "script-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    `connect-src 'self' ${backendOrigin}`,
+    "form-action 'self'",
+  ].join("; ");
+}
 
 function isProxyPath(pathname) {
   return (
@@ -148,6 +162,10 @@ function serveStatic(request, response) {
       "Content-Type": mimeType(filePath),
       "Cache-Control":
         filePath === indexFile ? "no-cache" : "public, max-age=31536000",
+      "Content-Security-Policy": contentSecurityPolicy(),
+      "Referrer-Policy": "strict-origin-when-cross-origin",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY",
     });
     response.end(content);
   });
@@ -207,14 +225,110 @@ function toLocalCallbackUrl(deepLink) {
 }
 
 function handleDeepLink(deepLink) {
-  if (!localServerUrl || !mainWindow) {
+  if (!localServerUrl) {
     pendingDeepLinkUrl = deepLink;
+    return;
+  }
+
+  if (!mainWindow) {
+    pendingDeepLinkUrl = deepLink;
+    createMainWindow();
     return;
   }
 
   mainWindow.show();
   mainWindow.focus();
   mainWindow.loadURL(toLocalCallbackUrl(deepLink));
+}
+
+function isAllowedLocalUrl(rawUrl) {
+  if (!localServerUrl) return false;
+
+  try {
+    return new URL(rawUrl).origin === new URL(localServerUrl).origin;
+  } catch {
+    return false;
+  }
+}
+
+function isAllowedExternalUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    return url.protocol === "https:" && url.origin === backendOrigin;
+  } catch {
+    return false;
+  }
+}
+
+function configureWindowSecurity(window) {
+  window.webContents.on("will-navigate", (event, navigationUrl) => {
+    if (!isAllowedLocalUrl(navigationUrl)) {
+      event.preventDefault();
+    }
+  });
+
+  window.webContents.setWindowOpenHandler(({ url }) => {
+    if (isAllowedExternalUrl(url)) {
+      shell.openExternal(url);
+    }
+
+    return { action: "deny" };
+  });
+}
+
+function configureSessionSecurity() {
+  session.defaultSession.setPermissionRequestHandler(
+    (_webContents, _permission, callback) => {
+      callback(false);
+    },
+  );
+}
+
+function configureApplicationMenu() {
+  if (process.platform !== "darwin") {
+    Menu.setApplicationMenu(null);
+    return;
+  }
+
+  const menu = Menu.buildFromTemplate([
+    {
+      label: "Ordovita",
+      submenu: [
+        { role: "about" },
+        { type: "separator" },
+        { role: "hide" },
+        { role: "hideOthers" },
+        { role: "unhide" },
+        { type: "separator" },
+        { role: "quit" },
+      ],
+    },
+    {
+      label: "Edit",
+      submenu: [
+        { role: "undo" },
+        { role: "redo" },
+        { type: "separator" },
+        { role: "cut" },
+        { role: "copy" },
+        { role: "paste" },
+        { role: "selectAll" },
+      ],
+    },
+    {
+      label: "Window",
+      submenu: [{ role: "minimize" }, { role: "close" }],
+    },
+  ]);
+
+  Menu.setApplicationMenu(menu);
+}
+
+function closeLocalServer() {
+  if (localServer) {
+    localServer.close();
+    localServer = null;
+  }
 }
 
 function createMainWindow() {
@@ -225,7 +339,7 @@ function createMainWindow() {
     minHeight: 680,
     title: "Ordovita",
     backgroundColor: "#fbf8ff",
-    autoHideMenuBar: true,
+    autoHideMenuBar: process.platform !== "darwin",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -233,7 +347,12 @@ function createMainWindow() {
       sandbox: true,
     },
   });
-  mainWindow.setMenuBarVisibility(false);
+
+  if (process.platform !== "darwin") {
+    mainWindow.setMenuBarVisibility(false);
+  }
+
+  configureWindowSecurity(mainWindow);
 
   const initialUrl = pendingDeepLinkUrl
     ? toLocalCallbackUrl(pendingDeepLinkUrl)
@@ -270,7 +389,8 @@ if (!gotLock) {
   });
 
   app.whenReady().then(async () => {
-    Menu.setApplicationMenu(null);
+    configureApplicationMenu();
+    configureSessionSecurity();
     registerProtocol();
     await startLocalServer();
 
@@ -290,8 +410,12 @@ if (!gotLock) {
 
   app.on("window-all-closed", () => {
     if (process.platform !== "darwin") {
-      if (localServer) localServer.close();
+      closeLocalServer();
       app.quit();
     }
+  });
+
+  app.on("before-quit", () => {
+    closeLocalServer();
   });
 }

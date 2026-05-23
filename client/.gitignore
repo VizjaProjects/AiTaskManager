@@ -8,7 +8,10 @@ node_modules/
 dist/
 desktop-dist/
 downloads/*.exe
+downloads/*.dmg
 !downloads/.gitkeep
+assets/icon.icns
+assets/icon.iconset/
 web-build/
 expo-env.d.ts
 

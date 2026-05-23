@@ -13,6 +13,7 @@ import { Button, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
 
 const WINDOWS_INSTALLER_URL = "/downloads/Ordovita-Setup.exe";
+const MACOS_INSTALLER_URL = "/downloads/Ordovita-macOS-arm64.dmg";
 
 export default function Index() {
   const router = useRouter();
@@ -24,12 +25,20 @@ export default function Index() {
   }
 
   function downloadWindowsInstaller() {
+    openDownload(WINDOWS_INSTALLER_URL);
+  }
+
+  function downloadMacOSInstaller() {
+    openDownload(MACOS_INSTALLER_URL);
+  }
+
+  function openDownload(url: string) {
     if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.location.href = WINDOWS_INSTALLER_URL;
+      window.location.href = url;
       return;
     }
 
-    Linking.openURL(`https://ordovita.pl${WINDOWS_INSTALLER_URL}`);
+    Linking.openURL(`https://ordovita.pl${url}`);
   }
 
   return (
@@ -98,6 +107,15 @@ export default function Index() {
                 fullWidth
                 onPress={downloadWindowsInstaller}
               />
+              <Button
+                label="Pobierz aplikacje macOS"
+                variant="secondary"
+                fullWidth
+                onPress={downloadMacOSInstaller}
+              />
+              <Text className="text-on-surface-variant font-body text-xs text-center">
+                Apple Silicon beta
+              </Text>
 
               <View className="pt-2 gap-3">
                 <TouchableOpacity

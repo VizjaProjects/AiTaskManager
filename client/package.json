@@ -10,7 +10,9 @@
     "desktop:dev": "node electron/dev.cjs",
     "desktop:export": "node electron/export.cjs",
     "desktop:pack": "node electron/build.cjs --dir",
-    "desktop:dist": "node electron/build.cjs --nsis"
+    "desktop:dist": "node electron/build.cjs --nsis",
+    "desktop:pack:mac": "node electron/build.cjs --mac --dir --arm64",
+    "desktop:dist:mac": "node electron/build.cjs --mac --dmg --arm64"
   },
   "dependencies": {
     "@expo-google-fonts/inter": "^0.4.2",
@@ -72,6 +74,31 @@
       "icon": "assets/icon.png",
       "target": [
         "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "assets/icon.icns",
+      "identity": null,
+      "hardenedRuntime": false,
+      "artifactName": "Ordovita-macOS-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "Ordovita",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
     },
     "nsis": {
