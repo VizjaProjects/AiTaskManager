@@ -64,7 +64,17 @@
       "dist/**/*",
       "electron/**/*",
       "assets/**/*",
-      "package.json"
+      "package.json",
+      "!node_modules/**/*",
+      "!.expo/**/*",
+      "!desktop-dist/**/*",
+      "!downloads/**/*",
+      "!web-build/**/*",
+      "!**/*.map",
+      "!**/*.log",
+      "!**/__tests__/**/*",
+      "!**/*.test.*",
+      "!**/*.spec.*"
     ],
     "extraMetadata": {
       "main": "electron/main.cjs"
