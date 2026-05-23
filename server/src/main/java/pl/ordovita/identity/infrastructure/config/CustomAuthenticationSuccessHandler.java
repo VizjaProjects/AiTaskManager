@@ -22,7 +22,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     private final OAuth2LoginUseCase oAuth2LoginUseCase;
     private final DesktopOAuthCodeService desktopOAuthCodeService;
     private final String frontendUrl;
-    private final String desktopRedirectUrl;
+    private final String desktopBrowserCallbackUrl;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -52,8 +52,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
             if (desktopClient) {
                 String code = desktopOAuthCodeService.create(result.tokenPair(), result.userInfo());
-                response.sendRedirect(desktopRedirectUrl
-                        + "?code=" + URLEncoder.encode(code, StandardCharsets.UTF_8));
+                response.sendRedirect(buildRedirectUrl(desktopBrowserCallbackUrl, "code", code));
                 return;
             }
 
@@ -93,13 +92,17 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
     }
 
     private void redirectWithError(HttpServletResponse response, boolean desktopClient, String error) throws IOException {
-        String encodedError = URLEncoder.encode(error, StandardCharsets.UTF_8);
-
         if (desktopClient) {
-            response.sendRedirect(desktopRedirectUrl + "?error=" + encodedError);
+            response.sendRedirect(buildRedirectUrl(desktopBrowserCallbackUrl, "error", error));
             return;
         }
 
-        response.sendRedirect(frontendUrl + "/login?error=" + encodedError);
+        response.sendRedirect(buildRedirectUrl(frontendUrl + "/login", "error", error));
+    }
+
+    private String buildRedirectUrl(String baseUrl, String parameterName, String parameterValue) {
+        String separator = baseUrl.contains("?") ? "&" : "?";
+        return baseUrl + separator + parameterName + "="
+                + URLEncoder.encode(parameterValue, StandardCharsets.UTF_8);
     }
 }

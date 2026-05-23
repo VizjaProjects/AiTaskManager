@@ -72,3 +72,4 @@ ai:
 oauth2:
   frontend-url: ${OAUTH2_FRONTEND_URL:http://localhost:3000}
   desktop-redirect-url: ${OAUTH2_DESKTOP_REDIRECT_URL:aitaskmanager://oauth-callback}
+  desktop-browser-callback-url: ${OAUTH2_DESKTOP_BROWSER_CALLBACK_URL:http://localhost:3000/desktop-oauth-complete}

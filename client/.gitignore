@@ -12,6 +12,9 @@ downloads/*.dmg
 !downloads/.gitkeep
 assets/icon.icns
 assets/icon.iconset/
+assets/favicon-desktop.png
+assets/favicon.icns
+assets/favicon.iconset/
 web-build/
 expo-env.d.ts
 

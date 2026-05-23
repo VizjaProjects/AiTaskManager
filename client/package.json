@@ -52,6 +52,7 @@
     "babel-preset-expo": "^55.0.13",
     "electron": "^42.2.0",
     "electron-builder": "^26.8.1",
+    "pngjs": "^3.4.0",
     "typescript": "~5.9.2"
   },
   "build": {
@@ -81,7 +82,7 @@
     },
     "win": {
       "signAndEditExecutable": false,
-      "icon": "assets/icon.png",
+      "icon": "assets/favicon-desktop.png",
       "target": [
         "nsis"
       ]
@@ -91,7 +92,7 @@
         "dmg"
       ],
       "category": "public.app-category.productivity",
-      "icon": "assets/icon.icns",
+      "icon": "assets/favicon.icns",
       "identity": null,
       "hardenedRuntime": false,
       "artifactName": "Ordovita-macOS-${arch}.${ext}"

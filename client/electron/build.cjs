@@ -7,6 +7,7 @@ const args = process.argv.slice(2);
 const isMac = args.includes("--mac");
 const mode = args.includes("--nsis") ? "nsis" : args.includes("--dmg") ? "dmg" : "dir";
 const arch = args.includes("--arm64") ? "arm64" : args.includes("--x64") ? "x64" : null;
+const desktopPngIconPath = path.resolve("assets", "favicon-desktop.png");
 
 function run(command, args, env = process.env) {
   const result = spawnSync(command, args, {
@@ -25,10 +26,40 @@ function run(command, args, env = process.env) {
   }
 }
 
+function prepareDesktopPngIcon() {
+  const sourceIcon = path.resolve("assets", "favicon.png");
+  if (!fs.existsSync(sourceIcon)) {
+    console.error("Missing source icon: assets/favicon.png");
+    process.exit(1);
+  }
+
+  const { PNG } = require("pngjs");
+  const source = PNG.sync.read(fs.readFileSync(sourceIcon));
+  const targetSize = 1024;
+  const target = new PNG({ width: targetSize, height: targetSize });
+
+  for (let y = 0; y < targetSize; y += 1) {
+    const sourceY = Math.floor((y * source.height) / targetSize);
+
+    for (let x = 0; x < targetSize; x += 1) {
+      const sourceX = Math.floor((x * source.width) / targetSize);
+      const sourceIndex = (source.width * sourceY + sourceX) << 2;
+      const targetIndex = (targetSize * y + x) << 2;
+
+      target.data[targetIndex] = source.data[sourceIndex];
+      target.data[targetIndex + 1] = source.data[sourceIndex + 1];
+      target.data[targetIndex + 2] = source.data[sourceIndex + 2];
+      target.data[targetIndex + 3] = source.data[sourceIndex + 3];
+    }
+  }
+
+  fs.writeFileSync(desktopPngIconPath, PNG.sync.write(target));
+}
+
 function prepareMacIcon() {
   if (!isMac) return;
 
-  const iconPath = path.resolve("assets", "icon.icns");
+  const iconPath = path.resolve("assets", "favicon.icns");
   if (fs.existsSync(iconPath)) return;
 
   if (process.platform !== "darwin") {
@@ -36,13 +67,13 @@ function prepareMacIcon() {
     process.exit(1);
   }
 
-  const sourceIcon = path.resolve("assets", "icon.png");
+  const sourceIcon = desktopPngIconPath;
   if (!fs.existsSync(sourceIcon)) {
-    console.error("Missing source icon: assets/icon.png");
+    console.error("Missing generated desktop icon: assets/favicon-desktop.png");
     process.exit(1);
   }
 
-  const iconsetDir = path.resolve("assets", "icon.iconset");
+  const iconsetDir = path.resolve("assets", "favicon.iconset");
   fs.rmSync(iconsetDir, { recursive: true, force: true });
   fs.mkdirSync(iconsetDir, { recursive: true });
 
@@ -72,6 +103,7 @@ run("npx", ["expo", "export", "--platform", "web"], {
   EXPO_PUBLIC_API_URL: "",
 });
 
+prepareDesktopPngIcon();
 prepareMacIcon();
 
 if (isMac) {

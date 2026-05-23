@@ -38,8 +38,8 @@ public class WebConfig {
     @Value("${oauth2.frontend-url:http://localhost:3000}")
     private String frontendUrl;
 
-    @Value("${oauth2.desktop-redirect-url:aitaskmanager://oauth-callback}")
-    private String desktopRedirectUrl;
+    @Value("${oauth2.desktop-browser-callback-url:http://localhost:3000/desktop-oauth-complete}")
+    private String desktopBrowserCallbackUrl;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -80,7 +80,7 @@ public class WebConfig {
                 oAuth2LoginUseCase,
                 desktopOAuthCodeService,
                 frontendUrl,
-                desktopRedirectUrl
+                desktopBrowserCallbackUrl
         );
     }
 

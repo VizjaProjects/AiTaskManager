@@ -276,6 +276,7 @@ jobs:
             export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
             export OAUTH2_FRONTEND_URL="https://ordovita.pl"
             export OAUTH2_DESKTOP_REDIRECT_URL="aitaskmanager://oauth-callback"
+            export OAUTH2_DESKTOP_BROWSER_CALLBACK_URL="https://ordovita.pl/desktop-oauth-complete"
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest

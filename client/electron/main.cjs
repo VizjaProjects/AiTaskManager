@@ -7,6 +7,7 @@ const { app, BrowserWindow, Menu, ipcMain, session, shell } = require("electron"
 
 const PROTOCOL = "aitaskmanager";
 const DEFAULT_BACKEND_ORIGIN = "https://ordovita.pl";
+const DEFAULT_DESKTOP_PORT = 47821;
 
 let mainWindow = null;
 let localServer = null;
@@ -47,6 +48,13 @@ function isProxyPath(pathname) {
     pathname.startsWith("/oauth2") ||
     pathname.startsWith("/login/oauth2")
   );
+}
+
+function configuredDesktopPort() {
+  const value = Number(process.env.ORDOVITA_DESKTOP_PORT || DEFAULT_DESKTOP_PORT);
+  return Number.isInteger(value) && value >= 0 && value <= 65535
+    ? value
+    : DEFAULT_DESKTOP_PORT;
 }
 
 function rewriteSetCookieHeader(cookie) {
@@ -171,27 +179,35 @@ function serveStatic(request, response) {
   });
 }
 
-function startLocalServer() {
+function createLocalServer() {
+  return http.createServer((request, response) => {
+    const requestUrl = new URL(request.url || "/", "http://localhost");
+
+    if (isProxyPath(requestUrl.pathname)) {
+      proxyRequest(request, response, backendOrigin);
+      return;
+    }
+
+    if (!app.isPackaged && devRendererOrigin) {
+      proxyRequest(request, response, devRendererOrigin);
+      return;
+    }
+
+    serveStatic(request, response);
+  });
+}
+
+function listenLocalServer(port) {
   return new Promise((resolve, reject) => {
-    localServer = http.createServer((request, response) => {
-      const requestUrl = new URL(request.url || "/", "http://localhost");
+    localServer = createLocalServer();
 
-      if (isProxyPath(requestUrl.pathname)) {
-        proxyRequest(request, response, backendOrigin);
-        return;
-      }
-
-      if (!app.isPackaged && devRendererOrigin) {
-        proxyRequest(request, response, devRendererOrigin);
-        return;
-      }
-
-      serveStatic(request, response);
+    localServer.once("error", (error) => {
+      localServer = null;
+      reject(error);
     });
 
-    localServer.on("error", reject);
     localServer.listen(
-      Number(process.env.ORDOVITA_DESKTOP_PORT || 0),
+      port,
       "127.0.0.1",
       () => {
         const address = localServer.address();
@@ -200,6 +216,21 @@ function startLocalServer() {
       },
     );
   });
+}
+
+async function startLocalServer() {
+  const preferredPort = configuredDesktopPort();
+
+  try {
+    await listenLocalServer(preferredPort);
+  } catch (error) {
+    if (error && error.code === "EADDRINUSE" && preferredPort !== 0) {
+      await listenLocalServer(0);
+      return;
+    }
+
+    throw error;
+  }
 }
 
 function registerProtocol() {
