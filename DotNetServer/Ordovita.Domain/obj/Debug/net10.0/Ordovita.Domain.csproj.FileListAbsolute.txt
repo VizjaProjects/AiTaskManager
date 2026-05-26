@@ -1,0 +1,12 @@
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/bin/Debug/net10.0/Ordovita.Domain.deps.json
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/bin/Debug/net10.0/Ordovita.Domain.dll
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/bin/Debug/net10.0/Ordovita.Domain.pdb
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.GeneratedMSBuildEditorConfig.editorconfig
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.AssemblyInfoInputs.cache
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.AssemblyInfo.cs
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.csproj.CoreCompileInputs.cache
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.sourcelink.json
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.dll
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/refint/Ordovita.Domain.dll
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/Ordovita.Domain.pdb
+/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Domain/obj/Debug/net10.0/ref/Ordovita.Domain.dll

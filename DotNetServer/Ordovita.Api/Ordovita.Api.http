@@ -1,0 +1,6 @@
+@Ordovita.Api_HostAddress = http://localhost:5259
+
+GET {{Ordovita.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

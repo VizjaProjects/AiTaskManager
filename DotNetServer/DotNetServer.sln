@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ordovita.Domain", "Ordovita.Domain\Ordovita.Domain.csproj", "{4AB4C887-3FE1-4F47-9284-C334C1D33CFF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ordovita.Application", "Ordovita.Application\Ordovita.Application.csproj", "{2B9FE610-43D7-4EC9-926A-EC768679B6A6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ordovita.Infrastructure", "Ordovita.Infrastructure\Ordovita.Infrastructure.csproj", "{01EA4872-E3E7-43B5-AF80-46F3C1846A70}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ordovita.Api", "Ordovita.Api\Ordovita.Api.csproj", "{5D996BCA-5B97-4882-BCCF-5F6502013D30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4AB4C887-3FE1-4F47-9284-C334C1D33CFF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AB4C887-3FE1-4F47-9284-C334C1D33CFF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AB4C887-3FE1-4F47-9284-C334C1D33CFF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AB4C887-3FE1-4F47-9284-C334C1D33CFF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2B9FE610-43D7-4EC9-926A-EC768679B6A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2B9FE610-43D7-4EC9-926A-EC768679B6A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2B9FE610-43D7-4EC9-926A-EC768679B6A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2B9FE610-43D7-4EC9-926A-EC768679B6A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01EA4872-E3E7-43B5-AF80-46F3C1846A70}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01EA4872-E3E7-43B5-AF80-46F3C1846A70}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01EA4872-E3E7-43B5-AF80-46F3C1846A70}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01EA4872-E3E7-43B5-AF80-46F3C1846A70}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5D996BCA-5B97-4882-BCCF-5F6502013D30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5D996BCA-5B97-4882-BCCF-5F6502013D30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5D996BCA-5B97-4882-BCCF-5F6502013D30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5D996BCA-5B97-4882-BCCF-5F6502013D30}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
