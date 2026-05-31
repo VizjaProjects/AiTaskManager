@@ -30,9 +30,4 @@ public readonly record struct Email(string Value)
             return false;
         }
     }
-
-    public Email ChangeToEmail(string newEmailValue)
-    {
-        return From(newEmailValue);
-    }
 }

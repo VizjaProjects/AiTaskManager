@@ -79,6 +79,7 @@
             "FluentValidation": "11.11.0",
             "FluentValidation.DependencyInjectionExtensions": "11.11.0",
             "MailKit": "4.16.0",
+            "Microsoft.AspNetCore.Http": "2.3.10",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.16",
             "Microsoft.AspNetCore.OpenApi": "10.0.8",
             "Microsoft.EntityFrameworkCore": "9.0.16",
@@ -594,6 +595,7 @@
             "FluentValidation": "11.11.0",
             "FluentValidation.DependencyInjectionExtensions": "11.11.0",
             "MailKit": "4.16.0",
+            "Microsoft.AspNetCore.Http": "2.3.10",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.16",
             "Microsoft.AspNetCore.OpenApi": "10.0.8",
             "Microsoft.EntityFrameworkCore": "9.0.16",
@@ -945,6 +947,7 @@
             "FluentValidation": "11.11.0",
             "FluentValidation.DependencyInjectionExtensions": "11.11.0",
             "MailKit": "4.16.0",
+            "Microsoft.AspNetCore.Http": "2.3.10",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.16",
             "Microsoft.AspNetCore.OpenApi": "10.0.8",
             "Microsoft.EntityFrameworkCore": "9.0.16",
@@ -1302,6 +1305,11 @@
               "version": "[4.16.0, )",
               "versionCentrallyManaged": true
             },
+            "Microsoft.AspNetCore.Http": {
+              "target": "Package",
+              "version": "[2.3.10, )",
+              "versionCentrallyManaged": true
+            },
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
               "target": "Package",
               "version": "[9.0.16, )",
@@ -1356,6 +1364,7 @@
             "FluentValidation": "11.11.0",
             "FluentValidation.DependencyInjectionExtensions": "11.11.0",
             "MailKit": "4.16.0",
+            "Microsoft.AspNetCore.Http": "2.3.10",
             "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "9.0.16",
             "Microsoft.AspNetCore.OpenApi": "10.0.8",
             "Microsoft.EntityFrameworkCore": "9.0.16",

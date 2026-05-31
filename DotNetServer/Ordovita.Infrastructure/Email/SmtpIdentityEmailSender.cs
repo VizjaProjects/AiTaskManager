@@ -41,7 +41,8 @@ public class SmtpIdentityEmailSender(
             new Dictionary<string, string>
             {
                 ["email"] = email,
-                ["resetCode"] = resetCode
+                ["code"] = resetCode,
+                ["createdTime"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
             });
         await SendAsync(email, "Reset hasła — Ordovita", html);
     }

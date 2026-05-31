@@ -22,7 +22,7 @@ public sealed class RegisterUserHandler(
             return Result.Failure<Guid>(identityUserResult.Error);
 
 
-        var user = DomainUser.Create(command.FullName, Email.From(command.Email), command.Role,
+        var user = Domain.Identity.DomainUser.Create(command.FullName, Email.From(command.Email), command.Role,
             identityUserResult.Value);
 
         if (user.IsFailure || user.Value == null)

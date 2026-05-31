@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ordovita.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+fc8e09e27ecde5e5b9ac4165d9729961f90caa5f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0e84709ef1e676e258e6e57b4eb0c361e4594b3c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ordovita.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ordovita.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

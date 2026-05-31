@@ -33,10 +33,8 @@ public sealed class AspIdentityService() : IAspIdentityService
 
         if (!result.Succeeded)
             return Result.Failure<string>(Error.AspIdentity("AspIdentityService", result.Errors.First().Description));
-   
+
 
         return Result.Success(user.Id);
     }
-
-
 }

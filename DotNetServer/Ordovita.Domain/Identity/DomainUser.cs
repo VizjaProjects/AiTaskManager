@@ -45,4 +45,37 @@ public sealed class DomainUser : AggregateRoot<UserId>
 
         return Result.Success(domainUser);
     }
+
+    public Result VerifyEmail()
+    {
+        if (IsEmailVerified && EmailVerificationAt < DateTime.UtcNow)
+            return Result.Failure(UserException.AlreadyVerified);
+
+        IsEmailVerified = true;
+        EmailVerificationAt = DateTime.UtcNow;
+        IsEnable = true;
+        UpdatedAt = DateTime.UtcNow;
+
+
+        return Result.Success();
+    }
+
+    public Result ChangeFullname(string newFullName)
+    {
+        if (FullName.Equals(newFullName))
+            return Result.Failure(Error.Conflict("ChangeFullname", "Fullname is same as old Fullname!"));
+
+        FullName = newFullName;
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
+
+    public Result DeleteAccount()
+    {
+        if (!IsEnable) return Result.Failure(Error.Conflict("DeleteAccount", "Account is already deleted!"));
+
+        IsEnable = false;
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
 }

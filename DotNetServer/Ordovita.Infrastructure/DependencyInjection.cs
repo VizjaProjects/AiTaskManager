@@ -6,6 +6,7 @@ using Ordovita.Application.Abstraction.Email;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Domain.Identity;
 using Ordovita.Infrastructure.AspIdentity;
 using Ordovita.Infrastructure.Cqrs;
@@ -13,6 +14,9 @@ using Ordovita.Infrastructure.Email;
 using Ordovita.Infrastructure.Identity;
 using Ordovita.Infrastructure.Identity.Persistence;
 using Ordovita.Infrastructure.Persistence;
+using Ordovita.Domain.Surveys.port;
+using Ordovita.Infrastructure.Survey;
+using Ordovita.Infrastructure.Survey.Persistence.Repository;
 
 namespace Ordovita.Infrastructure;
 
@@ -34,6 +38,15 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ISender, Sender>();
 
+        services.AddScoped<IUserContext, UserContext>();
+
+        services.AddScoped<IUserAnswerReader, UserAnswerReader>();
+
+        services.AddScoped<ISurveyRepository, SurveyRepository>();
+        services.AddScoped<IQuestionRepository, QuestionRepository>();
+        services.AddScoped<IUserResponseRepository, UserResponseRepository>();
+
+        services.AddHttpContextAccessor();
 
         services.AddScoped<IAspIdentityService, AspIdentityService>();
         services.AddScoped<IUserRepository, UserRepository>();

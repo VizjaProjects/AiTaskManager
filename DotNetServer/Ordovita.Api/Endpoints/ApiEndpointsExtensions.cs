@@ -1,4 +1,6 @@
+using Ordovita.Api.Endpoints.DomainUser;
 using Ordovita.Api.Endpoints.Identity;
+using Ordovita.Api.Endpoints.Surveys;
 using Ordovita.Infrastructure.Identity;
 
 namespace Ordovita.Api.Endpoints;
@@ -9,8 +11,11 @@ public static class ApiEndpointsExtensions
     {
         var api = app.MapGroup("/api/v1");
 
-
         api.MapAspIdentityApi();
+        api.MapDomainUserEndpoints();
+        api.MapSurveyEndpoints();
+        api.MapQuestionEndpoints();
+        api.MapUserResponseEndpoints();
         return app;
     }
 }

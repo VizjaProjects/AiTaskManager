@@ -18,4 +18,7 @@ public static class UserException
 
     public static readonly Error InvalidRole =
         Error.Validation("DomainUser.InvalidRole", "Provided role does not exist.");
+
+    public static readonly Error AlreadyVerified =
+        Error.Validation("DomainUser.AlreadyVerified", "User email is already verified.");
 }

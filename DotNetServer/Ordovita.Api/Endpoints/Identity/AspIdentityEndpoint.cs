@@ -1,4 +1,6 @@
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication.BearerToken;
@@ -10,13 +12,17 @@ using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Ordovita.Api.Common;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Identity.ConfirmUserEmail;
 using Ordovita.Application.Identity.RegisterUser;
+using Ordovita.Domain.Identity;
 using Ordovita.Infrastructure.Identity;
 
 namespace Ordovita.Api.Endpoints.Identity;
 
 public static class AspIdentityEndpoint
 {
+    private static readonly EmailAddressAttribute _emailAddressAttribute = new();
+
     public static RouteGroupBuilder MapAspIdentityApi(this IEndpointRouteBuilder endpoints)
     {
         ArgumentNullException.ThrowIfNull(endpoints);
@@ -29,37 +35,50 @@ public static class AspIdentityEndpoint
         var routeGroup = endpoints.MapGroup("/identity").WithTags("AspIdentity");
 
         routeGroup.MapPost("/register", async Task<IResult> (
-            [FromBody] CreateUserRequest request,
-            HttpContext context,
-            [FromServices] ISender sender,
-            [FromServices] UserManager<AspIdentityUser> userManager,
-            [FromServices] LinkGenerator linkGenerator,
-            [FromServices] IEmailSender<AspIdentityUser> emailSender,
-            CancellationToken ct) =>
-        {
-            var result = await sender.Send(
-                new RegisterUserCommand(request.FullName, request.Email, request.Password), ct);
+                [FromBody] CreateUserRequest request,
+                HttpContext context,
+                [FromServices] ISender sender,
+                [FromServices] UserManager<AspIdentityUser> userManager,
+                [FromServices] LinkGenerator linkGenerator,
+                [FromServices] IEmailSender<AspIdentityUser> emailSender,
+                CancellationToken ct) =>
+            {
+                var result = await sender.Send(
+                    new RegisterUserCommand(request.FullName, request.Email, request.Password), ct);
 
-            if (!result.IsSuccess)
-                return result.Error.ToProblem();
+                if (!result.IsSuccess)
+                    return result.Error.ToProblem();
 
-            if (await userManager.FindByEmailAsync(request.Email) is { } user)
-                await SendConfirmationEmailAsync(user, userManager, context, request.Email, linkGenerator, emailSender);
+                if (await userManager.FindByEmailAsync(request.Email) is { } user)
+                    await SendConfirmationEmailAsync(user, userManager, context, request.Email, linkGenerator,
+                        emailSender);
 
-            return Results.Created(string.Empty, result.Value);
-        })
+                return Results.Created(string.Empty, result.Value);
+            })
             .WithName("RegisterUser")
             .WithSummary("Register user")
             .Produces<Guid>();
 
         routeGroup.MapPost("/login", async Task<Results<Ok<AccessTokenResponse>, EmptyHttpResult, ProblemHttpResult>>
         ([FromBody] LoginRequest login, [FromQuery] bool? useCookies, [FromQuery] bool? useSessionCookies,
-            [FromServices] SignInManager<AspIdentityUser> signInManager) =>
+            [FromServices] SignInManager<AspIdentityUser> signInManager,
+            [FromServices] UserManager<AspIdentityUser> userManager, [FromServices] IUserRepository repository) =>
         {
             var useCookieScheme = useCookies == true || useSessionCookies == true;
             var isPersistent = useCookies == true && useSessionCookies != true;
             signInManager.AuthenticationScheme =
                 useCookieScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;
+
+            var aspUser = await userManager.FindByEmailAsync(login.Email);
+            if (aspUser == null)
+                return TypedResults.Problem("Asp user not found", statusCode: StatusCodes.Status404NotFound);
+
+            var domainUser = await repository.GetAsyncByAspId(aspUser.Id);
+            if (domainUser == null)
+                return TypedResults.Problem("Domain user not found", statusCode: StatusCodes.Status404NotFound);
+
+            if (!aspUser.EmailConfirmed && !domainUser.IsEmailVerified && !domainUser.IsEnable)
+                return TypedResults.Problem("User is not active!", statusCode: StatusCodes.Status406NotAcceptable);
 
             var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent, true);
 
@@ -80,7 +99,8 @@ public static class AspIdentityEndpoint
 
         routeGroup.MapPost("/refresh",
             async Task<Results<Ok<AccessTokenResponse>, UnauthorizedHttpResult, SignInHttpResult, ChallengeHttpResult>>
-                ([FromBody] RefreshRequest refreshRequest, [FromServices] SignInManager<AspIdentityUser> signInManager) =>
+            ([FromBody] RefreshRequest refreshRequest,
+                [FromServices] SignInManager<AspIdentityUser> signInManager) =>
             {
                 var refreshTokenProtector =
                     bearerTokenOptions.Get(IdentityConstants.BearerScheme).RefreshTokenProtector;
@@ -97,10 +117,11 @@ public static class AspIdentityEndpoint
 
         routeGroup.MapGet("/confirmEmail", async Task<Results<ContentHttpResult, UnauthorizedHttpResult>>
             ([FromQuery] string userId, [FromQuery] string code, [FromQuery] string? changedEmail,
-                [FromServices] UserManager<AspIdentityUser> userManager) =>
+                [FromServices] UserManager<AspIdentityUser> userManager, [FromServices] ISender sender) =>
             {
                 if (await userManager.FindByIdAsync(userId) is not { } user)
                     return TypedResults.Unauthorized();
+
 
                 try
                 {
@@ -114,7 +135,9 @@ public static class AspIdentityEndpoint
                 IdentityResult result;
 
                 if (string.IsNullOrEmpty(changedEmail))
+                {
                     result = await userManager.ConfirmEmailAsync(user, code);
+                }
                 else
                 {
                     result = await userManager.ChangeEmailAsync(user, changedEmail, code);
@@ -122,10 +145,12 @@ public static class AspIdentityEndpoint
                         result = await userManager.SetUserNameAsync(user, changedEmail);
                 }
 
-                if (!result.Succeeded)
+                var confirmEmailResult = await sender.Send(new ConfirmUserEmailCommand(userId));
+
+                if (!result.Succeeded || confirmEmailResult.IsFailure)
                     return TypedResults.Unauthorized();
 
-                
+
                 return TypedResults.Text("Thank you for confirming your email.");
             })
             .Add(endpointBuilder =>
@@ -145,7 +170,8 @@ public static class AspIdentityEndpoint
             if (await userManager.FindByEmailAsync(resendRequest.Email) is not { } user)
                 return TypedResults.Ok();
 
-            await SendConfirmationEmailAsync(user, userManager, context, resendRequest.Email, linkGenerator, emailSender);
+            await SendConfirmationEmailAsync(user, userManager, context, resendRequest.Email, linkGenerator,
+                emailSender);
             return TypedResults.Ok();
         });
 
@@ -193,10 +219,37 @@ public static class AspIdentityEndpoint
 
             return TypedResults.Ok();
         });
-        
+
+
+        routeGroup.MapPost("/restartPassword", async Task<Results<Ok<InfoResponse>, ValidationProblem, NotFound>>
+        (ClaimsPrincipal claimsPrincipal, [FromBody] InfoRequest infoRequest, HttpContext context,
+            [FromServices] IServiceProvider sp, [FromServices] IEmailSender<AspIdentityUser> emailSender) =>
+        {
+            var userManager = sp.GetRequiredService<UserManager<AspIdentityUser>>();
+            if (await userManager.GetUserAsync(claimsPrincipal) is not { } user) return TypedResults.NotFound();
+
+            if (!string.IsNullOrEmpty(infoRequest.NewEmail))
+                return CreateValidationProblem(
+                    IdentityResult.Failed(userManager.ErrorDescriber.InvalidEmail(infoRequest.NewEmail)));
+
+            if (!string.IsNullOrEmpty(infoRequest.NewPassword))
+            {
+                if (string.IsNullOrEmpty(infoRequest.OldPassword))
+                    return CreateValidationProblem("OldPasswordRequired",
+                        "The old password is required to set a new password. If the old password is forgotten, use /resetPassword.");
+
+                var changePasswordResult =
+                    await userManager.ChangePasswordAsync(user, infoRequest.OldPassword, infoRequest.NewPassword);
+                if (!changePasswordResult.Succeeded) return CreateValidationProblem(changePasswordResult);
+            }
+
+
+            return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
+        });
+
 
         return routeGroup;
-        
+
         async Task SendConfirmationEmailAsync(
             AspIdentityUser user,
             UserManager<AspIdentityUser> userManager,
@@ -206,7 +259,6 @@ public static class AspIdentityEndpoint
             IEmailSender<AspIdentityUser> emailSender,
             bool isChange = false)
         {
-        
             if (confirmEmailEndpointName is null)
                 throw new NotSupportedException("No email confirmation endpoint was registered!");
 
@@ -229,13 +281,30 @@ public static class AspIdentityEndpoint
             var confirmEmailUrl = linkGenerator.GetUriByName(context, confirmEmailEndpointName, routeValues)
                                   ?? throw new NotSupportedException(
                                       $"Could not find endpoint named '{confirmEmailEndpointName}'.");
-        
-        
+
 
             await emailSender.SendConfirmationLinkAsync(user, email, confirmEmailUrl);
         }
     }
 
+    private static async Task<InfoResponse> CreateInfoResponseAsync<TUser>(TUser user, UserManager<TUser> userManager)
+        where TUser : class
+    {
+        return new InfoResponse
+        {
+            Email = await userManager.GetEmailAsync(user) ??
+                    throw new NotSupportedException("Users must have an email."),
+            IsEmailConfirmed = await userManager.IsEmailConfirmedAsync(user)
+        };
+    }
+
+    private static ValidationProblem CreateValidationProblem(string errorCode, string errorDescription)
+    {
+        return TypedResults.ValidationProblem(new Dictionary<string, string[]>
+        {
+            { errorCode, [errorDescription] }
+        });
+    }
 
 
     private static ValidationProblem CreateValidationProblem(IdentityResult result)
