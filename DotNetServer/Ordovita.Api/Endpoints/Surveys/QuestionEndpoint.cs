@@ -12,7 +12,7 @@ public static class QuestionEndpoint
 {
     public static RouteGroupBuilder MapQuestionEndpoints(this IEndpointRouteBuilder root)
     {
-        var g = root.MapGroup("/question").WithTags("Questions");
+        var g = root.MapGroup("/question").WithTags("Questions").RequireAuthorization();
 
         g.MapPost("/{surveyId:guid}", CreateQuestion)
             .WithName("CreateQuestion")
@@ -71,5 +71,6 @@ public static class QuestionEndpoint
     }
 
     private sealed record QuestionRequest(string QuestionText, bool IsRequired, string Hint);
+
     private sealed record EditQuestionRequest(string QuestionText, bool IsRequired, string Hint);
 }

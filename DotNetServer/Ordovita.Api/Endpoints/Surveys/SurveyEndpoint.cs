@@ -14,7 +14,8 @@ public static class SurveyEndpoint
 {
     public static RouteGroupBuilder MapSurveyEndpoints(this IEndpointRouteBuilder root)
     {
-        var g = root.MapGroup("/survey").WithTags("Surveys");
+        var g = root.MapGroup("/survey").WithTags("Surveys")
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN"));
 
         g.MapPost("/createSurvey", CreateSurvey)
             .WithName("CreateSurvey")
@@ -88,6 +89,8 @@ public static class SurveyEndpoint
     }
 
     private sealed record CreateSurveyRequest(string Title, string Description);
+
     private sealed record ChangeSurveyVisibleRequest(bool IsVisible);
+
     private sealed record EditSurveyRequest(string Title, string Description);
 }

@@ -297,6 +297,52 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("Survey.UserResponses", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Workspace.Workspace", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("WorkspaceName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedBy");
+
+                    b.HasIndex("WorkspaceName");
+
+                    b.ToTable("Workspaces", (string)null);
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Workspace.WorkspaceUser", b =>
+                {
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("WorkspaceId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WorkspaceUsers", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Infrastructure.Identity.AspIdentityUser", b =>
                 {
                     b.Property<string>("Id")
@@ -410,6 +456,35 @@ namespace Ordovita.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Workspace.Workspace", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Identity.DomainUser", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Workspace.WorkspaceUser", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Identity.DomainUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ordovita.Domain.Workspace.Workspace", null)
+                        .WithMany("AssignedUsers")
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Workspace.Workspace", b =>
+                {
+                    b.Navigation("AssignedUsers");
                 });
 #pragma warning restore 612, 618
         }

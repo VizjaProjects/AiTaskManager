@@ -72,6 +72,8 @@ public static class UserResponseEndpoint
     }
 
     private sealed record UserResponseRequest(Guid QuestionId, string Answer);
+
     private sealed record ChangeUserResponseRequest(string NewAnswer);
+
     private sealed record GetAllUserResponsesResponse(IReadOnlyList<SurveyWithAnswersDto> UserResponseResultSet);
 }

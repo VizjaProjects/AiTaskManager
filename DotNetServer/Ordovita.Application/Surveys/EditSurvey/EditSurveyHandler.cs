@@ -26,6 +26,10 @@ public sealed class EditSurveyHandler(ISurveyRepository repository, IUnitOfWork 
         return Result.Success(Map(survey));
     }
 
-    private static SurveySummaryDto Map(Survey survey) =>
-        new(survey.Id.Value, survey.Title, survey.Description, survey.IsVisible, survey.CreatedAt, survey.UpdatedAt);
+    private static SurveySummaryDto Map(Survey survey)
+    {
+        return new SurveySummaryDto(survey.Id.Value, survey.Title, survey.Description, survey.IsVisible,
+            survey.CreatedAt,
+            survey.UpdatedAt);
+    }
 }

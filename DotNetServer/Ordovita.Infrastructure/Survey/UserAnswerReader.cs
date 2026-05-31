@@ -7,7 +7,8 @@ namespace Ordovita.Infrastructure.Survey;
 
 public class UserAnswerReader(AppDbContext context) : IUserAnswerReader
 {
-    public async Task<IReadOnlyList<SurveyWithAnswersDto>> GetByUserIdAsync(UserId userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<SurveyWithAnswersDto>> GetByUserIdAsync(UserId userId,
+        CancellationToken ct = default)
     {
         return await (
             from r in context.UserResponses

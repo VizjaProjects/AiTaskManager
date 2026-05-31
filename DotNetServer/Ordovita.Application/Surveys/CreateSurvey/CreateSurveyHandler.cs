@@ -6,7 +6,8 @@ using Ordovita.Domain.Surveys.Surveys;
 
 namespace Ordovita.Application.Surveys.CreateSurvey;
 
-public sealed class CreateSurveyHandler(ISurveyRepository repository, IUnitOfWork uow) : ICommandHandler<CreateSurveyCommand, CreateSurveyResult>
+public sealed class CreateSurveyHandler(ISurveyRepository repository, IUnitOfWork uow)
+    : ICommandHandler<CreateSurveyCommand, CreateSurveyResult>
 {
     public async Task<Result<CreateSurveyResult>> Handle(CreateSurveyCommand command, CancellationToken ct)
     {
@@ -14,12 +15,12 @@ public sealed class CreateSurveyHandler(ISurveyRepository repository, IUnitOfWor
 
         if (survey.IsFailure || survey.Value == null)
             return Result.Failure<CreateSurveyResult>(survey.Error);
-        
-        
+
+
         await repository.AddAsync(survey.Value, ct);
         await uow.SaveChangesAsync(ct);
-        
-        return Result.Success(new CreateSurveyResult(survey.Value.Id.Value, survey.Value.Title,survey.Value.Description, survey.Value.CreatedAt, survey.Value.IsVisible));
 
+        return Result.Success(new CreateSurveyResult(survey.Value.Id.Value, survey.Value.Title,
+            survey.Value.Description, survey.Value.CreatedAt, survey.Value.IsVisible));
     }
 }

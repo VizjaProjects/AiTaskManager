@@ -30,6 +30,17 @@ public sealed class Sender(IServiceProvider sp) : ISender
         var handlerType = typeof(IQueryHandler<,>)
             .MakeGenericType(query.GetType(), typeof(TResult));
         dynamic handler = sp.GetRequiredService(handlerType);
-        return (Task<Result<TResult>>)handler.Handle((dynamic)query, ct);
+
+        var behaviors = sp.GetServices<IPipelineBehavior<TResult>>().Reverse();
+        Func<Task<Result<TResult>>> next =
+            () => (Task<Result<TResult>>)handler.Handle((dynamic)query, ct);
+
+        foreach (var behavior in behaviors)
+        {
+            var current = next;
+            next = () => behavior.Handle(query, current, ct);
+        }
+
+        return next();
     }
 }

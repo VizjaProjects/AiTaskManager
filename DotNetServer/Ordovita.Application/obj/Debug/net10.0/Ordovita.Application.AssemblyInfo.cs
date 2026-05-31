@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ordovita.Application")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0e84709ef1e676e258e6e57b4eb0c361e4594b3c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+38c892115439e0c57522004490675136c27039f5")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ordovita.Application")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ordovita.Application")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

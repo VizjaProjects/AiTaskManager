@@ -15,12 +15,14 @@ public class UserResponseRepository(AppDbContext context) : IUserResponseReposit
         await context.UserResponses.AddAsync(userResponse, ct);
     }
 
-    public async Task<UserResponseAggregate?> GetByIdAsync(UserResponseId userResponseId, CancellationToken ct = default)
+    public async Task<UserResponseAggregate?> GetByIdAsync(UserResponseId userResponseId,
+        CancellationToken ct = default)
     {
         return await context.UserResponses.FirstOrDefaultAsync(u => u.Id == userResponseId, ct);
     }
 
-    public async Task<IReadOnlyList<UserResponseAggregate>> GetAllByUserIdAsync(UserId userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<UserResponseAggregate>> GetAllByUserIdAsync(UserId userId,
+        CancellationToken ct = default)
     {
         return await context.UserResponses
             .Where(u => u.UserId == userId)

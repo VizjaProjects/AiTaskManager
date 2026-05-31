@@ -10,7 +10,8 @@ public sealed class GetUserAnswersHandler(
     IUserRepository userRepository,
     IUserAnswerReader reader) : IQueryHandler<GetUserAnswersQuery, IReadOnlyList<SurveyWithAnswersDto>>
 {
-    public async Task<Result<IReadOnlyList<SurveyWithAnswersDto>>> Handle(GetUserAnswersQuery query, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<SurveyWithAnswersDto>>> Handle(GetUserAnswersQuery query,
+        CancellationToken ct)
     {
         var userResult = await SurveyUserResolver.GetCurrentDomainUserAsync(userContext, userRepository, ct);
         if (userResult.IsFailure)

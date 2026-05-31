@@ -15,8 +15,10 @@ using Ordovita.Infrastructure.Identity;
 using Ordovita.Infrastructure.Identity.Persistence;
 using Ordovita.Infrastructure.Persistence;
 using Ordovita.Domain.Surveys.port;
+using Ordovita.Domain.Workspace.port;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
+using Ordovita.Infrastructure.Workspace.Persistance;
 
 namespace Ordovita.Infrastructure;
 
@@ -45,6 +47,8 @@ public static class DependencyInjection
         services.AddScoped<ISurveyRepository, SurveyRepository>();
         services.AddScoped<IQuestionRepository, QuestionRepository>();
         services.AddScoped<IUserResponseRepository, UserResponseRepository>();
+
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
         services.AddHttpContextAccessor();
 
