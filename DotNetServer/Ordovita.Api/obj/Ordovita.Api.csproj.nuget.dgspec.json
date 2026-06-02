@@ -1349,6 +1349,11 @@
               "version": "[9.0.16, )",
               "versionCentrallyManaged": true
             },
+            "Microsoft.Extensions.Http": {
+              "target": "Package",
+              "version": "[9.0.16, )",
+              "versionCentrallyManaged": true
+            },
             "Microsoft.Extensions.Options.ConfigurationExtensions": {
               "target": "Package",
               "version": "[9.0.16, )",
@@ -1374,6 +1379,7 @@
             "Microsoft.Extensions.Configuration.UserSecrets": "9.0.16",
             "Microsoft.Extensions.DependencyInjection.Abstractions": "9.0.16",
             "Microsoft.Extensions.Hosting.Abstractions": "9.0.16",
+            "Microsoft.Extensions.Http": "9.0.16",
             "Microsoft.Extensions.Options.ConfigurationExtensions": "9.0.16",
             "Pomelo.EntityFrameworkCore.MySql": "9.0.0",
             "Scalar.AspNetCore": "2.14.6"

@@ -29,7 +29,6 @@
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.AspNetCore.Routing.Abstractions.dll
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.AspNetCore.DataProtection.Abstractions.dll
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/System.Formats.Cbor.dll
-/Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.Extensions.Diagnostics.dll
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.AspNetCore.Authorization.Policy.dll
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.Extensions.Features.dll
 /Users/mateuszbarlik/IdeaProjects/AiTaskManager/DotNetServer/Ordovita.Infrastructure/bin/Debug/net10.0/Microsoft.AspNetCore.Authentication.Core.dll

@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Ordovita.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+38c892115439e0c57522004490675136c27039f5")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+206ced3a1dbe4cad7b7f60a023170049adf5da6d")]
 [assembly: System.Reflection.AssemblyProductAttribute("Ordovita.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Ordovita.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
