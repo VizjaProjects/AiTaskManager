@@ -9,12 +9,12 @@ public sealed class DomainUser : AggregateRoot<UserId>
     public string FullName { get; private set; }
     public Email Email { get; private set; }
     public Role Role { get; private set; }
-    public bool IsEnable { get; set; }
+    public bool IsEnable { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
-    public bool IsEmailVerified { get; set; }
-    public DateTime EmailVerificationAt { get; set; }
-    public string AspIdentityUserId { get; set; }
+    public bool IsEmailVerified { get; private set; }
+    public DateTime EmailVerificationAt { get; private set; }
+    public string AspIdentityUserId { get; private set; }
 
     private DomainUser()
     {

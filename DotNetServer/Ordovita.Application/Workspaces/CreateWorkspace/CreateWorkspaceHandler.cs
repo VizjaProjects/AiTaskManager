@@ -1,8 +1,10 @@
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Workspaces;
 using Ordovita.Domain.Common;
 using Ordovita.Domain.Identity;
+using Ordovita.Domain.Tasks.port;
 using Ordovita.Domain.Workspace;
 using Ordovita.Domain.Workspace.port;
 
@@ -12,6 +14,7 @@ public sealed class CreateWorkspaceHandler(
     IUserContext userContext,
     IUserRepository userRepository,
     IWorkspaceRepository workspaceRepository,
+    IWorkspaceTaskInitializer workspaceTaskInitializer,
     IUnitOfWork uow) : ICommandHandler<CreateWorkspaceCommand, WorkspaceDto>
 {
     public async Task<Result<WorkspaceDto>> Handle(CreateWorkspaceCommand command, CancellationToken ct)
@@ -28,9 +31,11 @@ public sealed class CreateWorkspaceHandler(
         if (workspaceResult.IsFailure)
             return Result.Failure<WorkspaceDto>(workspaceResult.Error);
 
-        await workspaceRepository.AddAsync(workspaceResult.Value!, ct);
+        var workspace = workspaceResult.Value!;
+        await workspaceRepository.AddAsync(workspace, ct);
+        await workspaceTaskInitializer.InitializeAsync(workspace.Id, userResult.Value.Id, ct);
         await uow.SaveChangesAsync(ct);
 
-        return Result.Success(WorkspaceMapper.ToDto(workspaceResult.Value!));
+        return Result.Success(WorkspaceMapper.ToDto(workspace));
     }
 }

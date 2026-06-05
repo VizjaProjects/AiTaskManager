@@ -4,6 +4,7 @@ using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Domain.Identity;
 using Ordovita.Domain.Surveys.Questions;
 using Ordovita.Domain.Surveys.UserResponse;
+using Ordovita.Domain.Tasks;
 using Ordovita.Infrastructure.Identity;
 using WorkspaceAggregate = Ordovita.Domain.Workspace.Workspace;
 
@@ -19,6 +20,12 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<UserResponse> UserResponses => Set<UserResponse>();
 
     public DbSet<WorkspaceAggregate> Workspaces => Set<WorkspaceAggregate>();
+
+    public DbSet<WorkTask> WorkTasks => Set<WorkTask>();
+    public DbSet<TaskCategory> TaskCategories => Set<TaskCategory>();
+    public DbSet<WorkTaskStatus> WorkTaskStatuses => Set<WorkTaskStatus>();
+    public DbSet<WorkCalendar> WorkCalendars => Set<WorkCalendar>();
+    public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)

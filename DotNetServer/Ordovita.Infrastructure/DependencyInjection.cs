@@ -17,10 +17,13 @@ using Ordovita.Infrastructure.Identity;
 using Ordovita.Infrastructure.Identity.Persistence;
 using Ordovita.Infrastructure.Persistence;
 using Ordovita.Domain.Surveys.port;
+using Ordovita.Domain.Tasks.port;
 using Ordovita.Domain.Workspace.port;
 using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
+using Ordovita.Infrastructure.Tasks;
+using Ordovita.Infrastructure.Tasks.Persistence.Repository;
 using Ordovita.Infrastructure.Workspace.Persistance;
 
 namespace Ordovita.Infrastructure;
@@ -61,6 +64,13 @@ public static class DependencyInjection
         services.AddScoped<IUserResponseRepository, UserResponseRepository>();
 
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+
+        services.AddScoped<IWorkTaskRepository, WorkTaskRepository>();
+        services.AddScoped<ITaskCategoryRepository, TaskCategoryRepository>();
+        services.AddScoped<IWorkTaskStatusRepository, WorkTaskStatusRepository>();
+        services.AddScoped<IWorkCalendarRepository, WorkCalendarRepository>();
+        services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+        services.AddScoped<IWorkspaceTaskInitializer, WorkspaceTaskInitializer>();
 
         services.AddHttpContextAccessor();
 

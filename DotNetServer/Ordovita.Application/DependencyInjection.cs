@@ -29,6 +29,28 @@ using Ordovita.Application.Workspaces.DeleteWorkspace;
 using Ordovita.Application.Workspaces.GetMyWorkspaces;
 using Ordovita.Application.Workspaces.GetWorkspaceById;
 using Ordovita.Application.Workspaces.RemoveUsersFromWorkspace;
+using Ordovita.Application.Tasks;
+using Ordovita.Application.Tasks.Categories.CreateTaskCategory;
+using Ordovita.Application.Tasks.Categories.DeleteTaskCategory;
+using Ordovita.Application.Tasks.Categories.EditTaskCategory;
+using Ordovita.Application.Tasks.Categories.GetWorkspaceCategories;
+using Ordovita.Application.Tasks.Events.CreateCalendarEvent;
+using Ordovita.Application.Tasks.Events.DeleteCalendarEvent;
+using Ordovita.Application.Tasks.Events.EditCalendarEvent;
+using Ordovita.Application.Tasks.Events.GetWorkspaceEvents;
+using Ordovita.Application.Tasks.TaskStatuses.CreateWorkTaskStatus;
+using Ordovita.Application.Tasks.TaskStatuses.DeleteWorkTaskStatus;
+using Ordovita.Application.Tasks.TaskStatuses.EditWorkTaskStatus;
+using Ordovita.Application.Tasks.TaskStatuses.GetWorkspaceTaskStatuses;
+using Ordovita.Application.Tasks.Proposals.GetPendingProposals;
+using Ordovita.Application.Tasks.Proposals.AcceptAiTask;
+using Ordovita.Application.Tasks.Proposals.RejectAiTask;
+using Ordovita.Application.Tasks.Proposals.AcceptAiEvent;
+using Ordovita.Application.Tasks.Proposals.RejectAiEvent;
+using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
+using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
+using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
+using Ordovita.Application.Tasks.WorkTasks.GetWorkspaceTasks;
 
 namespace Ordovita.Application;
 
@@ -79,6 +101,34 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<AssignUsersToWorkspaceCommand, WorkspaceDto>, AssignUsersToWorkspaceHandler>();
         services.AddScoped<ICommandHandler<RemoveUsersFromWorkspaceCommand, WorkspaceDto>, RemoveUsersFromWorkspaceHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkspaceCommand, Unit>, DeleteWorkspaceHandler>();
+
+        services.AddScoped<WorkspaceAccessGuard>();
+
+        services.AddScoped<ICommandHandler<CreateWorkTaskCommand, CreateWorkTaskResult>, CreateWorkTaskHandler>();
+        services.AddScoped<ICommandHandler<EditWorkTaskCommand, EditWorkTaskResult>, EditWorkTaskHandler>();
+        services.AddScoped<ICommandHandler<DeleteWorkTaskCommand, Unit>, DeleteWorkTaskHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceTasksQuery, IReadOnlyList<WorkTaskDto>>, GetWorkspaceTasksHandler>();
+
+        services.AddScoped<ICommandHandler<CreateCalendarEventCommand, CreateCalendarEventResult>, CreateCalendarEventHandler>();
+        services.AddScoped<ICommandHandler<EditCalendarEventCommand, EditCalendarEventResult>, EditCalendarEventHandler>();
+        services.AddScoped<ICommandHandler<DeleteCalendarEventCommand, Unit>, DeleteCalendarEventHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceEventsQuery, IReadOnlyList<CalendarEventDto>>, GetWorkspaceEventsHandler>();
+
+        services.AddScoped<ICommandHandler<CreateTaskCategoryCommand, CreateTaskCategoryResult>, CreateTaskCategoryHandler>();
+        services.AddScoped<ICommandHandler<EditTaskCategoryCommand, EditTaskCategoryResult>, EditTaskCategoryHandler>();
+        services.AddScoped<ICommandHandler<DeleteTaskCategoryCommand, Unit>, DeleteTaskCategoryHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceCategoriesQuery, IReadOnlyList<TaskCategoryDto>>, GetWorkspaceCategoriesHandler>();
+
+        services.AddScoped<ICommandHandler<CreateWorkTaskStatusCommand, CreateWorkTaskStatusResult>, CreateWorkTaskStatusHandler>();
+        services.AddScoped<ICommandHandler<EditWorkTaskStatusCommand, EditWorkTaskStatusResult>, EditWorkTaskStatusHandler>();
+        services.AddScoped<ICommandHandler<DeleteWorkTaskStatusCommand, Unit>, DeleteWorkTaskStatusHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceTaskStatusesQuery, IReadOnlyList<WorkTaskStatusDto>>, GetWorkspaceTaskStatusesHandler>();
+
+        services.AddScoped<IQueryHandler<GetPendingProposalsQuery, PendingProposalsDto>, GetPendingProposalsHandler>();
+        services.AddScoped<ICommandHandler<AcceptAiTaskCommand, AcceptAiTaskResult>, AcceptAiTaskHandler>();
+        services.AddScoped<ICommandHandler<RejectAiTaskCommand, Unit>, RejectAiTaskHandler>();
+        services.AddScoped<ICommandHandler<AcceptAiEventCommand, AcceptAiEventResult>, AcceptAiEventHandler>();
+        services.AddScoped<ICommandHandler<RejectAiEventCommand, Unit>, RejectAiEventHandler>();
 
         return services;
     }

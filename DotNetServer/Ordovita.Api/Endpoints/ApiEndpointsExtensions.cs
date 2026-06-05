@@ -1,6 +1,7 @@
 using Ordovita.Api.Endpoints.DomainUser;
 using Ordovita.Api.Endpoints.Identity;
 using Ordovita.Api.Endpoints.Surveys;
+using Ordovita.Api.Endpoints.Tasks;
 using Ordovita.Api.Endpoints.Workspaces;
 using Ordovita.Infrastructure.Identity;
 
@@ -18,6 +19,8 @@ public static class ApiEndpointsExtensions
         api.MapQuestionEndpoints();
         api.MapUserResponseEndpoints();
         api.MapWorkspaceEndpoints();
+        api.MapWorkspaceTasksEndpoints();
+        api.MapWorkspaceProposalsEndpoints();
         return app;
     }
 }
