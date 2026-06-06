@@ -4,7 +4,10 @@ namespace Ordovita.Domain.Tasks;
 
 public readonly record struct TaskStatusId(Guid Value) : IEntityId<TaskStatusId>
 {
-    public static TaskStatusId New() => new(Guid.CreateVersion7());
+    public static TaskStatusId New()
+    {
+        return new TaskStatusId(Guid.CreateVersion7());
+    }
 
     public static TaskStatusId From(Guid value)
     {
@@ -13,5 +16,8 @@ public readonly record struct TaskStatusId(Guid Value) : IEntityId<TaskStatusId>
         return new TaskStatusId(value);
     }
 
-    public override string ToString() => Value.ToString();
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }

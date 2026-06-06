@@ -46,7 +46,7 @@ public sealed class DeleteCalendarEventHandler(
     }
 }
 
-public sealed class DeleteCalendarEventValidator : FluentValidation.AbstractValidator<DeleteCalendarEventCommand>
+public sealed class DeleteCalendarEventValidator : AbstractValidator<DeleteCalendarEventCommand>
 {
     public DeleteCalendarEventValidator()
     {

@@ -26,7 +26,10 @@ public sealed class GetWorkspaceTasksHandler(
     }
 }
 
-public sealed class GetWorkspaceTasksValidator : FluentValidation.AbstractValidator<GetWorkspaceTasksQuery>
+public sealed class GetWorkspaceTasksValidator : AbstractValidator<GetWorkspaceTasksQuery>
 {
-    public GetWorkspaceTasksValidator() => RuleFor(x => x.WorkspaceId).NotEmpty();
+    public GetWorkspaceTasksValidator()
+    {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+    }
 }

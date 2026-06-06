@@ -21,7 +21,8 @@ public sealed class WorkspaceRepository(AppDbContext context) : IWorkspaceReposi
             .FirstOrDefaultAsync(w => w.Id == id, ct);
     }
 
-    public async Task<IReadOnlyList<WorkspaceAggregate>> GetByCreatedByAsync(UserId createdBy, CancellationToken ct = default)
+    public async Task<IReadOnlyList<WorkspaceAggregate>> GetByCreatedByAsync(UserId createdBy,
+        CancellationToken ct = default)
     {
         return await context.Workspaces
             .AsNoTracking()

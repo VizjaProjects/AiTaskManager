@@ -4,7 +4,10 @@ namespace Ordovita.Domain.Tasks;
 
 public readonly record struct EventId(Guid Value) : IEntityId<EventId>
 {
-    public static EventId New() => new(Guid.CreateVersion7());
+    public static EventId New()
+    {
+        return new EventId(Guid.CreateVersion7());
+    }
 
     public static EventId From(Guid value)
     {
@@ -13,5 +16,8 @@ public readonly record struct EventId(Guid Value) : IEntityId<EventId>
         return new EventId(value);
     }
 
-    public override string ToString() => Value.ToString();
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }

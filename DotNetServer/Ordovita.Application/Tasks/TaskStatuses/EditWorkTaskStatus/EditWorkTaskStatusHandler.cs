@@ -37,7 +37,7 @@ public sealed class EditWorkTaskStatusHandler(
     }
 }
 
-public sealed class EditWorkTaskStatusValidator : FluentValidation.AbstractValidator<EditWorkTaskStatusCommand>
+public sealed class EditWorkTaskStatusValidator : AbstractValidator<EditWorkTaskStatusCommand>
 {
     public EditWorkTaskStatusValidator()
     {

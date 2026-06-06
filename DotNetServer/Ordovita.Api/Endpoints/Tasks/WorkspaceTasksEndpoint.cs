@@ -59,7 +59,8 @@ public static class WorkspaceTasksEndpoint
             workspaceId, request.Title, request.Description, request.Priority,
             request.CategoryId, request.EstimatedDuration, request.DueDateTime,
             request.StatusId, request.Source), ct);
-        return result.IsSuccess ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{result.Value!.TaskId}", result.Value)
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{result.Value!.TaskId}", result.Value)
             : result.Error.ToProblem();
     }
 
@@ -91,7 +92,8 @@ public static class WorkspaceTasksEndpoint
         var result = await sender.Send(new CreateCalendarEventCommand(
             workspaceId, request.TaskId, request.Title, request.StartDateTime,
             request.EndDateTime, request.AllDay, request.ProposedBy), ct);
-        return result.IsSuccess ? Results.Created($"/api/v1/workspace/{workspaceId}/event/{result.Value!.EventId}", result.Value)
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/event/{result.Value!.EventId}", result.Value)
             : result.Error.ToProblem();
     }
 
@@ -121,7 +123,8 @@ public static class WorkspaceTasksEndpoint
         Guid workspaceId, CategoryRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new CreateTaskCategoryCommand(workspaceId, request.Name, request.Color), ct);
-        return result.IsSuccess ? Results.Created($"/api/v1/workspace/{workspaceId}/category/{result.Value!.CategoryId}", result.Value)
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/category/{result.Value!.CategoryId}", result.Value)
             : result.Error.ToProblem();
     }
 
@@ -150,7 +153,8 @@ public static class WorkspaceTasksEndpoint
         Guid workspaceId, CategoryRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new CreateWorkTaskStatusCommand(workspaceId, request.Name, request.Color), ct);
-        return result.IsSuccess ? Results.Created($"/api/v1/workspace/{workspaceId}/task-status/{result.Value!.StatusId}", result.Value)
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/task-status/{result.Value!.StatusId}", result.Value)
             : result.Error.ToProblem();
     }
 
@@ -176,20 +180,40 @@ public static class WorkspaceTasksEndpoint
     }
 
     private sealed record CreateTaskRequest(
-        string Title, string? Description, TaskPriority Priority, Guid? CategoryId,
-        int EstimatedDuration, DateTime? DueDateTime, Guid StatusId, TaskSource Source);
+        string Title,
+        string? Description,
+        TaskPriority Priority,
+        Guid? CategoryId,
+        int EstimatedDuration,
+        DateTime? DueDateTime,
+        Guid StatusId,
+        TaskSource Source);
 
     private sealed record EditTaskRequest(
-        Guid TaskId, string Title, string? Description, TaskPriority Priority, Guid? CategoryId,
-        int EstimatedDuration, DateTime? DueDateTime, Guid StatusId);
+        Guid TaskId,
+        string Title,
+        string? Description,
+        TaskPriority Priority,
+        Guid? CategoryId,
+        int EstimatedDuration,
+        DateTime? DueDateTime,
+        Guid StatusId);
 
     private sealed record CreateEventRequest(
-        Guid? TaskId, string Title, DateTime StartDateTime, DateTime EndDateTime,
-        bool AllDay, ProposedBy ProposedBy);
+        Guid? TaskId,
+        string Title,
+        DateTime StartDateTime,
+        DateTime EndDateTime,
+        bool AllDay,
+        ProposedBy ProposedBy);
 
     private sealed record EditEventRequest(
-        Guid EventId, string Title, DateTime StartDateTime, DateTime EndDateTime,
-        bool AllDay, EventStatus Status);
+        Guid EventId,
+        string Title,
+        DateTime StartDateTime,
+        DateTime EndDateTime,
+        bool AllDay,
+        EventStatus Status);
 
     private sealed record CategoryRequest(string Name, string Color);
 

@@ -102,5 +102,8 @@ public sealed class WorkTask : AggregateRoot<TaskId>
         UpdatedAt = DateTime.UtcNow;
     }
 
-    public bool BelongsToWorkspace(WorkspaceId workspaceId) => WorkspaceId == workspaceId;
+    public bool BelongsToWorkspace(WorkspaceId workspaceId)
+    {
+        return WorkspaceId == workspaceId;
+    }
 }

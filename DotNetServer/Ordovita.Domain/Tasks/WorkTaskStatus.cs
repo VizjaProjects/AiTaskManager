@@ -70,5 +70,8 @@ public sealed class WorkTaskStatus : Entity<TaskStatusId>
         return Result.Success();
     }
 
-    public bool BelongsToWorkspace(WorkspaceId workspaceId) => WorkspaceId == workspaceId;
+    public bool BelongsToWorkspace(WorkspaceId workspaceId)
+    {
+        return WorkspaceId == workspaceId;
+    }
 }

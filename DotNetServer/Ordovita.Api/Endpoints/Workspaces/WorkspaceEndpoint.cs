@@ -54,7 +54,8 @@ public static class WorkspaceEndpoint
         return g;
     }
 
-    private static async Task<IResult> CreateWorkspace(CreateWorkspaceRequest request, ISender sender, CancellationToken ct)
+    private static async Task<IResult> CreateWorkspace(CreateWorkspaceRequest request, ISender sender,
+        CancellationToken ct)
     {
         var result = await sender.Send(new CreateWorkspaceCommand(request.WorkspaceName, request.AssignedUserIds), ct);
         return result.IsSuccess

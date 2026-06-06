@@ -21,6 +21,7 @@ public static class ApiEndpointsExtensions
         api.MapWorkspaceEndpoints();
         api.MapWorkspaceTasksEndpoints();
         api.MapWorkspaceProposalsEndpoints();
+        api.MapWorkspaceAiPlanEndpoints();
         return app;
     }
 }

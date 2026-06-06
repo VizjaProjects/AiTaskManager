@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using Ordovita.Application.Abstraction.Email;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Llm;
@@ -19,6 +20,7 @@ using Ordovita.Infrastructure.Persistence;
 using Ordovita.Domain.Surveys.port;
 using Ordovita.Domain.Tasks.port;
 using Ordovita.Domain.Workspace.port;
+using Ordovita.Infrastructure.Llm;
 using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
@@ -40,6 +42,7 @@ public static class DependencyInjection
 
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.Configure<GroqConfiguration>(configuration.GetSection(GroqConfiguration.SectionName));
+        services.AddSingleton(sp => sp.GetRequiredService<IOptions<GroqConfiguration>>().Value);
         services.AddTransient<IEmailSender<AspIdentityUser>, SmtpIdentityEmailSender>();
         services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
@@ -47,13 +50,15 @@ public static class DependencyInjection
         services.AddHttpClient<IAiClient, AiGroqClient>((serviceProvider, client) =>
         {
             var config = serviceProvider.GetRequiredService<GroqConfiguration>();
-    
+
             client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
         });
-        
+
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ISender, Sender>();
+
+        services.AddScoped<ILlmPlanningService, LlmPlanningService>();
 
         services.AddScoped<IUserContext, UserContext>();
 

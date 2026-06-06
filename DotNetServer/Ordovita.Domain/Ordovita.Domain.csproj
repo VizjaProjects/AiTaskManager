@@ -7,8 +7,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="Calendars\" />
-      <Folder Include="Events\" />
+        <Folder Include="Calendars\"/>
+        <Folder Include="Events\"/>
     </ItemGroup>
 
 </Project>

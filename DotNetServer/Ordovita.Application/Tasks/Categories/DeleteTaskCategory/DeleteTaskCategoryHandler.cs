@@ -32,7 +32,7 @@ public sealed class DeleteTaskCategoryHandler(
     }
 }
 
-public sealed class DeleteTaskCategoryValidator : FluentValidation.AbstractValidator<DeleteTaskCategoryCommand>
+public sealed class DeleteTaskCategoryValidator : AbstractValidator<DeleteTaskCategoryCommand>
 {
     public DeleteTaskCategoryValidator()
     {

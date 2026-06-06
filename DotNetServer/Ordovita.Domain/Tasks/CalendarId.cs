@@ -4,7 +4,10 @@ namespace Ordovita.Domain.Tasks;
 
 public readonly record struct CalendarId(Guid Value) : IEntityId<CalendarId>
 {
-    public static CalendarId New() => new(Guid.CreateVersion7());
+    public static CalendarId New()
+    {
+        return new CalendarId(Guid.CreateVersion7());
+    }
 
     public static CalendarId From(Guid value)
     {
@@ -13,5 +16,8 @@ public readonly record struct CalendarId(Guid Value) : IEntityId<CalendarId>
         return new CalendarId(value);
     }
 
-    public override string ToString() => Value.ToString();
+    public override string ToString()
+    {
+        return Value.ToString();
+    }
 }

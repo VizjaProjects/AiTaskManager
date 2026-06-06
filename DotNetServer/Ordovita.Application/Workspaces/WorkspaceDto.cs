@@ -12,8 +12,9 @@ public sealed record WorkspaceDto(
 
 public static class WorkspaceMapper
 {
-    public static WorkspaceDto ToDto(Domain.Workspace.Workspace workspace) =>
-        new(
+    public static WorkspaceDto ToDto(Domain.Workspace.Workspace workspace)
+    {
+        return new WorkspaceDto(
             workspace.Id.Value,
             workspace.WorkspaceName,
             workspace.CreatedBy.Value,
@@ -22,4 +23,5 @@ public static class WorkspaceMapper
                 .ToList(),
             workspace.CreatedAt,
             workspace.UpdatedAt);
+    }
 }

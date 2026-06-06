@@ -37,7 +37,7 @@ public sealed class EditTaskCategoryHandler(
     }
 }
 
-public sealed class EditTaskCategoryValidator : FluentValidation.AbstractValidator<EditTaskCategoryCommand>
+public sealed class EditTaskCategoryValidator : AbstractValidator<EditTaskCategoryCommand>
 {
     public EditTaskCategoryValidator()
     {

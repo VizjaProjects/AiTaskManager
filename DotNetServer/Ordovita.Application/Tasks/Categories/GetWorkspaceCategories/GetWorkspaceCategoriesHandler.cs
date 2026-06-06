@@ -10,7 +10,8 @@ public sealed record GetWorkspaceCategoriesQuery(Guid WorkspaceId) : IQuery<IRea
 
 public sealed class GetWorkspaceCategoriesHandler(
     WorkspaceAccessGuard accessGuard,
-    ITaskCategoryRepository categoryRepository) : IQueryHandler<GetWorkspaceCategoriesQuery, IReadOnlyList<TaskCategoryDto>>
+    ITaskCategoryRepository categoryRepository)
+    : IQueryHandler<GetWorkspaceCategoriesQuery, IReadOnlyList<TaskCategoryDto>>
 {
     public async Task<Result<IReadOnlyList<TaskCategoryDto>>> Handle(
         GetWorkspaceCategoriesQuery query, CancellationToken ct)
@@ -27,7 +28,10 @@ public sealed class GetWorkspaceCategoriesHandler(
     }
 }
 
-public sealed class GetWorkspaceCategoriesValidator : FluentValidation.AbstractValidator<GetWorkspaceCategoriesQuery>
+public sealed class GetWorkspaceCategoriesValidator : AbstractValidator<GetWorkspaceCategoriesQuery>
 {
-    public GetWorkspaceCategoriesValidator() => RuleFor(x => x.WorkspaceId).NotEmpty();
+    public GetWorkspaceCategoriesValidator()
+    {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+    }
 }

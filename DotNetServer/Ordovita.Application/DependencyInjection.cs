@@ -1,7 +1,9 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
+using Ordovita.Application.Abstraction.Llm;
 using Ordovita.Application.Common.Behaviors;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Tasks.Ai.GenerateAiPlan;
 using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
 using Ordovita.Application.Identity.ConfirmUserEmail;
@@ -98,8 +100,11 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CreateWorkspaceCommand, WorkspaceDto>, CreateWorkspaceHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceByIdQuery, WorkspaceDto>, GetWorkspaceByIdHandler>();
         services.AddScoped<IQueryHandler<GetMyWorkspacesQuery, IReadOnlyList<WorkspaceDto>>, GetMyWorkspacesHandler>();
-        services.AddScoped<ICommandHandler<AssignUsersToWorkspaceCommand, WorkspaceDto>, AssignUsersToWorkspaceHandler>();
-        services.AddScoped<ICommandHandler<RemoveUsersFromWorkspaceCommand, WorkspaceDto>, RemoveUsersFromWorkspaceHandler>();
+        services
+            .AddScoped<ICommandHandler<AssignUsersToWorkspaceCommand, WorkspaceDto>, AssignUsersToWorkspaceHandler>();
+        services
+            .AddScoped<ICommandHandler<RemoveUsersFromWorkspaceCommand, WorkspaceDto>,
+                RemoveUsersFromWorkspaceHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkspaceCommand, Unit>, DeleteWorkspaceHandler>();
 
         services.AddScoped<WorkspaceAccessGuard>();
@@ -107,22 +112,41 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CreateWorkTaskCommand, CreateWorkTaskResult>, CreateWorkTaskHandler>();
         services.AddScoped<ICommandHandler<EditWorkTaskCommand, EditWorkTaskResult>, EditWorkTaskHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkTaskCommand, Unit>, DeleteWorkTaskHandler>();
-        services.AddScoped<IQueryHandler<GetWorkspaceTasksQuery, IReadOnlyList<WorkTaskDto>>, GetWorkspaceTasksHandler>();
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceTasksQuery, IReadOnlyList<WorkTaskDto>>, GetWorkspaceTasksHandler>();
 
-        services.AddScoped<ICommandHandler<CreateCalendarEventCommand, CreateCalendarEventResult>, CreateCalendarEventHandler>();
-        services.AddScoped<ICommandHandler<EditCalendarEventCommand, EditCalendarEventResult>, EditCalendarEventHandler>();
+        services
+            .AddScoped<ICommandHandler<CreateCalendarEventCommand, CreateCalendarEventResult>,
+                CreateCalendarEventHandler>();
+        services
+            .AddScoped<ICommandHandler<EditCalendarEventCommand, EditCalendarEventResult>, EditCalendarEventHandler>();
         services.AddScoped<ICommandHandler<DeleteCalendarEventCommand, Unit>, DeleteCalendarEventHandler>();
-        services.AddScoped<IQueryHandler<GetWorkspaceEventsQuery, IReadOnlyList<CalendarEventDto>>, GetWorkspaceEventsHandler>();
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceEventsQuery, IReadOnlyList<CalendarEventDto>>,
+                GetWorkspaceEventsHandler>();
 
-        services.AddScoped<ICommandHandler<CreateTaskCategoryCommand, CreateTaskCategoryResult>, CreateTaskCategoryHandler>();
+        services
+            .AddScoped<ICommandHandler<CreateTaskCategoryCommand, CreateTaskCategoryResult>,
+                CreateTaskCategoryHandler>();
         services.AddScoped<ICommandHandler<EditTaskCategoryCommand, EditTaskCategoryResult>, EditTaskCategoryHandler>();
         services.AddScoped<ICommandHandler<DeleteTaskCategoryCommand, Unit>, DeleteTaskCategoryHandler>();
-        services.AddScoped<IQueryHandler<GetWorkspaceCategoriesQuery, IReadOnlyList<TaskCategoryDto>>, GetWorkspaceCategoriesHandler>();
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceCategoriesQuery, IReadOnlyList<TaskCategoryDto>>,
+                GetWorkspaceCategoriesHandler>();
 
-        services.AddScoped<ICommandHandler<CreateWorkTaskStatusCommand, CreateWorkTaskStatusResult>, CreateWorkTaskStatusHandler>();
-        services.AddScoped<ICommandHandler<EditWorkTaskStatusCommand, EditWorkTaskStatusResult>, EditWorkTaskStatusHandler>();
+        services
+            .AddScoped<ICommandHandler<CreateWorkTaskStatusCommand, CreateWorkTaskStatusResult>,
+                CreateWorkTaskStatusHandler>();
+        services
+            .AddScoped<ICommandHandler<EditWorkTaskStatusCommand, EditWorkTaskStatusResult>,
+                EditWorkTaskStatusHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkTaskStatusCommand, Unit>, DeleteWorkTaskStatusHandler>();
-        services.AddScoped<IQueryHandler<GetWorkspaceTaskStatusesQuery, IReadOnlyList<WorkTaskStatusDto>>, GetWorkspaceTaskStatusesHandler>();
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceTaskStatusesQuery, IReadOnlyList<WorkTaskStatusDto>>,
+                GetWorkspaceTaskStatusesHandler>();
+
+        services
+            .AddScoped<ICommandHandler<GenerateAiPlanCommand, GeneratedLlmPlanResult>, GenerateAiPlanHandler>();
 
         services.AddScoped<IQueryHandler<GetPendingProposalsQuery, PendingProposalsDto>, GetPendingProposalsHandler>();
         services.AddScoped<ICommandHandler<AcceptAiTaskCommand, AcceptAiTaskResult>, AcceptAiTaskHandler>();

@@ -67,9 +67,17 @@ public static class WorkspaceProposalsEndpoint
     }
 
     private sealed record AcceptAiTaskRequest(
-        string Title, string? Description, TaskPriority Priority, Guid? CategoryId,
-        int EstimatedDuration, DateTime? DueDateTime, Guid StatusId);
+        string Title,
+        string? Description,
+        TaskPriority Priority,
+        Guid? CategoryId,
+        int EstimatedDuration,
+        DateTime? DueDateTime,
+        Guid StatusId);
 
     private sealed record AcceptAiEventRequest(
-        string Title, DateTime StartDateTime, DateTime EndDateTime, bool AllDay);
+        string Title,
+        DateTime StartDateTime,
+        DateTime EndDateTime,
+        bool AllDay);
 }

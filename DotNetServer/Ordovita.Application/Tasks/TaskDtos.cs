@@ -33,7 +33,10 @@ public sealed record TaskCategoryDto(
 public sealed record CreateTaskCategoryResult(Guid CategoryId, DateTime CreatedAt);
 
 public sealed record EditTaskCategoryResult(
-    Guid CategoryId, string Name, string Color, DateTime UpdatedAt);
+    Guid CategoryId,
+    string Name,
+    string Color,
+    DateTime UpdatedAt);
 
 public sealed record WorkTaskStatusDto(
     Guid StatusId,
@@ -47,7 +50,10 @@ public sealed record WorkTaskStatusDto(
 public sealed record CreateWorkTaskStatusResult(Guid StatusId, DateTime CreatedAt);
 
 public sealed record EditWorkTaskStatusResult(
-    Guid StatusId, string Name, string Color, DateTime UpdatedAt);
+    Guid StatusId,
+    string Name,
+    string Color,
+    DateTime UpdatedAt);
 
 public sealed record CalendarEventDto(
     Guid EventId,
@@ -98,71 +104,89 @@ public sealed record AcceptAiEventResult(Guid EventId, DateTime UpdatedAt);
 
 public static class TaskMapper
 {
-    public static WorkTaskDto ToDto(WorkTask task) => new(
-        task.Id.Value,
-        task.WorkspaceId.Value,
-        task.CreatedBy.Value,
-        task.Title,
-        task.Description,
-        task.Priority,
-        task.CategoryId?.Value,
-        task.EstimatedDuration,
-        task.DueDateTime,
-        task.StatusId.Value,
-        task.Source,
-        task.CreatedAt,
-        task.UpdatedAt);
+    public static WorkTaskDto ToDto(WorkTask task)
+    {
+        return new WorkTaskDto(
+            task.Id.Value,
+            task.WorkspaceId.Value,
+            task.CreatedBy.Value,
+            task.Title,
+            task.Description,
+            task.Priority,
+            task.CategoryId?.Value,
+            task.EstimatedDuration,
+            task.DueDateTime,
+            task.StatusId.Value,
+            task.Source,
+            task.CreatedAt,
+            task.UpdatedAt);
+    }
 
-    public static TaskCategoryDto ToDto(TaskCategory category) => new(
-        category.Id.Value,
-        category.WorkspaceId.Value,
-        category.Name,
-        category.Color,
-        category.CreatedBy.Value,
-        category.CreatedAt,
-        category.UpdatedAt);
+    public static TaskCategoryDto ToDto(TaskCategory category)
+    {
+        return new TaskCategoryDto(
+            category.Id.Value,
+            category.WorkspaceId.Value,
+            category.Name,
+            category.Color,
+            category.CreatedBy.Value,
+            category.CreatedAt,
+            category.UpdatedAt);
+    }
 
-    public static WorkTaskStatusDto ToDto(WorkTaskStatus status) => new(
-        status.Id.Value,
-        status.WorkspaceId.Value,
-        status.Name,
-        status.Color,
-        status.CreatedBy.Value,
-        status.CreatedAt,
-        status.UpdatedAt);
+    public static WorkTaskStatusDto ToDto(WorkTaskStatus status)
+    {
+        return new WorkTaskStatusDto(
+            status.Id.Value,
+            status.WorkspaceId.Value,
+            status.Name,
+            status.Color,
+            status.CreatedBy.Value,
+            status.CreatedAt,
+            status.UpdatedAt);
+    }
 
-    public static CalendarEventDto ToDto(CalendarEvent calendarEvent) => new(
-        calendarEvent.Id.Value,
-        calendarEvent.TaskId?.Value,
-        calendarEvent.Title,
-        calendarEvent.StartDateTime,
-        calendarEvent.EndDateTime,
-        calendarEvent.AllDay,
-        calendarEvent.Status,
-        calendarEvent.ProposedBy,
-        calendarEvent.CalendarId.Value,
-        calendarEvent.CreatedAt,
-        calendarEvent.UpdatedAt);
+    public static CalendarEventDto ToDto(CalendarEvent calendarEvent)
+    {
+        return new CalendarEventDto(
+            calendarEvent.Id.Value,
+            calendarEvent.TaskId?.Value,
+            calendarEvent.Title,
+            calendarEvent.StartDateTime,
+            calendarEvent.EndDateTime,
+            calendarEvent.AllDay,
+            calendarEvent.Status,
+            calendarEvent.ProposedBy,
+            calendarEvent.CalendarId.Value,
+            calendarEvent.CreatedAt,
+            calendarEvent.UpdatedAt);
+    }
 
-    public static PendingWorkTaskDto ToPendingDto(WorkTask task) => new(
-        task.Id.Value,
-        task.Title,
-        task.Description,
-        task.Priority,
-        task.CategoryId?.Value,
-        task.EstimatedDuration,
-        task.DueDateTime,
-        task.StatusId.Value,
-        task.Source,
-        task.CreatedAt);
+    public static PendingWorkTaskDto ToPendingDto(WorkTask task)
+    {
+        return new PendingWorkTaskDto(
+            task.Id.Value,
+            task.Title,
+            task.Description,
+            task.Priority,
+            task.CategoryId?.Value,
+            task.EstimatedDuration,
+            task.DueDateTime,
+            task.StatusId.Value,
+            task.Source,
+            task.CreatedAt);
+    }
 
-    public static PendingCalendarEventDto ToPendingDto(CalendarEvent calendarEvent) => new(
-        calendarEvent.Id.Value,
-        calendarEvent.TaskId?.Value,
-        calendarEvent.Title,
-        calendarEvent.StartDateTime,
-        calendarEvent.EndDateTime,
-        calendarEvent.AllDay,
-        calendarEvent.ProposedBy,
-        calendarEvent.CreatedAt);
+    public static PendingCalendarEventDto ToPendingDto(CalendarEvent calendarEvent)
+    {
+        return new PendingCalendarEventDto(
+            calendarEvent.Id.Value,
+            calendarEvent.TaskId?.Value,
+            calendarEvent.Title,
+            calendarEvent.StartDateTime,
+            calendarEvent.EndDateTime,
+            calendarEvent.AllDay,
+            calendarEvent.ProposedBy,
+            calendarEvent.CreatedAt);
+    }
 }

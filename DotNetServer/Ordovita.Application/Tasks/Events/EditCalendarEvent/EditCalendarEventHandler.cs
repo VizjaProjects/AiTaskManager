@@ -49,7 +49,7 @@ public sealed class EditCalendarEventHandler(
     }
 }
 
-public sealed class EditCalendarEventValidator : FluentValidation.AbstractValidator<EditCalendarEventCommand>
+public sealed class EditCalendarEventValidator : AbstractValidator<EditCalendarEventCommand>
 {
     public EditCalendarEventValidator()
     {

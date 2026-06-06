@@ -41,7 +41,7 @@ public sealed class CreateTaskCategoryHandler(
     }
 }
 
-public sealed class CreateTaskCategoryValidator : FluentValidation.AbstractValidator<CreateTaskCategoryCommand>
+public sealed class CreateTaskCategoryValidator : AbstractValidator<CreateTaskCategoryCommand>
 {
     public CreateTaskCategoryValidator()
     {

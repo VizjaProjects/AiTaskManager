@@ -17,7 +17,8 @@ public sealed class CreateWorkTaskStatusHandler(
     IWorkTaskStatusRepository statusRepository,
     IUnitOfWork uow) : ICommandHandler<CreateWorkTaskStatusCommand, CreateWorkTaskStatusResult>
 {
-    public async Task<Result<CreateWorkTaskStatusResult>> Handle(CreateWorkTaskStatusCommand command, CancellationToken ct)
+    public async Task<Result<CreateWorkTaskStatusResult>> Handle(CreateWorkTaskStatusCommand command,
+        CancellationToken ct)
     {
         var access = await accessGuard.RequireAccessAsync(command.WorkspaceId, ct);
         if (access.IsFailure)
@@ -36,7 +37,7 @@ public sealed class CreateWorkTaskStatusHandler(
     }
 }
 
-public sealed class CreateWorkTaskStatusValidator : FluentValidation.AbstractValidator<CreateWorkTaskStatusCommand>
+public sealed class CreateWorkTaskStatusValidator : AbstractValidator<CreateWorkTaskStatusCommand>
 {
     public CreateWorkTaskStatusValidator()
     {

@@ -32,7 +32,7 @@ public sealed class DeleteWorkTaskStatusHandler(
     }
 }
 
-public sealed class DeleteWorkTaskStatusValidator : FluentValidation.AbstractValidator<DeleteWorkTaskStatusCommand>
+public sealed class DeleteWorkTaskStatusValidator : AbstractValidator<DeleteWorkTaskStatusCommand>
 {
     public DeleteWorkTaskStatusValidator()
     {

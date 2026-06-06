@@ -25,7 +25,8 @@ public sealed class CreateCalendarEventHandler(
     IWorkTaskRepository taskRepository,
     IUnitOfWork uow) : ICommandHandler<CreateCalendarEventCommand, CreateCalendarEventResult>
 {
-    public async Task<Result<CreateCalendarEventResult>> Handle(CreateCalendarEventCommand command, CancellationToken ct)
+    public async Task<Result<CreateCalendarEventResult>> Handle(CreateCalendarEventCommand command,
+        CancellationToken ct)
     {
         var access = await accessGuard.RequireAccessAsync(command.WorkspaceId, ct);
         if (access.IsFailure)
@@ -65,7 +66,7 @@ public sealed class CreateCalendarEventHandler(
     }
 }
 
-public sealed class CreateCalendarEventValidator : FluentValidation.AbstractValidator<CreateCalendarEventCommand>
+public sealed class CreateCalendarEventValidator : AbstractValidator<CreateCalendarEventCommand>
 {
     public CreateCalendarEventValidator()
     {

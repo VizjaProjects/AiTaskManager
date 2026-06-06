@@ -83,6 +83,8 @@ public class Workspace : AggregateRoot<WorkspaceId>
         return Result.Success();
     }
 
-    public bool CanBeAccessedBy(UserId userId) =>
-        CreatedBy == userId || _assignedUsers.Any(u => u.UserId == userId);
+    public bool CanBeAccessedBy(UserId userId)
+    {
+        return CreatedBy == userId || _assignedUsers.Any(u => u.UserId == userId);
+    }
 }

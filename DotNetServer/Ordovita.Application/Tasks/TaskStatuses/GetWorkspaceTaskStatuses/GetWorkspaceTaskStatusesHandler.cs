@@ -10,7 +10,8 @@ public sealed record GetWorkspaceTaskStatusesQuery(Guid WorkspaceId) : IQuery<IR
 
 public sealed class GetWorkspaceTaskStatusesHandler(
     WorkspaceAccessGuard accessGuard,
-    IWorkTaskStatusRepository statusRepository) : IQueryHandler<GetWorkspaceTaskStatusesQuery, IReadOnlyList<WorkTaskStatusDto>>
+    IWorkTaskStatusRepository statusRepository)
+    : IQueryHandler<GetWorkspaceTaskStatusesQuery, IReadOnlyList<WorkTaskStatusDto>>
 {
     public async Task<Result<IReadOnlyList<WorkTaskStatusDto>>> Handle(
         GetWorkspaceTaskStatusesQuery query, CancellationToken ct)
@@ -27,7 +28,10 @@ public sealed class GetWorkspaceTaskStatusesHandler(
     }
 }
 
-public sealed class GetWorkspaceTaskStatusesValidator : FluentValidation.AbstractValidator<GetWorkspaceTaskStatusesQuery>
+public sealed class GetWorkspaceTaskStatusesValidator : AbstractValidator<GetWorkspaceTaskStatusesQuery>
 {
-    public GetWorkspaceTaskStatusesValidator() => RuleFor(x => x.WorkspaceId).NotEmpty();
+    public GetWorkspaceTaskStatusesValidator()
+    {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+    }
 }

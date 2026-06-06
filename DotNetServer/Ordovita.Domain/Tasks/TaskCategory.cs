@@ -55,5 +55,8 @@ public sealed class TaskCategory : Entity<TaskCategoryId>
         return Result.Success();
     }
 
-    public bool BelongsToWorkspace(WorkspaceId workspaceId) => WorkspaceId == workspaceId;
+    public bool BelongsToWorkspace(WorkspaceId workspaceId)
+    {
+        return WorkspaceId == workspaceId;
+    }
 }

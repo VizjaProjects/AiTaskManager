@@ -15,7 +15,8 @@ public sealed class GetWorkspaceEventsHandler(
     IWorkCalendarRepository calendarRepository,
     ICalendarEventRepository eventRepository) : IQueryHandler<GetWorkspaceEventsQuery, IReadOnlyList<CalendarEventDto>>
 {
-    public async Task<Result<IReadOnlyList<CalendarEventDto>>> Handle(GetWorkspaceEventsQuery query, CancellationToken ct)
+    public async Task<Result<IReadOnlyList<CalendarEventDto>>> Handle(GetWorkspaceEventsQuery query,
+        CancellationToken ct)
     {
         var access = await accessGuard.RequireAccessAsync(query.WorkspaceId, ct);
         if (access.IsFailure)
@@ -36,7 +37,10 @@ public sealed class GetWorkspaceEventsHandler(
     }
 }
 
-public sealed class GetWorkspaceEventsValidator : FluentValidation.AbstractValidator<GetWorkspaceEventsQuery>
+public sealed class GetWorkspaceEventsValidator : AbstractValidator<GetWorkspaceEventsQuery>
 {
-    public GetWorkspaceEventsValidator() => RuleFor(x => x.WorkspaceId).NotEmpty();
+    public GetWorkspaceEventsValidator()
+    {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+    }
 }

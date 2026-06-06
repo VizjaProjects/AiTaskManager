@@ -58,10 +58,10 @@ public sealed class CreateWorkTaskHandler(
             TaskStatusId.From(command.StatusId),
             command.Source);
 
-        if (taskResult.IsFailure ||  taskResult.Value is null)
+        if (taskResult.IsFailure || taskResult.Value is null)
             return Result.Failure<CreateWorkTaskResult>(taskResult.Error);
 
-        if(taskResult.Value.Source == TaskSource.MANUAL)
+        if (taskResult.Value.Source == TaskSource.MANUAL)
             taskResult.Value.Accept();
 
         await taskRepository.AddAsync(taskResult.Value!, ct);

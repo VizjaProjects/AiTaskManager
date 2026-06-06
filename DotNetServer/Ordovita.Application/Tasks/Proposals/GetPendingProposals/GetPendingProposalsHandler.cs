@@ -38,5 +38,8 @@ public sealed class GetPendingProposalsHandler(
 
 public sealed class GetPendingProposalsValidator : AbstractValidator<GetPendingProposalsQuery>
 {
-    public GetPendingProposalsValidator() => RuleFor(x => x.WorkspaceId).NotEmpty();
+    public GetPendingProposalsValidator()
+    {
+        RuleFor(x => x.WorkspaceId).NotEmpty();
+    }
 }
