@@ -42,3 +42,5 @@ out/
 .env
 .env.*
 !.env.example
+DotNetServer/ddd-clean/*
+DotNetServer/Ordovita.Application/obj/Debug*
