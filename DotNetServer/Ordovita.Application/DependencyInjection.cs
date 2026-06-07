@@ -8,6 +8,14 @@ using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
 using Ordovita.Application.Identity.ConfirmUserEmail;
 using Ordovita.Application.Identity.RegisterUser;
+using Ordovita.Application.LlmSettings;
+using Ordovita.Application.LlmSettings.CreateLlmSettings;
+using Ordovita.Application.LlmSettings.DeleteLlmSettings;
+using Ordovita.Application.LlmSettings.GetAllModels;
+using Ordovita.Application.LlmSettings.GetAllProviders;
+using Ordovita.Application.LlmSettings.GetLlmSettingById;
+using Ordovita.Application.LlmSettings.GetLlmSettings;
+using Ordovita.Application.LlmSettings.UpdateLlmSettings;
 using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.ChangeSurveyVisibility;
 using Ordovita.Application.Surveys.CreateSurvey;
@@ -163,6 +171,17 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RejectAiTaskCommand, Unit>, RejectAiTaskHandler>();
         services.AddScoped<ICommandHandler<AcceptAiEventCommand, AcceptAiEventResult>, AcceptAiEventHandler>();
         services.AddScoped<ICommandHandler<RejectAiEventCommand, Unit>, RejectAiEventHandler>();
+
+
+        services.AddScoped<ICommandHandler<CreateLlmSettingsCommand, LlmSettingsDto>, CreateLlmSettingsHandler>();
+        services.AddScoped<ICommandHandler<DeleteLlmSettingsCommand, Unit>, DeleteLlmSettingsHandler>();
+        services.AddScoped<IQueryHandler<GetAllModelsQuery, IReadOnlyList<string>>, GetAllModelsHandler>();
+        services.AddScoped<IQueryHandler<GetAllProvidersQuery, IReadOnlyList<string>>, GetAllProvidersHandler>();
+        services.AddScoped<IQueryHandler<GetLlmSettingsByIdHandlerQuery, LlmSettingsDto>, GetLlmSettingsByIdHandler>();
+        services
+            .AddScoped<IQueryHandler<GetAllLlmSettingsQuery, IReadOnlyList<LlmSettingsDto>>, GetLlmSettingsHandler>();
+        services.AddScoped<ICommandHandler<UpdateLlmSettingsCommand, LlmSettingsDto>, UpdateLlmSettingsHandler>();
+
 
         return services;
     }

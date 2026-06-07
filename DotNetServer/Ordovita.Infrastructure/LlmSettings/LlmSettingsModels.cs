@@ -13,8 +13,7 @@ public class LlmSettingsModels : ILlmSettingsModels
                 "There are no models for this chat model."));
 
         IReadOnlyList<string> models = ChatModel.AllModels
-            .Select(p => p.ToString())
-            .OfType<string>()
+            .Select(p => p.Name)
             .ToList()
             .AsReadOnly();
 

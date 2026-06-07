@@ -25,6 +25,7 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
 
         var llmSettings = new LlmSettings
         {
+            Id = LlmSettingsId.New(),
             UserId = userId,
             ApiKey = apiKey,
             Provider = provider,
@@ -37,16 +38,16 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
     }
 
 
-    public Result Update(UserId userId, string apiKey, string provider, string model, UserId accessUser)
+    public Result<LlmSettings> Update(UserId userId, string apiKey, string provider, string model, UserId accessUser)
     {
-        if (accessUser != UserId) return Result.Failure(LlmSettingsException.AccessDenied);
+        if (accessUser != UserId) return Result.Failure<LlmSettings>(LlmSettingsException.AccessDenied);
         UserId = userId;
         ApiKey = apiKey;
         Provider = provider;
         Model = model;
         UpdatedAt = DateTime.UtcNow;
 
-        return Result.Success();
+        return Result.Success(this);
     }
 
     public Result Delete(UserId accessUser)

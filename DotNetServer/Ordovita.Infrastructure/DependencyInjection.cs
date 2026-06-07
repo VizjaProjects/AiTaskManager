@@ -7,10 +7,12 @@ using Microsoft.Extensions.Options;
 using Ordovita.Application.Abstraction.Email;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Llm;
+using Ordovita.Application.Abstraction.LlmSettings;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Domain.Identity;
+using Ordovita.Domain.LlmSettings.Port;
 using Ordovita.Infrastructure.AspIdentity;
 using Ordovita.Infrastructure.Cqrs;
 using Ordovita.Infrastructure.Email;
@@ -23,6 +25,8 @@ using Ordovita.Domain.Workspace.port;
 using Ordovita.Infrastructure.Llm;
 using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Llm.LlmTornado;
+using Ordovita.Infrastructure.LlmSettings;
+using Ordovita.Infrastructure.LlmSettings.Persistance;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
 using Ordovita.Infrastructure.Tasks;
@@ -80,6 +84,11 @@ public static class DependencyInjection
         services.AddScoped<IWorkCalendarRepository, WorkCalendarRepository>();
         services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
         services.AddScoped<IWorkspaceTaskInitializer, WorkspaceTaskInitializer>();
+        services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();
+
+        services.AddScoped<ILlmSettingsModels, LlmSettingsModels>();
+        services.AddScoped<ILlmSettingsProviders, LlmSettingsProviders>();
+
 
         services.AddHttpContextAccessor();
 
