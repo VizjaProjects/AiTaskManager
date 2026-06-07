@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Domain.Identity;
+using Ordovita.Domain.LlmSettings;
 using Ordovita.Domain.Surveys.Questions;
 using Ordovita.Domain.Surveys.UserResponse;
 using Ordovita.Domain.Tasks;
@@ -26,6 +27,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
     public DbSet<WorkTaskStatus> WorkTaskStatuses => Set<WorkTaskStatus>();
     public DbSet<WorkCalendar> WorkCalendars => Set<WorkCalendar>();
     public DbSet<CalendarEvent> CalendarEvents => Set<CalendarEvent>();
+
+    public DbSet<Domain.LlmSettings.LlmSettings> LlmSettings => Set<Domain.LlmSettings.LlmSettings>();
 
 
     protected override void OnModelCreating(ModelBuilder builder)

@@ -14,11 +14,11 @@ public sealed class QuestionOptionRepository(AppDbContext context) : IQuestionOp
         {
             var rows = await context.Database
                 .SqlQuery<QuestionOptionRow>($"""
-                    SELECT id AS Id, option_text AS OptionText
-                    FROM surveys_question_options
-                    WHERE question_id = {questionId.Value}
-                    ORDER BY option_text
-                    """)
+                                              SELECT id AS Id, option_text AS OptionText
+                                              FROM surveys_question_options
+                                              WHERE question_id = {questionId.Value}
+                                              ORDER BY option_text
+                                              """)
                 .ToListAsync(ct);
 
             return rows.Select(row => new QuestionOptionDto(row.Id, row.OptionText)).ToList();
@@ -34,10 +34,8 @@ public sealed class QuestionOptionRepository(AppDbContext context) : IQuestionOp
     {
         var result = new HashSet<QuestionId>();
         foreach (var questionId in questionIds)
-        {
             if ((await GetByQuestionIdAsync(questionId, ct)).Count > 0)
                 result.Add(questionId);
-        }
 
         return result;
     }
@@ -53,9 +51,9 @@ public sealed class QuestionOptionRepository(AppDbContext context) : IQuestionOp
         {
             var optionId = Guid.NewGuid();
             await context.Database.ExecuteSqlAsync($"""
-                INSERT INTO surveys_question_options (id, question_id, option_text, createAt, updateAt)
-                VALUES ({optionId}, {questionId.Value}, {optionText}, {now}, {now})
-                """, ct);
+                                                    INSERT INTO surveys_question_options (id, question_id, option_text, createAt, updateAt)
+                                                    VALUES ({optionId}, {questionId.Value}, {optionText}, {now}, {now})
+                                                    """, ct);
         }
     }
 

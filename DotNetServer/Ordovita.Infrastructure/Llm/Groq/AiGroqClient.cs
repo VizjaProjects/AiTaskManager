@@ -60,6 +60,9 @@ internal static class GroqErrors
     public static readonly Error Unreachable =
         new("Ai.Groq.Unreachable", "The AI provider could not be reached.", ErrorType.Failure);
 
-    public static Error RequestFailed(int statusCode) =>
-        new("Ai.Groq.RequestFailed", $"The AI provider responded with HTTP {statusCode}.", ErrorType.Failure);
+    public static Error RequestFailed(int statusCode)
+    {
+        return new Error("Ai.Groq.RequestFailed", $"The AI provider responded with HTTP {statusCode}.",
+            ErrorType.Failure);
+    }
 }

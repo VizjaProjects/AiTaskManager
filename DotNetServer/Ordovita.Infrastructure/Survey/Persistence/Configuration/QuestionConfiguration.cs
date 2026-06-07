@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ordovita.Domain.Surveys.Questions;
 using Ordovita.Domain.Surveys.Surveys;
 
-namespace Ordovita.Infrastructure.Survey.Persistence;
+namespace Ordovita.Infrastructure.Survey.Persistence.Configuration;
 
 public class QuestionConfiguration : IEntityTypeConfiguration<Question>
 {

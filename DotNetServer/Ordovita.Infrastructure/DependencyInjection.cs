@@ -22,6 +22,7 @@ using Ordovita.Domain.Tasks.port;
 using Ordovita.Domain.Workspace.port;
 using Ordovita.Infrastructure.Llm;
 using Ordovita.Infrastructure.Llm.Groq;
+using Ordovita.Infrastructure.Llm.LlmTornado;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
 using Ordovita.Infrastructure.Tasks;
@@ -47,13 +48,15 @@ public static class DependencyInjection
         services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
 
-        services.AddHttpClient<IAiClient, AiGroqClient>((serviceProvider, client) =>
-        {
-            var config = serviceProvider.GetRequiredService<GroqConfiguration>();
+        // services.AddHttpClient<IAiClient, AiGroqClient>((serviceProvider, client) =>
+        // {
+        //     var config = serviceProvider.GetRequiredService<GroqConfiguration>();
+        //
+        //     client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
+        //     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
+        // });
 
-            client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
-            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-        });
+        services.AddScoped<IAiClient, LlmTornadoProvider>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
         services.AddScoped<ISender, Sender>();

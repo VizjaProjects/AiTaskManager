@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="LlmTornado" />
+        <PackageReference Include="LlmTornado"/>
         <PackageReference Include="MailKit"/>
         <PackageReference Include="Microsoft.AspNetCore.Http"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>

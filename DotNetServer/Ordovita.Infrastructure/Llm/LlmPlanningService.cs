@@ -194,7 +194,8 @@ public sealed class LlmPlanningService(
             ? DefaultCategoryColor
             : task.NewCategoryColor.Trim();
 
-        var categoryResult = TaskCategory.Create(context.WorkspaceId, context.UserId, task.NewCategoryName.Trim(), color);
+        var categoryResult =
+            TaskCategory.Create(context.WorkspaceId, context.UserId, task.NewCategoryName.Trim(), color);
         if (categoryResult.IsFailure || categoryResult.Value is null)
         {
             logger.LogWarning("Skipping invalid AI category '{Name}': {Error}",
@@ -224,7 +225,7 @@ public sealed class LlmPlanningService(
     {
         return string.IsNullOrWhiteSpace(value) ? null : AiPlanMapper.Clamp(value.Trim(), maxLength);
     }
-    
+
     private sealed class PlanBuildContext
     {
         private readonly HashSet<Guid> _existingCategoryIds;
@@ -232,7 +233,8 @@ public sealed class LlmPlanningService(
         private readonly List<GeneratedCategory> _createdCategories = new();
 
         public PlanBuildContext(
-            WorkspaceId workspaceId, UserId userId, CalendarId calendarId, IReadOnlyList<TaskCategory> existingCategories)
+            WorkspaceId workspaceId, UserId userId, CalendarId calendarId,
+            IReadOnlyList<TaskCategory> existingCategories)
         {
             WorkspaceId = workspaceId;
             UserId = userId;
@@ -247,10 +249,15 @@ public sealed class LlmPlanningService(
         public int CategoryCount { get; private set; }
         public IReadOnlyList<GeneratedCategory> CreatedCategories => _createdCategories;
 
-        public bool IsKnownCategory(Guid categoryId) => _existingCategoryIds.Contains(categoryId);
+        public bool IsKnownCategory(Guid categoryId)
+        {
+            return _existingCategoryIds.Contains(categoryId);
+        }
 
-        public bool TryGetCreatedCategory(string key, out TaskCategory category) =>
-            _createdCategoriesByName.TryGetValue(key, out category!);
+        public bool TryGetCreatedCategory(string key, out TaskCategory category)
+        {
+            return _createdCategoriesByName.TryGetValue(key, out category!);
+        }
 
         public void RegisterCreatedCategory(string key, TaskCategory category)
         {

@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Ordovita.Domain.Surveys.Surveys;
 
-namespace Ordovita.Infrastructure.Survey.Persistence;
+namespace Ordovita.Infrastructure.Survey.Persistence.Configuration;
 
 public class SurveyConfiguration : IEntityTypeConfiguration<Domain.Surveys.Surveys.Survey>
 {

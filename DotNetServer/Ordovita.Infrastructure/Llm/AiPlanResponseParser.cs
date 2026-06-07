@@ -54,17 +54,27 @@ internal sealed record AiPlanJson(
 
 internal sealed record AiTaskJson(
     [property: JsonPropertyName("title")] string? Title,
-    [property: JsonPropertyName("description")] string? Description,
-    [property: JsonPropertyName("priority")] string? Priority,
-    [property: JsonPropertyName("categoryId")] Guid? CategoryId,
-    [property: JsonPropertyName("statusId")] Guid? StatusId,
-    [property: JsonPropertyName("estimatedDuration")] int? EstimatedDuration,
-    [property: JsonPropertyName("dueDateTime")] DateTime? DueDateTime,
-    [property: JsonPropertyName("newCategoryName")] string? NewCategoryName,
-    [property: JsonPropertyName("newCategoryColor")] string? NewCategoryColor);
+    [property: JsonPropertyName("description")]
+    string? Description,
+    [property: JsonPropertyName("priority")]
+    string? Priority,
+    [property: JsonPropertyName("categoryId")]
+    Guid? CategoryId,
+    [property: JsonPropertyName("statusId")]
+    Guid? StatusId,
+    [property: JsonPropertyName("estimatedDuration")]
+    int? EstimatedDuration,
+    [property: JsonPropertyName("dueDateTime")]
+    DateTime? DueDateTime,
+    [property: JsonPropertyName("newCategoryName")]
+    string? NewCategoryName,
+    [property: JsonPropertyName("newCategoryColor")]
+    string? NewCategoryColor);
 
 internal sealed record AiEventJson(
     [property: JsonPropertyName("title")] string? Title,
-    [property: JsonPropertyName("startDateTime")] DateTime? StartDateTime,
-    [property: JsonPropertyName("endDateTime")] DateTime? EndDateTime,
+    [property: JsonPropertyName("startDateTime")]
+    DateTime? StartDateTime,
+    [property: JsonPropertyName("endDateTime")]
+    DateTime? EndDateTime,
     [property: JsonPropertyName("allDay")] bool? AllDay);

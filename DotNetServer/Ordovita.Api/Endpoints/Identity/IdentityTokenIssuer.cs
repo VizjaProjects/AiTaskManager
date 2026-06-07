@@ -42,12 +42,14 @@ public sealed class IdentityTokenIssuer(
         return new TokenPair(accessToken, refreshToken);
     }
 
-    public static LoginUserInfo ToUserInfo(Ordovita.Domain.Identity.DomainUser domainUser) =>
-        new(
+    public static LoginUserInfo ToUserInfo(Ordovita.Domain.Identity.DomainUser domainUser)
+    {
+        return new LoginUserInfo(
             domainUser.Id.Value,
             domainUser.Email.Value,
             domainUser.FullName,
             domainUser.Role.ToString());
+    }
 }
 
 public sealed record TokenPair(string AccessToken, string RefreshToken);

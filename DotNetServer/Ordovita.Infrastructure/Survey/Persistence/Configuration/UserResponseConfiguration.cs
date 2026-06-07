@@ -4,7 +4,7 @@ using Ordovita.Domain.Identity;
 using Ordovita.Domain.Surveys.Questions;
 using Ordovita.Domain.Surveys.UserResponse;
 
-namespace Ordovita.Infrastructure.Survey.Persistence;
+namespace Ordovita.Infrastructure.Survey.Persistence.Configuration;
 
 public class UserResponseConfiguration : IEntityTypeConfiguration<UserResponse>
 {

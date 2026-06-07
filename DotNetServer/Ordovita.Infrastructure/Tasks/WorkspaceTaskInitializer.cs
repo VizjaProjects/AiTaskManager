@@ -12,10 +12,7 @@ public sealed class WorkspaceTaskInitializer(
     public async Task InitializeAsync(WorkspaceId workspaceId, UserId createdBy, CancellationToken ct = default)
     {
         var calendar = await calendarRepository.GetByUserIdAsync(workspaceId, ct);
-        if (calendar is null)
-        {
-            await calendarRepository.AddAsync(WorkCalendar.CreatePrimary(workspaceId), ct);
-        }
+        if (calendar is null) await calendarRepository.AddAsync(WorkCalendar.CreatePrimary(workspaceId), ct);
 
         var existingStatuses = await statusRepository.GetByWorkspaceIdAsync(workspaceId, ct);
         if (existingStatuses.Count > 0)
