@@ -6,6 +6,8 @@ using Ordovita.Domain.Common;
 namespace Ordovita.Application.Tasks.Ai.GenerateAiPlan;
 
 public sealed record GenerateAiPlanCommand(
+    Uri? CustomUrl,
+    Guid? LlmSettingId,
     Guid WorkspaceId,
     string UserText,
     string? TimeZoneId) : ICommand<GeneratedLlmPlanResult>;
@@ -22,6 +24,8 @@ public sealed class GenerateAiPlanHandler(
             return Result.Failure<GeneratedLlmPlanResult>(access.Error);
 
         var request = new GeneratedLlmPlanRequest(
+            command.CustomUrl,
+            command.LlmSettingId,
             command.WorkspaceId,
             access.Value.User.Id.Value,
             command.UserText,

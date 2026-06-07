@@ -11,7 +11,12 @@ using Ordovita.Domain.LlmSettings.Port;
 
 namespace Ordovita.Application.LlmSettings.UpdateLlmSettings;
 
-public sealed record UpdateLlmSettingsCommand(Guid LlmSettingsId, string ApiKey, string Provider, string Model)
+public sealed record UpdateLlmSettingsCommand(
+    Guid LlmSettingsId,
+    string ApiKey,
+    string? Provider,
+    string Model,
+    Uri? CustomUrl)
     : ICommand<LlmSettingsDto>;
 
 public class UpdateLlmSettingsHandler(
@@ -23,13 +28,6 @@ public class UpdateLlmSettingsHandler(
 {
     public async Task<Result<LlmSettingsDto>> Handle(UpdateLlmSettingsCommand command, CancellationToken ct)
     {
-        var llmSettingsId = LlmSettingsId.From(command.LlmSettingsId);
-        var llmSettings = await repository.GetByIdAsync(llmSettingsId, ct);
-
-        if (llmSettings == null)
-            return Result.Failure<LlmSettingsDto>(Error.NotFound("GetLlmSettingsByIdHandler",
-                "Llm settings not found"));
-
         if (context.UserId == null)
             return Result.Failure<LlmSettingsDto>(Error.Unauthorized("CreateLlmSettingsHandler", "Access denied"));
 
@@ -39,9 +37,18 @@ public class UpdateLlmSettingsHandler(
         if (user == null)
             return Result.Failure<LlmSettingsDto>(Error.NotFound("GetLlmSettingsByIdHandler", "User not found"));
 
+        var llmSettingsId = LlmSettingsId.From(command.LlmSettingsId);
+        var llmSettings = await repository.GetByIdAsync(llmSettingsId, user.Id, ct);
+
+        if (llmSettings == null)
+            return Result.Failure<LlmSettingsDto>(Error.NotFound("GetLlmSettingsByIdHandler",
+                "Llm settings not found"));
+
+
         var hashedApiKey = GetHash(llmSettings.ApiKey);
 
-        var updatedLlmSettings = llmSettings.Update(user.Id, hashedApiKey, command.Provider, command.Model, user.Id);
+        var updatedLlmSettings = llmSettings.Update(user.Id, hashedApiKey, command.Provider, command.Model,
+            command.CustomUrl, user.Id);
 
 
         if (updatedLlmSettings.Value == null || updatedLlmSettings.IsFailure)

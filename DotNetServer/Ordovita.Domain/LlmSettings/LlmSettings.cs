@@ -8,8 +8,9 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
 {
     public UserId UserId { get; private set; }
     public string ApiKey { get; set; }
-    public string Provider { get; private set; }
+    public string? Provider { get; private set; }
     public string Model { get; private set; }
+    public Uri? CustomUrl { get; set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -17,10 +18,10 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
     {
     }
 
-    public static Result<LlmSettings> Create(UserId userId, string apiKey, string provider, string model)
+    public static Result<LlmSettings> Create(UserId userId, string apiKey, string? provider, string model,
+        Uri? customUrl)
     {
         if (string.IsNullOrEmpty(apiKey)) return Result.Failure<LlmSettings>(LlmSettingsException.MissingApiKey);
-        if (string.IsNullOrEmpty(provider)) return Result.Failure<LlmSettings>(LlmSettingsException.MissingProvider);
         if (string.IsNullOrEmpty(model)) return Result.Failure<LlmSettings>(LlmSettingsException.MissingModel);
 
         var llmSettings = new LlmSettings
@@ -30,6 +31,7 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
             ApiKey = apiKey,
             Provider = provider,
             Model = model,
+            CustomUrl = customUrl,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -38,13 +40,15 @@ public class LlmSettings : AggregateRoot<LlmSettingsId>
     }
 
 
-    public Result<LlmSettings> Update(UserId userId, string apiKey, string provider, string model, UserId accessUser)
+    public Result<LlmSettings> Update(UserId userId, string apiKey, string? provider, string model, Uri? customUrl,
+        UserId? accessUser)
     {
         if (accessUser != UserId) return Result.Failure<LlmSettings>(LlmSettingsException.AccessDenied);
         UserId = userId;
         ApiKey = apiKey;
         Provider = provider;
         Model = model;
+        CustomUrl = customUrl;
         UpdatedAt = DateTime.UtcNow;
 
         return Result.Success(this);

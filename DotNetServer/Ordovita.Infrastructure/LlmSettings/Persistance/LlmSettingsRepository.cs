@@ -13,10 +13,10 @@ public class LlmSettingsRepository(AppDbContext context) : ILlmSettingsRepositor
         await context.AddAsync(llmSettings, ct);
     }
 
-    public async Task<Domain.LlmSettings.LlmSettings?> GetByIdAsync(LlmSettingsId llmSettingsId,
+    public async Task<Domain.LlmSettings.LlmSettings?> GetByIdAsync(LlmSettingsId llmSettingsId, UserId userId,
         CancellationToken ct = default)
     {
-        return await context.LlmSettings.FirstOrDefaultAsync(l => l.Id == llmSettingsId, ct);
+        return await context.LlmSettings.FirstOrDefaultAsync(l => l.Id == llmSettingsId && l.UserId == userId, ct);
     }
 
     public async Task<IReadOnlyList<Domain.LlmSettings.LlmSettings>> GetAllByUserIdAsync(UserId userId,

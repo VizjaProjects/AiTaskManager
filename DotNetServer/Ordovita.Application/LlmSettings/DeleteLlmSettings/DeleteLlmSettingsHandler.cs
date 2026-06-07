@@ -11,7 +11,11 @@ namespace Ordovita.Application.LlmSettings.DeleteLlmSettings;
 
 public sealed record DeleteLlmSettingsCommand(Guid LlmSettingId) : ICommand<Unit>;
 
-public class DeleteLlmSettingsHandler(IUserContext context, ILlmSettingsRepository repository, IUnitOfWork uow)
+public class DeleteLlmSettingsHandler(
+    IUserContext context,
+    ILlmSettingsRepository repository,
+    IUserRepository userRepository,
+    IUnitOfWork uow)
     : ICommandHandler<DeleteLlmSettingsCommand, Unit>
 {
     public async Task<Result<Unit>> Handle(DeleteLlmSettingsCommand command, CancellationToken ct)
@@ -19,7 +23,12 @@ public class DeleteLlmSettingsHandler(IUserContext context, ILlmSettingsReposito
         if (context.UserId == null)
             return Result.Failure<Unit>(Error.Unauthorized("CreateLlmSettingsHandler", "Access denied"));
 
-        var result = await repository.GetByIdAsync(LlmSettingsId.From(command.LlmSettingId), ct);
+        var user = await userRepository.GetAsyncByAspId(context.UserId.Value.ToString(), ct);
+
+        if (user == null)
+            return Result.Failure<Unit>(Error.NotFound("CreateLlmSettingsHandler", "User not found"));
+
+        var result = await repository.GetByIdAsync(LlmSettingsId.From(command.LlmSettingId), user.Id, ct);
 
         if (result == null)
             return Result.Failure<Unit>(Error.NotFound("GetLlmSettingsByIdHandler", "Llm setting not found"));

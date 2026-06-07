@@ -2,76 +2,88 @@ using LlmTornado;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
-using LlmTornado.Code.Models;
-using LlmTornado.Models;
+using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Llm;
 using Ordovita.Domain.Common;
+using Ordovita.Domain.Identity;
+using Ordovita.Domain.LlmSettings;
+using Ordovita.Domain.LlmSettings.Port;
 using Ordovita.Infrastructure.Llm.Groq;
 
 namespace Ordovita.Infrastructure.Llm.LlmTornado;
 
-public class LlmTornadoProvider(GroqConfiguration configuration) : IAiClient
+public class LlmTornadoProvider(
+    GroqConfiguration configuration,
+    ILlmSettingsRepository repository,
+    IUserRepository userRepository,
+    IUserContext context) : IAiClient
 {
-    public async Task<Result<AiResponse>> AskAsync(AiRequest request, CancellationToken ct)
+    public async Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingId, Uri? customUrl, CancellationToken ct)
     {
-        // TornadoApi api = new TornadoApi(new[]
-        // {
-        //     new ProviderAuthentication(LLmProviders.Groq, configuration.ApiKey)
-        // });
-        // var result = await api.Chat.CreateChatCompletion(new ChatRequest
-        // {
-        //     Model = ChatModel.Groq.OpenAi.GptOss120B,
-        //     Messages = [
-        //         new ChatMessage(ChatMessageRoles.User, request.Prompt)
-        //     ]
-        // });
+        if (context.UserId == null)
+            return Result.Failure<AiResponse>(Error.Unauthorized("AskAsync", "Access denied"));
 
+        var user = await userRepository.GetAsyncByAspId(context.UserId.Value.ToString(), ct);
 
-        // string[] prodivers = System.Enum.GetNames(typeof(LLmProviders));
-        // foreach (var prodiver in prodivers)
-        // {
-        //     Console.WriteLine("provider " + prodiver);
-        // }
-        //
-        // foreach (var VARIABLE in ChatModel.AllModels)
-        // {
-        //     Console.WriteLine("------------------------");
-        //     // Console.WriteLine("model " + VARIABLE.Name);
-        //     Console.WriteLine("provider " + VARIABLE.Provider);
-        //     Console.WriteLine("model " + VARIABLE.ApiName);
-        // }
-        //
-        var newModel = new ChatModel("openai/o4-mini:high");
+        if (user == null)
+            return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "User not found"));
 
+        Domain.LlmSettings.LlmSettings llmSettings;
 
-        Console.WriteLine("model: " + newModel.Name);
-        Console.WriteLine("Provider: " + newModel.Provider);
-
-        var newModel2 = new ChatModel("okimi-k2-0905-preview");
-
-
-        Console.WriteLine("model: " + newModel2.Name);
-        Console.WriteLine("Provider: " + newModel2.Provider);
-
-
-        foreach (var provider in ChatModel.AllProviders)
+        if (llmSettingId != null)
+            llmSettings = await repository.GetByIdAsync(LlmSettingsId.From(llmSettingId.Value), user.Id, ct);
+        else
+            llmSettings = null;
+        
+        TornadoApi api;
+        ChatModel model;
+        if (llmSettings == null)
         {
-            Console.WriteLine("provider " + provider.Provider);
-
-            foreach (var model in provider.AllModels.OrderBy(x => x.GetApiName))
-            {
-                var aliases = model.Aliases is { Count: > 0 }
-                    ? string.Join(", ", model.Aliases)
-                    : "-";
-
-                Console.WriteLine(
-                    $"Name: {model.Name}\n" +
-                    $"ApiName: {model.GetApiName}\n" +
-                    $"Aliases: {aliases}");
-            }
+            api = GetTornadoApi("Groq", configuration.ApiKey);
+            model = ChatModel.Groq.OpenAi.GptOss120B;
+        }
+        else if (llmSettings != null && llmSettings.CustomUrl != null)
+        {
+            api = GetTornadoApi(llmSettings.CustomUrl);
+            model = new ChatModel(llmSettings.Model);
+        }
+        else
+        {
+            api = GetTornadoApi(llmSettings.Provider, llmSettings.ApiKey);
+            model = new ChatModel(llmSettings.Model, llmSettings.ApiKey);
         }
 
 
-        return Result.Success(new AiResponse(null, 123, request.Prompt));
+        var result = await api.Chat.CreateChatCompletion(new ChatRequest
+        {
+            Model = model,
+            Messages =
+            [
+                new ChatMessage(ChatMessageRoles.User, request.Prompt)
+            ]
+        });
+
+        var content = result?.Choices?[0].Message?.Content;
+        if (content == null) return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "Message is empty!"));
+
+        return Result.Success(new AiResponse(content, 123, request.Prompt));
+    }
+
+    private static TornadoApi GetTornadoApi(string provider, string apiKey)
+    {
+        if (!Enum.TryParse<LLmProviders>(provider, true, out var providerEnum))
+            throw new ArgumentException($"Unsupported LLM provider: {provider}", nameof(provider));
+
+        var tornadoApi = new TornadoApi(new[]
+        {
+            new ProviderAuthentication(providerEnum, apiKey)
+        });
+
+        return tornadoApi;
+    }
+
+    private static TornadoApi GetTornadoApi(Uri customUrl)
+    {
+        return new TornadoApi(customUrl);
     }
 }

@@ -10,6 +10,8 @@ public interface ILlmPlanningService
 }
 
 public sealed record GeneratedLlmPlanRequest(
+    Uri? CustomUrl,
+    Guid? LlmSettingId,
     Guid WorkspaceId,
     Guid UserId,
     string UserText,

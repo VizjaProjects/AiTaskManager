@@ -66,7 +66,8 @@ public static class LlmSettingsEndpoint
     private static async Task<IResult> CreateLlmSettings(CreateLlmSettingsRequest request, ISender sender,
         CancellationToken ct)
     {
-        var result = await sender.Send(new CreateLlmSettingsCommand(request.Provider, request.Model, request.ApiKey),
+        var result = await sender.Send(
+            new CreateLlmSettingsCommand(request.Provider, request.Model, request.ApiKey, request.CustomUrl),
             ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
@@ -100,7 +101,8 @@ public static class LlmSettingsEndpoint
     {
         var result =
             await sender.Send(
-                new UpdateLlmSettingsCommand(llmSettingId, request.ApiKey, request.Provider, request.Model), ct);
+                new UpdateLlmSettingsCommand(llmSettingId, request.ApiKey, request.Provider, request.Model,
+                    request.CustomUrl), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -111,5 +113,5 @@ public static class LlmSettingsEndpoint
         return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
     }
 
-    public sealed record CreateLlmSettingsRequest(string Provider, string Model, string ApiKey);
+    public sealed record CreateLlmSettingsRequest(string? Provider, string Model, string ApiKey, Uri? CustomUrl);
 }

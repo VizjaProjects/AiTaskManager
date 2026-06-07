@@ -10,7 +10,8 @@ using Ordovita.Domain.LlmSettings.Port;
 
 namespace Ordovita.Application.LlmSettings.CreateLlmSettings;
 
-public sealed record CreateLlmSettingsCommand(string Provider, string Model, string ApiKey) : ICommand<LlmSettingsDto>;
+public sealed record CreateLlmSettingsCommand(string? Provider, string Model, string ApiKey, Uri? CustomUrl)
+    : ICommand<LlmSettingsDto>;
 
 public class CreateLlmSettingsHandler(
     ILlmSettingsRepository repository,
@@ -29,7 +30,9 @@ public class CreateLlmSettingsHandler(
 
         var hashedApiKey = GetHash(requst.ApiKey);
 
-        var llmSettings = Domain.LlmSettings.LlmSettings.Create(user.Id, hashedApiKey, requst.Provider, requst.Model);
+        var llmSettings =
+            Domain.LlmSettings.LlmSettings.Create(user.Id, hashedApiKey, requst.Provider, requst.Model,
+                requst.CustomUrl);
 
         if (llmSettings.Value == null || llmSettings.IsFailure)
             return Result.Failure<LlmSettingsDto>(llmSettings.Error);
@@ -64,6 +67,5 @@ public sealed class CreateLlmSettingValidator : AbstractValidator<CreateLlmSetti
     {
         RuleFor(command => command.Model).NotEmpty().WithMessage("Model is required");
         RuleFor(command => command.ApiKey).NotEmpty().WithMessage("Api key is required");
-        RuleFor(command => command.Provider).NotEmpty().WithMessage("Provider is required");
     }
 }
