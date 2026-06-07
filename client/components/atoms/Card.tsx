@@ -1,13 +1,16 @@
 import { View, type ViewProps } from "react-native";
 
 interface CardProps extends ViewProps {
-  variant?: "glass" | "surface" | "elevated";
+  variant?: "glass" | "surface" | "elevated" | "ai-proposed" | "bordered";
+  dashed?: boolean;
 }
 
 export function Card({
-  variant = "glass",
+  variant = "surface",
+  dashed,
   className: cn,
   children,
+  style,
   ...props
 }: CardProps) {
   const base = "rounded-2xl";
@@ -15,11 +18,17 @@ export function Card({
   const variants = {
     glass: `${base} bg-surface-container-lowest p-6`,
     surface: `${base} bg-surface-container-lowest p-5`,
-    elevated: `${base} bg-surface-container-lowest p-5 shadow-lg`,
+    elevated: `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
+    bordered: `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
+    "ai-proposed": `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
   };
 
   return (
-    <View className={`${variants[variant]} ${cn ?? ""}`} {...props}>
+    <View
+      className={`${variants[variant]} ${dashed ? "border-dashed" : ""} ${cn ?? ""}`}
+      style={style}
+      {...props}
+    >
       {children}
     </View>
   );

@@ -43,11 +43,7 @@ function contentSecurityPolicy() {
 }
 
 function isProxyPath(pathname) {
-  return (
-    pathname.startsWith("/v1/api") ||
-    pathname.startsWith("/oauth2") ||
-    pathname.startsWith("/login/oauth2")
-  );
+  return pathname.startsWith("/api/v1");
 }
 
 function configuredDesktopPort() {

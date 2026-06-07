@@ -11,7 +11,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
 ARG EXPO_PUBLIC_API_URL
+ARG EXPO_PUBLIC_API_PREFIX=/api/v1
 ENV EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL
+ENV EXPO_PUBLIC_API_PREFIX=$EXPO_PUBLIC_API_PREFIX
 
 RUN npx expo export --platform web
 

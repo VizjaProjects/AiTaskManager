@@ -367,32 +367,18 @@ export default function SurveysScreen() {
 
   const allResponses = myResponses ?? [];
 
-  const { completedSurveys, incompleteSurveys, completedCount } =
-    useMemo(() => {
-      if (!surveys)
-        return {
-          completedSurveys: [],
-          incompleteSurveys: [],
-          completedCount: 0,
-        };
-      const respondedSurveyIds = new Set(allResponses.map((r) => r.surveyId));
-      // We can't know exact completion without question counts, so we split by
-      // "has any response" vs "no response" — the card components resolve fully.
-      // For stat counter we use the same heuristic; cards handle the real logic.
-      const comp = surveys.filter((s) => respondedSurveyIds.has(s.surveyId));
-      const inc = surveys.filter((s) => !respondedSurveyIds.has(s.surveyId));
-      return {
-        completedSurveys: comp,
-        incompleteSurveys: inc,
-        completedCount: comp.length,
-      };
-    }, [surveys, allResponses]);
+  const incompleteSurveys = surveys ?? [];
+  const completedCount = useMemo(() => {
+    if (!surveys) return 0;
+    const respondedSurveyIds = new Set(allResponses.map((r) => r.surveyId));
+    return surveys.filter((s) => respondedSurveyIds.has(s.surveyId)).length;
+  }, [surveys, allResponses]);
 
   const loading = isLoading || responsesLoading;
 
   if (loading) {
     return (
-      <PageLayout title="Ankiety">
+      <PageLayout>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#4d41df" />
         </View>
@@ -402,7 +388,7 @@ export default function SurveysScreen() {
 
   if (!surveys || surveys.length === 0) {
     return (
-      <PageLayout title="Ankiety">
+      <PageLayout>
         <EmptyState
           icon="assignment"
           title="Brak aktywnych ankiet"
@@ -413,7 +399,7 @@ export default function SurveysScreen() {
   }
 
   return (
-    <PageLayout title="Ankiety">
+    <PageLayout>
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1"
@@ -449,55 +435,17 @@ export default function SurveysScreen() {
           </View>
         </View>
 
-        {/* Incomplete surveys — action needed */}
-        {incompleteSurveys.length > 0 && (
-          <View className="mb-6">
-            <View className="flex-row items-center gap-2 mb-3">
-              <MaterialIcons name="pending-actions" size={18} color="#4d41df" />
-              <Text className="text-on-surface font-headline text-sm font-bold uppercase tracking-wider">
-                Do wypełnienia
-              </Text>
-            </View>
-            <View className="gap-4">
-              {incompleteSurveys.map((s) => (
-                <SurveyCardWrapper
-                  key={s.surveyId}
-                  surveyId={s.surveyId}
-                  title={s.title}
-                  description={s.description}
-                  allResponses={allResponses}
-                />
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Completed surveys — with responses */}
-        {completedSurveys.length > 0 && (
-          <View className="mb-6">
-            <View className="flex-row items-center gap-2 mb-3">
-              <MaterialIcons
-                name="assignment-turned-in"
-                size={18}
-                color="#16a34a"
-              />
-              <Text className="text-on-surface font-headline text-sm font-bold uppercase tracking-wider">
-                Wypełnione
-              </Text>
-            </View>
-            <View className="gap-4">
-              {completedSurveys.map((s) => (
-                <SurveyCardWrapper
-                  key={s.surveyId}
-                  surveyId={s.surveyId}
-                  title={s.title}
-                  description={s.description}
-                  allResponses={allResponses}
-                />
-              ))}
-            </View>
-          </View>
-        )}
+        <View className="gap-4">
+          {incompleteSurveys.map((s) => (
+            <SurveyCardWrapper
+              key={s.surveyId}
+              surveyId={s.surveyId}
+              title={s.title}
+              description={s.description}
+              allResponses={allResponses}
+            />
+          ))}
+        </View>
 
         <View className="h-8" />
       </ScrollView>

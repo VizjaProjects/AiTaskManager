@@ -50,24 +50,29 @@ public static class AspIdentityEndpoint
                     return result.Error.ToProblem();
 
                 if (await userManager.FindByEmailAsync(request.Email) is { } user)
+                {
+                    if (!await userManager.IsInRoleAsync(user, Role.USER.ToString()))
+                        await userManager.AddToRoleAsync(user, Role.USER.ToString());
+
                     await SendConfirmationEmailAsync(user, userManager, context, request.Email, linkGenerator,
                         emailSender);
+                }
 
-                return Results.Created(string.Empty, result.Value);
+                return Results.Created(string.Empty, new RegisterResponse(result.Value));
             })
             .WithName("RegisterUser")
             .WithSummary("Register user")
-            .Produces<Guid>();
+            .Produces<RegisterResponse>(201);
 
-        routeGroup.MapPost("/login", async Task<Results<Ok<AccessTokenResponse>, EmptyHttpResult, ProblemHttpResult>>
-        ([FromBody] LoginRequest login, [FromQuery] bool? useCookies, [FromQuery] bool? useSessionCookies,
+        routeGroup.MapPost("/login", async Task<Results<Ok<LoginResponse>, ProblemHttpResult>>
+        ([FromBody] LoginRequest login,
             [FromServices] SignInManager<AspIdentityUser> signInManager,
-            [FromServices] UserManager<AspIdentityUser> userManager, [FromServices] IUserRepository repository) =>
+            [FromServices] UserManager<AspIdentityUser> userManager,
+            [FromServices] IUserRepository repository,
+            [FromServices] IdentityTokenIssuer tokenIssuer,
+            CancellationToken ct) =>
         {
-            var useCookieScheme = useCookies == true || useSessionCookies == true;
-            var isPersistent = useCookies == true && useSessionCookies != true;
-            signInManager.AuthenticationScheme =
-                useCookieScheme ? IdentityConstants.ApplicationScheme : IdentityConstants.BearerScheme;
+            signInManager.AuthenticationScheme = IdentityConstants.BearerScheme;
 
             var aspUser = await userManager.FindByEmailAsync(login.Email);
             if (aspUser == null)
@@ -80,13 +85,12 @@ public static class AspIdentityEndpoint
             if (!aspUser.EmailConfirmed && !domainUser.IsEmailVerified && !domainUser.IsEnable)
                 return TypedResults.Problem("User is not active!", statusCode: StatusCodes.Status406NotAcceptable);
 
-            var result = await signInManager.PasswordSignInAsync(login.Email, login.Password, isPersistent, true);
+            var result = await signInManager.CheckPasswordSignInAsync(aspUser, login.Password, lockoutOnFailure: true);
 
             if (result.RequiresTwoFactor)
             {
                 if (!string.IsNullOrEmpty(login.TwoFactorCode))
-                    result = await signInManager.TwoFactorAuthenticatorSignInAsync(login.TwoFactorCode, isPersistent,
-                        isPersistent);
+                    result = await signInManager.TwoFactorAuthenticatorSignInAsync(login.TwoFactorCode, false, false);
                 else if (!string.IsNullOrEmpty(login.TwoFactorRecoveryCode))
                     result = await signInManager.TwoFactorRecoveryCodeSignInAsync(login.TwoFactorRecoveryCode);
             }
@@ -94,13 +98,26 @@ public static class AspIdentityEndpoint
             if (!result.Succeeded)
                 return TypedResults.Problem(result.ToString(), statusCode: StatusCodes.Status401Unauthorized);
 
-            return TypedResults.Empty;
-        });
+            var tokens = await tokenIssuer.IssueAsync(aspUser, domainUser.Role.ToString(), ct);
+            var userInfo = IdentityTokenIssuer.ToUserInfo(domainUser);
+
+            return TypedResults.Ok(new LoginResponse(
+                tokens.AccessToken,
+                tokens.RefreshToken,
+                userInfo.UserId,
+                userInfo.Email,
+                userInfo.FullName,
+                userInfo.Role));
+        })
+        .Produces<LoginResponse>(200);
 
         routeGroup.MapPost("/refresh",
-            async Task<Results<Ok<AccessTokenResponse>, UnauthorizedHttpResult, SignInHttpResult, ChallengeHttpResult>>
+            async Task<Results<Ok<RefreshTokenResponse>, UnauthorizedHttpResult>>
             ([FromBody] RefreshRequest refreshRequest,
-                [FromServices] SignInManager<AspIdentityUser> signInManager) =>
+                [FromServices] SignInManager<AspIdentityUser> signInManager,
+                [FromServices] IUserRepository userRepository,
+                [FromServices] IdentityTokenIssuer tokenIssuer,
+                CancellationToken ct) =>
             {
                 var refreshTokenProtector =
                     bearerTokenOptions.Get(IdentityConstants.BearerScheme).RefreshTokenProtector;
@@ -109,11 +126,14 @@ public static class AspIdentityEndpoint
                 if (refreshTicket?.Properties?.ExpiresUtc is not { } expiresUtc ||
                     timeProvider.GetUtcNow() >= expiresUtc ||
                     await signInManager.ValidateSecurityStampAsync(refreshTicket.Principal) is not AspIdentityUser user)
-                    return TypedResults.Challenge();
+                    return TypedResults.Unauthorized();
 
-                var newPrincipal = await signInManager.CreateUserPrincipalAsync(user);
-                return TypedResults.SignIn(newPrincipal, authenticationScheme: IdentityConstants.BearerScheme);
-            });
+                var domainUser = await userRepository.GetAsyncByAspId(user.Id);
+                var tokens = await tokenIssuer.IssueAsync(
+                    user, domainUser?.Role.ToString(), ct);
+                return TypedResults.Ok(new RefreshTokenResponse(tokens.AccessToken, tokens.RefreshToken));
+            })
+            .Produces<RefreshTokenResponse>(200);
 
         routeGroup.MapGet("/confirmEmail", async Task<Results<ContentHttpResult, UnauthorizedHttpResult>>
             ([FromQuery] string userId, [FromQuery] string code, [FromQuery] string? changedEmail,

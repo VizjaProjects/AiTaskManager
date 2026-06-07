@@ -34,13 +34,34 @@ import {
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
 
+type TaskSaveData = {
+  title: string;
+  description: string;
+  priority: TaskPriority;
+  statusId: string;
+  categoryId?: string;
+  estimatedDuration: number;
+  dueDateTime?: string;
+};
+
 interface TaskDetailModalProps {
   task: Task | null;
   categories: Category[];
   statuses: TaskStatus[];
   visible: boolean;
   onClose: () => void;
+  forceEdit?: boolean;
+  onSaveCustom?: (data: TaskSaveData) => void;
+  saveLoading?: boolean;
+  saveLabel?: string;
+  showDelete?: boolean;
+  onDeleteCustom?: () => void;
+  acceptAction?: { label: string; onPress: () => void; loading?: boolean };
+  rejectAction?: { label: string; onPress: () => void; loading?: boolean };
 }
+
+const NO_OUTLINE =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
 
 export function TaskDetailModal({
   task,
@@ -48,6 +69,14 @@ export function TaskDetailModal({
   statuses,
   visible,
   onClose,
+  forceEdit = false,
+  onSaveCustom,
+  saveLoading,
+  saveLabel = "Zapisz",
+  showDelete = true,
+  onDeleteCustom,
+  acceptAction,
+  rejectAction,
 }: TaskDetailModalProps) {
   const editTask = useEditTask();
   const deleteTask = useDeleteTask();
@@ -70,11 +99,15 @@ export function TaskDetailModal({
   const [dueMin, setDueMin] = useState("00");
   const [showDuePicker, setShowDuePicker] = useState(false);
 
-  // Reset editing state when task changes or modal closes
   useEffect(() => {
-    setEditing(false);
+    if (visible && task) {
+      setEditing(forceEdit || !!onSaveCustom);
+      if (forceEdit || onSaveCustom) startEdit();
+    } else {
+      setEditing(false);
+    }
     setShowDuePicker(false);
-  }, [task?.taskId, visible]);
+  }, [task?.taskId, visible, forceEdit, onSaveCustom]);
 
   const cat = task?.categoryId
     ? categories.find((c) => c.categoryId === task.categoryId)
@@ -114,31 +147,38 @@ export function TaskDetailModal({
     setEditing(true);
   }
 
+  function buildSaveData(): TaskSaveData {
+    if (!task) throw new Error("no task");
+    return {
+      title,
+      description,
+      priority,
+      statusId,
+      categoryId: categoryId ?? undefined,
+      estimatedDuration: estimatedDuration
+        ? parseInt(estimatedDuration, 10)
+        : task.estimatedDuration,
+      dueDateTime: dueDate
+        ? new Date(
+            dueDateObj.getFullYear(),
+            dueDateObj.getMonth(),
+            dueDateObj.getDate(),
+            parseInt(dueHour) || 0,
+            parseInt(dueMin) || 0,
+          ).toISOString()
+        : undefined,
+    };
+  }
+
   function handleSave() {
     if (!task) return;
+    const data = buildSaveData();
+    if (onSaveCustom) {
+      onSaveCustom(data);
+      return;
+    }
     editTask.mutate(
-      {
-        taskId: task.taskId,
-        data: {
-          title,
-          description,
-          priority,
-          statusId,
-          categoryId: categoryId ?? undefined,
-          estimatedDuration: estimatedDuration
-            ? parseInt(estimatedDuration, 10)
-            : task.estimatedDuration,
-          dueDateTime: dueDate
-            ? new Date(
-                dueDateObj.getFullYear(),
-                dueDateObj.getMonth(),
-                dueDateObj.getDate(),
-                parseInt(dueHour) || 0,
-                parseInt(dueMin) || 0,
-              ).toISOString()
-            : undefined,
-        },
-      },
+      { taskId: task.taskId, data },
       {
         onSuccess: () => {
           setEditing(false);
@@ -188,7 +228,7 @@ export function TaskDetailModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View className="flex-1 bg-black/50 items-center justify-center p-4">
-        <View className="bg-surface-container-lowest rounded-3xl w-full max-w-2xl overflow-hidden shadow-xl">
+        <View className="bg-surface-container-lowest rounded-3xl w-full max-w-3xl overflow-hidden border border-outline-variant">
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 0 }}
@@ -199,15 +239,12 @@ export function TaskDetailModal({
                 <View className="flex-row flex-wrap gap-2 flex-1">
                   <PriorityBadge
                     priority={editing ? priority : task.priority}
+                    variant="soft"
                   />
                   {task.source === TaskSource.AI_PARSED && (
-                    <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-full bg-secondary/10">
-                      <MaterialIcons
-                        name="auto-awesome"
-                        size={12}
-                        color="#006b58"
-                      />
-                      <Text className="text-secondary text-xs font-label uppercase">
+                    <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-outline-variant">
+                      <MaterialIcons name="auto-awesome" size={12} color="#9b8cff" />
+                      <Text className="text-accent text-xs font-label uppercase">
                         AI_PARSED
                       </Text>
                     </View>
@@ -226,15 +263,63 @@ export function TaskDetailModal({
             </View>
 
             {/* Title */}
-            <View className="px-6 pb-4">
+            <View className="px-6 pb-3">
               {editing ? (
                 <Input value={title} onChangeText={setTitle} />
               ) : (
-                <Text className="font-headline text-on-surface text-2xl">
+                <Text className="font-headline text-on-surface text-2xl leading-8">
                   {task.title}
                 </Text>
               )}
             </View>
+
+            {!editing && (
+              <View className="px-6 pb-4 flex-row flex-wrap gap-2">
+                {cat && (
+                  <View className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
+                    <View
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: getCategoryDisplayColor(cat.color, isDark),
+                      }}
+                    />
+                    <Text className="text-on-surface-variant font-label text-xs">
+                      {cat.name}
+                    </Text>
+                  </View>
+                )}
+                {status && (
+                  <View
+                    className="px-2.5 py-1 rounded-lg border border-outline-variant"
+                    style={{ backgroundColor: `${status.color}18` }}
+                  >
+                    <Text className="font-label text-xs" style={{ color: status.color }}>
+                      {status.name}
+                    </Text>
+                  </View>
+                )}
+                {task.estimatedDuration > 0 && (
+                  <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
+                    <MaterialIcons name="schedule" size={12} color="#9ca3af" />
+                    <Text className="text-on-surface-variant font-label text-xs">
+                      {formatDuration(task.estimatedDuration)}
+                    </Text>
+                  </View>
+                )}
+                {task.dueDateTime && (
+                  <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
+                    <MaterialIcons name="calendar-today" size={12} color="#9ca3af" />
+                    <Text
+                      className={`font-label text-xs ${
+                        isOverdue(task.dueDateTime) ? "text-error" : "text-on-surface-variant"
+                      }`}
+                    >
+                      {formatDateTime(task.dueDateTime)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
 
             {/* Two-column layout */}
             <View
@@ -248,8 +333,8 @@ export function TaskDetailModal({
                   </Text>
                   {editing ? (
                     <TextInput
-                      className="bg-surface-container-low rounded-xl p-4 text-on-surface font-body text-sm"
-                      style={{ minHeight: 120 }}
+                      className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-sm border border-outline-variant"
+                      style={[{ minHeight: 120 }, NO_OUTLINE]}
                       multiline
                       textAlignVertical="top"
                       value={description}
@@ -556,7 +641,8 @@ export function TaskDetailModal({
                               placeholder="HH"
                               placeholderTextColor="#777587"
                               keyboardType="numeric"
-                              className="bg-surface-container-low rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm"
+                              className="bg-surface-container-lowest rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm border border-outline-variant"
+                              style={NO_OUTLINE}
                             />
                             <Text className="text-on-surface font-headline text-base">
                               :
@@ -570,7 +656,8 @@ export function TaskDetailModal({
                               placeholder="MM"
                               placeholderTextColor="#777587"
                               keyboardType="numeric"
-                              className="bg-surface-container-low rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm"
+                              className="bg-surface-container-lowest rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm border border-outline-variant"
+                              style={NO_OUTLINE}
                             />
                           </View>
                           <TouchableOpacity
@@ -652,11 +739,11 @@ export function TaskDetailModal({
                         key={evt.eventId}
                         className="bg-surface-container-low rounded-xl p-3 flex-row items-center gap-3 min-w-[180px]"
                       >
-                        <View className="bg-primary/10 rounded-lg w-10 h-10 items-center justify-center">
+                        <View className="bg-accent/10 rounded-lg w-10 h-10 items-center justify-center">
                           <MaterialIcons
                             name="event"
                             size={20}
-                            color="#4d41df"
+                            color={isDark ? "#9b8cff" : "#4d41df"}
                           />
                         </View>
                         <View className="flex-1">
@@ -679,29 +766,63 @@ export function TaskDetailModal({
 
             {/* Action buttons */}
             <View
-              className="px-6 py-4 flex-row items-center border-t border-outline-variant/30"
+              className="px-6 py-4 flex-row items-center border-t border-outline-variant"
               style={{ gap: 12 }}
             >
               {editing ? (
                 <>
-                  <View className="flex-1" />
+                  {showDelete && (
+                    <TouchableOpacity
+                      onPress={onDeleteCustom ?? handleDelete}
+                      className="flex-row items-center gap-1.5 mr-auto"
+                    >
+                      <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                      <Text className="text-error font-headline text-sm">Usuń</Text>
+                    </TouchableOpacity>
+                  )}
+                  {!showDelete && <View className="flex-1" />}
                   <Button
                     variant="outline"
                     label="Anuluj"
-                    onPress={() => setEditing(false)}
+                    onPress={() => {
+                      if (onSaveCustom) onClose();
+                      else setEditing(false);
+                    }}
                   />
                   <Button
-                    label="Zapisz"
-                    loading={editTask.isPending}
+                    label={saveLabel}
+                    icon="check"
+                    loading={saveLoading ?? editTask.isPending}
                     onPress={handleSave}
+                  />
+                </>
+              ) : acceptAction ? (
+                <>
+                  {rejectAction && (
+                    <TouchableOpacity
+                      onPress={rejectAction.onPress}
+                      className="flex-row items-center gap-1.5 mr-auto"
+                    >
+                      <MaterialIcons name="close" size={18} color="#ef4444" />
+                      <Text className="text-error font-headline text-sm">
+                        {rejectAction.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                  {!rejectAction && <View className="flex-1" />}
+                  <Button variant="outline" label="Edytuj" onPress={startEdit} />
+                  <Button
+                    label={acceptAction.label}
+                    icon="check"
+                    loading={acceptAction.loading}
+                    onPress={acceptAction.onPress}
                   />
                 </>
               ) : (
                 <>
-                  <TouchableOpacity onPress={handleDelete} className="mr-auto">
-                    <Text className="text-error font-headline text-sm">
-                      Usuń
-                    </Text>
+                  <TouchableOpacity onPress={handleDelete} className="flex-row items-center gap-1.5 mr-auto">
+                    <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+                    <Text className="text-error font-headline text-sm">Usuń</Text>
                   </TouchableOpacity>
                   <Button
                     variant="outline"
@@ -709,7 +830,7 @@ export function TaskDetailModal({
                     loading={editTask.isPending}
                     onPress={handleMarkComplete}
                   />
-                  <Button label="Edytuj zadanie" onPress={startEdit} />
+                  <Button label="Edytuj" onPress={startEdit} />
                 </>
               )}
             </View>
@@ -803,8 +924,8 @@ export function CreateTaskModal({
               Opis
             </Text>
             <TextInput
-              className="bg-surface-container-low rounded-xl p-4 text-on-surface font-body text-base"
-              style={{ minHeight: 80 }}
+              className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-base border border-outline-variant"
+              style={[{ minHeight: 80 }, NO_OUTLINE]}
               multiline
               textAlignVertical="top"
               value={description}

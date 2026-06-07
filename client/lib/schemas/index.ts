@@ -16,10 +16,15 @@ export const registerSchema = z
       .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
       .regex(/[0-9]/, "Hasło musi zawierać cyfrę"),
     confirmPassword: z.string(),
+    termsAccepted: z.boolean(),
   })
   .refine((data) => data.rawPassword === data.confirmPassword, {
     message: "Hasła nie są takie same",
     path: ["confirmPassword"],
+  })
+  .refine((data) => data.termsAccepted === true, {
+    message: "Zaakceptuj regulamin i politykę prywatności",
+    path: ["termsAccepted"],
   });
 
 export const forgotPasswordSchema = z.object({

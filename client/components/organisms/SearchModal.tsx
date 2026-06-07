@@ -164,7 +164,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
                     key={event.eventId}
                     activeOpacity={0.85}
                     onPress={() => handleEventPress(event.eventId)}
-                    className="bg-surface-container-lowest rounded-2xl p-4 flex-row items-center gap-3 border border-outline-variant/20"
+                    className="bg-surface-container-lowest rounded-2xl p-4 flex-row items-center gap-3 shadow-card"
                   >
                     <View className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center">
                       <MaterialIcons name="event" size={18} color="#4d41df" />

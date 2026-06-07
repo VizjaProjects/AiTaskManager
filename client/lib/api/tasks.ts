@@ -1,108 +1,196 @@
 import { api } from "./client";
+import {
+  mapCategoryDto,
+  mapEventDto,
+  mapPendingEventDto,
+  mapPendingTaskDto,
+  mapPriorityToApi,
+  mapStatusDto,
+  mapTaskDto,
+  normalizeArray,
+} from "./adapters";
 import type {
-  CreateTaskRequest,
-  EditTaskRequest,
-  CreateCategoryRequest,
-  EditCategoryRequest,
-  CreateTaskStatusRequest,
-  EditTaskStatusRequest,
-  CreateEventRequest,
-  EditEventRequest,
-  GenerateAiPlanRequest,
-  AcceptAiTaskRequest,
   AcceptAiEventRequest,
-  Task,
-  Category,
-  TaskStatus,
-  CalendarEvent,
-  AiStatistic,
+  AcceptAiTaskRequest,
+  CreateCategoryRequest,
+  CreateEventRequest,
+  CreateTaskRequest,
+  CreateTaskStatusRequest,
+  EditCategoryRequest,
+  EditEventRequest,
+  EditTaskRequest,
+  EditTaskStatusRequest,
+  GenerateAiPlanRequest,
 } from "../types";
 
+function ws(workspaceId: string) {
+  return `/workspace/${encodeURIComponent(workspaceId)}`;
+}
+
 export const taskApi = {
-  getAll: () => api.get<{ tasks: Task[] }>("/task"),
+  getAll: async (workspaceId: string) => {
+    const { data } = await api.get(ws(workspaceId) + "/task");
+    return { tasks: normalizeArray(data, mapTaskDto) };
+  },
 
-  create: (data: CreateTaskRequest) =>
-    api.post<{ taskId: string; createdAt: string }>("/task", data),
+  create: (workspaceId: string, data: CreateTaskRequest) =>
+    api.post<{ taskId: string; createdAt: string }>(
+      ws(workspaceId) + "/task",
+      {
+        ...data,
+        priority: mapPriorityToApi(data.priority),
+      },
+    ),
 
-  edit: (taskId: string, data: EditTaskRequest) =>
-    api.put(`/task/${encodeURIComponent(taskId)}`, data),
+  edit: (workspaceId: string, taskId: string, data: EditTaskRequest) =>
+    api.put(ws(workspaceId) + "/task", {
+      taskId,
+      ...data,
+      priority: mapPriorityToApi(data.priority),
+    }),
 
-  delete: (taskId: string) => api.delete(`/task/${encodeURIComponent(taskId)}`),
+  delete: (workspaceId: string, taskId: string) =>
+    api.delete(`${ws(workspaceId)}/task/${encodeURIComponent(taskId)}`),
 };
 
 export const categoryApi = {
-  getAll: () => api.get<{ categories: Category[] }>("/category"),
+  getAll: async (workspaceId: string) => {
+    const { data } = await api.get(ws(workspaceId) + "/category");
+    return { categories: normalizeArray(data, mapCategoryDto) };
+  },
 
-  getMy: () => api.get<{ categories: Category[] }>("/category/my"),
-
-  create: (data: CreateCategoryRequest) =>
-    api.post<{ categoryId: string; createdAt: string }>("/category", data),
-
-  edit: (categoryId: string, data: EditCategoryRequest) =>
-    api.put(`/category/${encodeURIComponent(categoryId)}`, data),
-
-  delete: (categoryId: string) =>
-    api.delete(`/category/${encodeURIComponent(categoryId)}`),
-};
-
-export const taskStatusApi = {
-  getAll: () => api.get<{ statuses: TaskStatus[] }>("/task-status"),
-
-  getMy: () => api.get<{ statuses: TaskStatus[] }>("/task-status/my"),
-
-  create: (data: CreateTaskStatusRequest) =>
-    api.post<{ statusId: string; createdAt: string }>("/task-status", data),
-
-  edit: (statusId: string, data: EditTaskStatusRequest) =>
-    api.put(`/task-status/${encodeURIComponent(statusId)}`, data),
-
-  delete: (statusId: string) =>
-    api.delete(`/task-status/${encodeURIComponent(statusId)}`),
-};
-
-export const eventApi = {
-  getAll: () => api.get<{ events: CalendarEvent[] }>("/event"),
-
-  create: (data: CreateEventRequest) =>
-    api.post<{ eventId: string; createdAt: string }>("/event", data),
-
-  edit: (eventId: string, data: EditEventRequest) =>
-    api.put(`/event/${encodeURIComponent(eventId)}`, data),
-
-  delete: (eventId: string) =>
-    api.delete(`/event/${encodeURIComponent(eventId)}`),
-};
-
-export const aiApi = {
-  generatePlan: (data: GenerateAiPlanRequest) =>
-    api.post("/ai/plan", data, {
-      timeout: 120000,
-      headers: {
-        "X-Time-Zone": Intl.DateTimeFormat().resolvedOptions().timeZone,
-      },
-    }),
-
-  getPendingProposals: () =>
-    api.get<{ tasks: Task[]; events: CalendarEvent[] }>("/ai/proposals"),
-
-  acceptTask: (taskId: string, data: AcceptAiTaskRequest) =>
-    api.post(`/ai/proposals/tasks/${encodeURIComponent(taskId)}/accept`, data),
-
-  rejectTask: (taskId: string) =>
-    api.delete(`/ai/proposals/tasks/${encodeURIComponent(taskId)}`),
-
-  acceptEvent: (eventId: string, data: AcceptAiEventRequest) =>
-    api.post(
-      `/ai/proposals/events/${encodeURIComponent(eventId)}/accept`,
+  create: (workspaceId: string, data: CreateCategoryRequest) =>
+    api.post<{ categoryId: string; createdAt: string }>(
+      ws(workspaceId) + "/category",
       data,
     ),
 
-  rejectEvent: (eventId: string) =>
-    api.delete(`/ai/proposals/events/${encodeURIComponent(eventId)}`),
+  edit: (workspaceId: string, categoryId: string, data: EditCategoryRequest) =>
+    api.put(ws(workspaceId) + "/category", {
+      categoryId,
+      ...data,
+    }),
+
+  delete: (workspaceId: string, categoryId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/category/${encodeURIComponent(categoryId)}`,
+    ),
 };
 
-export const aiStatisticApi = {
-  getMy: () => api.get<{ statistics: AiStatistic[] }>("/ai-statistic/my"),
+export const taskStatusApi = {
+  getAll: async (workspaceId: string) => {
+    const { data } = await api.get(ws(workspaceId) + "/task-status");
+    return { statuses: normalizeArray(data, mapStatusDto) };
+  },
 
-  delete: (id: string) => api.delete(`/ai-statistic/${encodeURIComponent(id)}`),
+  create: (workspaceId: string, data: CreateTaskStatusRequest) =>
+    api.post<{ statusId: string; createdAt: string }>(
+      ws(workspaceId) + "/task-status",
+      data,
+    ),
+
+  edit: (
+    workspaceId: string,
+    statusId: string,
+    data: EditTaskStatusRequest,
+  ) =>
+    api.put(ws(workspaceId) + "/task-status", {
+      statusId,
+      ...data,
+    }),
+
+  delete: (workspaceId: string, statusId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/task-status/${encodeURIComponent(statusId)}`,
+    ),
+};
+
+export const eventApi = {
+  getAll: async (workspaceId: string) => {
+    const { data } = await api.get(ws(workspaceId) + "/event");
+    return { events: normalizeArray(data, mapEventDto) };
+  },
+
+  create: (workspaceId: string, data: CreateEventRequest) =>
+    api.post<{ eventId: string; createdAt: string }>(
+      ws(workspaceId) + "/event",
+      data,
+    ),
+
+  edit: (workspaceId: string, eventId: string, data: EditEventRequest) =>
+    api.put(ws(workspaceId) + "/event", {
+      eventId,
+      ...data,
+    }),
+
+  delete: (workspaceId: string, eventId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/event/${encodeURIComponent(eventId)}`,
+    ),
+};
+
+export const aiApi = {
+  generatePlan: (
+    workspaceId: string,
+    data: GenerateAiPlanRequest,
+    timeZoneId?: string,
+  ) =>
+    api.post(ws(workspaceId) + "/ai/plan", {
+      userText: data.text,
+      timeZoneId: timeZoneId ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }, { timeout: 120000 }),
+
+  getPendingProposals: async (workspaceId: string) => {
+    const { data } = await api.get<{
+      tasks: Record<string, unknown>[];
+      events: Record<string, unknown>[];
+    }>(`${ws(workspaceId)}/proposals`);
+    return {
+      tasks: (data.tasks ?? []).map(mapPendingTaskDto),
+      events: (data.events ?? []).map(mapPendingEventDto),
+    };
+  },
+
+  acceptTask: (
+    workspaceId: string,
+    taskId: string,
+    data: AcceptAiTaskRequest,
+  ) =>
+    api.post(
+      `${ws(workspaceId)}/proposals/tasks/${encodeURIComponent(taskId)}/accept`,
+      { ...data, priority: mapPriorityToApi(data.priority) },
+    ),
+
+  rejectTask: (workspaceId: string, taskId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/proposals/tasks/${encodeURIComponent(taskId)}`,
+    ),
+
+  acceptEvent: (
+    workspaceId: string,
+    eventId: string,
+    data: AcceptAiEventRequest,
+  ) =>
+    api.post(
+      `${ws(workspaceId)}/proposals/events/${encodeURIComponent(eventId)}/accept`,
+      {
+        title: data.title,
+        startDateTime: data.startDateTime,
+        endDateTime: data.endDateTime,
+        allDay: data.allDay,
+      },
+    ),
+
+  rejectEvent: (workspaceId: string, eventId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/proposals/events/${encodeURIComponent(eventId)}`,
+    ),
+};
+
+/** AI statistics — not implemented in .NET backend yet */
+export const aiStatisticApi = {
+  getMy: async () => ({ statistics: [] as never[] }),
+  delete: async (_id: string) => {
+    throw new Error("AI statistics are not available yet");
+  },
 };

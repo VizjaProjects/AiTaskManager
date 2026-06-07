@@ -12,6 +12,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Button, Input } from "@/components/atoms";
+import { AuthCard, AuthHeader } from "@/components/molecules/AuthCard";
 import { authApi } from "@/lib/api";
 import {
   forgotPasswordSchema,
@@ -47,41 +48,32 @@ export default function ForgotPasswordScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-          keyboardShouldPersistTaps="handled"
-          className="px-8"
-        >
-          <View className="max-w-md w-full self-center gap-8 items-center">
-            <View className="w-20 h-20 rounded-full bg-primary-fixed items-center justify-center">
-              <MaterialIcons
-                name={sent ? "mark-email-read" : "lock-reset"}
-                size={40}
-                color="#4d41df"
-              />
-            </View>
-
-            <View className="items-center gap-2">
-              <Text className="text-on-surface font-headline text-2xl text-center">
-                {sent ? "Link wysłany!" : "Resetuj hasło"}
-              </Text>
-              <Text className="text-on-surface-variant font-body text-sm text-center">
-                {sent
+    <SafeAreaView className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} className="flex-1">
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <AuthCard showIllustration={false}>
+            <AuthHeader
+              title={sent ? "Link wysłany!" : "Resetuj hasło"}
+              subtitle={
+                sent
                   ? "Sprawdź swoją skrzynkę email i kliknij w link resetujący"
-                  : "Podaj email, a wyślemy Ci link do resetowania hasła"}
-              </Text>
+                  : "Podaj email, a wyślemy Ci link do resetowania hasła"
+              }
+            />
+
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 rounded-full bg-primary-fixed items-center justify-center">
+                <MaterialIcons
+                  name={sent ? "mark-email-read" : "lock-reset"}
+                  size={32}
+                  color="#4d41df"
+                />
+              </View>
             </View>
 
             {error && (
-              <View className="bg-error-container rounded-xl px-4 py-3 w-full">
-                <Text className="text-on-error-container font-body text-sm text-center">
-                  {error}
-                </Text>
+              <View className="bg-error-container rounded-xl px-4 py-3 mb-4">
+                <Text className="text-on-error-container font-body text-sm">{error}</Text>
               </View>
             )}
 
@@ -92,9 +84,9 @@ export default function ForgotPasswordScreen() {
                   name="email"
                   render={({ field: { onChange, value } }) => (
                     <Input
-                      label="Email"
+                      label="Email Address"
                       icon="email"
-                      placeholder="name@company.com"
+                      placeholder="you@example.com"
                       keyboardType="email-address"
                       autoCapitalize="none"
                       value={value}
@@ -105,21 +97,16 @@ export default function ForgotPasswordScreen() {
                     />
                   )}
                 />
-                <Button
-                  label="Wyślij link"
-                  loading={loading}
-                  fullWidth
-                  onPress={handleSubmit(onSubmit)}
-                />
+                <View className="mt-6">
+                  <Button label="Wyślij link" loading={loading} fullWidth onPress={handleSubmit(onSubmit)} />
+                </View>
               </>
             )}
 
-            <Button
-              variant="text"
-              label="Wróć do logowania"
-              onPress={() => router.push("/(auth)/login")}
-            />
-          </View>
+            <View className="mt-4">
+              <Button variant="text" label="Wróć do logowania" fullWidth onPress={() => router.push("/(auth)/login")} />
+            </View>
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

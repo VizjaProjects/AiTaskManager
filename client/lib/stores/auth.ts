@@ -2,7 +2,13 @@ import { create } from "zustand";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { User, Role } from "../types";
-import { authApi, setAccessToken, clearTokens } from "../api";
+import {
+  identityApi,
+  setAccessToken,
+  setRefreshToken,
+  clearTokens,
+} from "../api";
+import { useWorkspaceStore } from "./workspace";
 
 function storeUser(user: User) {
   if (Platform.OS === "web") {
@@ -51,7 +57,7 @@ interface AuthState {
   register: (
     fullName: string,
     email: string,
-    rawPassword: string,
+    password: string,
   ) => Promise<{ userId: string }>;
   logout: () => Promise<void>;
   setUser: (user: User) => void;
@@ -64,22 +70,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email, password) => {
-    const { data } = await authApi.login({ email, password });
+    const { data } = await identityApi.login({ email, password });
     await setAccessToken(data.accessToken);
-
-    if (Platform.OS !== "web") {
-      await SecureStore.setItemAsync("refreshToken", "stored-via-cookie");
-    }
+    await setRefreshToken(data.refreshToken);
 
     const user: User = {
       userId: data.userId,
       email: data.email,
       fullName: data.fullName,
-      role: data.role,
+      role: data.role as Role,
     };
 
     storeUser(user);
     set({ user, isAuthenticated: true, isLoading: false });
+    await useWorkspaceStore.getState().fetchWorkspaces();
   },
 
   loginWithOAuth: async (token, userId, email, fullName, role) => {
@@ -92,35 +96,41 @@ export const useAuthStore = create<AuthState>((set) => ({
     };
     storeUser(user);
     set({ user, isAuthenticated: true, isLoading: false });
+    await useWorkspaceStore.getState().fetchWorkspaces();
   },
 
-  register: async (fullName, email, rawPassword) => {
-    const { data } = await authApi.register({ fullName, email, rawPassword });
+  register: async (fullName, email, password) => {
+    const { data } = await identityApi.register({ fullName, email, password });
     return { userId: data.userId };
   },
 
   logout: async () => {
-    set({ user: null, isAuthenticated: false, isLoading: false });
     await clearTokens();
     removeUser();
-    authApi.logout().catch(() => {});
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.location.href = "/login";
-    }
+    useWorkspaceStore.getState().reset();
+    set({ user: null, isAuthenticated: false, isLoading: false });
   },
 
-  setUser: (user) => set({ user, isAuthenticated: true }),
+  setUser: (user) => {
+    storeUser(user);
+    set({ user });
+  },
 
   hydrate: async () => {
-    try {
-      const result = await loadUser();
-      if (result) {
-        set({ user: result.user, isAuthenticated: true, isLoading: false });
-        return;
+    const stored = await loadUser();
+    if (stored) {
+      set({
+        user: stored.user,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+      try {
+        await useWorkspaceStore.getState().fetchWorkspaces();
+      } catch {
+        // workspace fetch may fail if token expired — interceptor handles refresh
       }
-    } catch {
-      // ignore
+    } else {
+      set({ isLoading: false });
     }
-    set({ isLoading: false });
   },
 }));

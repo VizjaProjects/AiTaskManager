@@ -12,7 +12,8 @@ namespace Ordovita.Application.Tasks;
 public sealed class WorkspaceAccessGuard(
     IUserContext userContext,
     IUserRepository userRepository,
-    IWorkspaceRepository workspaceRepository)
+    IWorkspaceRepository workspaceRepository,
+    WorkspaceTaskEnsurer workspaceTaskEnsurer)
 {
     public async Task<Result<(DomainUserEntity User, Workspace Workspace)>> RequireAccessAsync(
         Guid workspaceId, CancellationToken ct)
@@ -27,6 +28,8 @@ public sealed class WorkspaceAccessGuard(
 
         if (!workspace.CanBeAccessedBy(userResult.Value!.Id))
             return Result.Failure<(DomainUserEntity, Workspace)>(WorkspaceException.UnauthorizedAccess);
+
+        await workspaceTaskEnsurer.EnsureInitializedAsync(workspace.Id, userResult.Value.Id, ct);
 
         return Result.Success((userResult.Value, workspace));
     }

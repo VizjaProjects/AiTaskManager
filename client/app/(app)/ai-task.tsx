@@ -8,18 +8,18 @@ import {
   TouchableOpacity,
   Modal,
   Animated,
+  useWindowDimensions,
 } from "react-native";
 import { useState, useEffect, useRef } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PageLayout } from "@/components/organisms";
+import { TaskDetailModal } from "@/components/organisms/TaskModals";
 import {
   Button,
-  Card,
-  EmptyState,
   Input,
   InlineDatePicker,
+  AiProposedCard,
 } from "@/components/atoms";
-import { PriorityBadge, ColorBadge } from "@/components/atoms";
 import {
   useGenerateAiPlan,
   useAiProposals,
@@ -30,9 +30,12 @@ import {
   useCategories,
   useTaskStatuses,
 } from "@/lib/hooks";
-import type { Task, CalendarEvent, Category, TaskStatus } from "@/lib/types";
-import { TaskPriority, EventStatus, ProposedBy } from "@/lib/types";
-import { PRIORITY_COLORS, formatDateTime, formatDuration } from "@/lib/utils";
+import type { Task, CalendarEvent } from "@/lib/types";
+import { EventStatus } from "@/lib/types";
+import { formatDuration } from "@/lib/utils";
+
+const NO_OUTLINE =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
 
 function AiLoadingAnimation() {
   const pulse1 = useRef(new Animated.Value(0.3)).current;
@@ -44,16 +47,8 @@ function AiLoadingAnimation() {
       return Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(val, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(val, {
-            toValue: 0.3,
-            duration: 600,
-            useNativeDriver: true,
-          }),
+          Animated.timing(val, { toValue: 1, duration: 600, useNativeDriver: true }),
+          Animated.timing(val, { toValue: 0.3, duration: 600, useNativeDriver: true }),
         ]),
       );
     }
@@ -63,395 +58,32 @@ function AiLoadingAnimation() {
     a1.start();
     a2.start();
     a3.start();
-    return () => {
-      a1.stop();
-      a2.stop();
-      a3.stop();
-    };
+    return () => { a1.stop(); a2.stop(); a3.stop(); };
   }, [pulse1, pulse2, pulse3]);
 
   return (
-    <Card variant="surface">
-      <View className="items-center gap-4 py-8">
-        <View className="flex-row items-center gap-3">
+    <View className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-8 items-center gap-4">
+      <View className="flex-row items-center gap-2">
+        {[pulse1, pulse2, pulse3].map((p, i) => (
           <Animated.View
+            key={i}
             style={{
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: "#4d41df",
-              opacity: pulse1,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: "#111111",
+              opacity: p,
             }}
           />
-          <Animated.View
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: "#006b58",
-              opacity: pulse2,
-            }}
-          />
-          <Animated.View
-            style={{
-              width: 12,
-              height: 12,
-              borderRadius: 6,
-              backgroundColor: "#f59e0b",
-              opacity: pulse3,
-            }}
-          />
-        </View>
-        <Text className="text-on-surface font-headline text-base">
-          AI analizuje Twój plan...
-        </Text>
-        <Text className="text-on-surface-variant font-body text-sm text-center">
-          Generowanie zadań i wydarzeń. To może potrwać kilka sekund.
-        </Text>
+        ))}
       </View>
-    </Card>
-  );
-}
-
-function EditTaskModal({
-  task,
-  visible,
-  onClose,
-  onSave,
-  loading,
-  categories,
-  statuses,
-}: {
-  task: Task;
-  visible: boolean;
-  onClose: () => void;
-  onSave: (data: any) => void;
-  loading: boolean;
-  categories: Category[];
-  statuses: TaskStatus[];
-}) {
-  const [title, setTitle] = useState(task.title);
-  const [description, setDescription] = useState(task.description);
-  const [priority, setPriority] = useState(task.priority);
-  const [statusId, setStatusId] = useState(task.statusId);
-  const [categoryId, setCategoryId] = useState<string | null>(task.categoryId);
-  const [estimatedDuration, setEstimatedDuration] = useState(
-    task.estimatedDuration > 0 ? String(task.estimatedDuration) : "",
-  );
-  const [dueDate, setDueDate] = useState(task.dueDateTime ?? "");
-  const [dueDateObj, setDueDateObj] = useState<Date>(() =>
-    task.dueDateTime ? new Date(task.dueDateTime) : new Date(),
-  );
-  const [showDuePicker, setShowDuePicker] = useState(false);
-  const [dueHour, setDueHour] = useState(() => {
-    if (task.dueDateTime)
-      return String(new Date(task.dueDateTime).getHours()).padStart(2, "0");
-    return "12";
-  });
-  const [dueMin, setDueMin] = useState(() => {
-    if (task.dueDateTime)
-      return String(new Date(task.dueDateTime).getMinutes()).padStart(2, "0");
-    return "00";
-  });
-
-  useEffect(() => {
-    if (visible) {
-      setTitle(task.title);
-      setDescription(task.description);
-      setPriority(task.priority);
-      setStatusId(task.statusId);
-      setCategoryId(task.categoryId);
-      setEstimatedDuration(
-        task.estimatedDuration > 0 ? String(task.estimatedDuration) : "",
-      );
-      setDueDate(task.dueDateTime ?? "");
-      setDueDateObj(task.dueDateTime ? new Date(task.dueDateTime) : new Date());
-      setShowDuePicker(false);
-      if (task.dueDateTime) {
-        setDueHour(
-          String(new Date(task.dueDateTime).getHours()).padStart(2, "0"),
-        );
-        setDueMin(
-          String(new Date(task.dueDateTime).getMinutes()).padStart(2, "0"),
-        );
-      } else {
-        setDueHour("12");
-        setDueMin("00");
-      }
-    }
-  }, [visible, task]);
-
-  return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-          showsVerticalScrollIndicator={false}
-        >
-          <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4 self-center">
-            <View className="flex-row items-center justify-between">
-              <Text className="font-headline text-on-surface text-lg">
-                Edytuj propozycję zadania
-              </Text>
-              <TouchableOpacity onPress={onClose}>
-                <MaterialIcons name="close" size={24} color="#777587" />
-              </TouchableOpacity>
-            </View>
-            <Input label="Tytuł" value={title} onChangeText={setTitle} />
-            <View className="w-full">
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Opis
-              </Text>
-              <TextInput
-                className="bg-surface-container-low rounded-xl p-4 text-on-surface font-body text-base"
-                style={{ minHeight: 120 }}
-                multiline
-                textAlignVertical="top"
-                value={description}
-                onChangeText={setDescription}
-                placeholderTextColor="#777587"
-              />
-            </View>
-            <View className="w-full">
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Priorytet
-              </Text>
-              <View className="flex-row gap-2 flex-wrap">
-                {Object.values(TaskPriority).map((p) => (
-                  <TouchableOpacity
-                    key={p}
-                    onPress={() => setPriority(p)}
-                    className={`px-3 py-1.5 rounded-full border ${
-                      priority === p
-                        ? "border-transparent"
-                        : "border-outline-variant"
-                    }`}
-                    style={
-                      priority === p
-                        ? { backgroundColor: PRIORITY_COLORS[p] }
-                        : undefined
-                    }
-                  >
-                    <Text
-                      className={`text-xs font-label ${
-                        priority === p
-                          ? "text-white"
-                          : "text-on-surface-variant"
-                      }`}
-                    >
-                      {p}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View className="w-full">
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Status
-              </Text>
-              <View className="flex-row gap-2 flex-wrap">
-                {statuses.map((s) => (
-                  <TouchableOpacity
-                    key={s.statusId}
-                    onPress={() => setStatusId(s.statusId)}
-                    className={`px-3 py-1.5 rounded-full border ${
-                      statusId === s.statusId
-                        ? "border-transparent"
-                        : "border-outline-variant"
-                    }`}
-                    style={
-                      statusId === s.statusId
-                        ? { backgroundColor: s.color }
-                        : undefined
-                    }
-                  >
-                    <Text
-                      className={`text-xs font-label ${
-                        statusId === s.statusId
-                          ? "text-white"
-                          : "text-on-surface-variant"
-                      }`}
-                    >
-                      {s.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View className="w-full">
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Kategoria
-              </Text>
-              <View className="flex-row gap-2 flex-wrap">
-                <TouchableOpacity
-                  onPress={() => setCategoryId(null)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    !categoryId
-                      ? "border-transparent bg-outline-variant"
-                      : "border-outline-variant"
-                  }`}
-                >
-                  <Text className="text-xs font-label text-on-surface-variant">
-                    Brak
-                  </Text>
-                </TouchableOpacity>
-                {categories.map((c) => (
-                  <TouchableOpacity
-                    key={c.categoryId}
-                    onPress={() => setCategoryId(c.categoryId)}
-                    className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-                      categoryId === c.categoryId
-                        ? "border-transparent"
-                        : "border-outline-variant"
-                    }`}
-                    style={
-                      categoryId === c.categoryId
-                        ? { backgroundColor: `${c.color}20` }
-                        : undefined
-                    }
-                  >
-                    <View
-                      className="w-2.5 h-2.5 rounded-full"
-                      style={{ backgroundColor: c.color }}
-                    />
-                    <Text
-                      className={`text-xs font-label ${
-                        categoryId === c.categoryId
-                          ? ""
-                          : "text-on-surface-variant"
-                      }`}
-                      style={
-                        categoryId === c.categoryId
-                          ? { color: c.color }
-                          : undefined
-                      }
-                    >
-                      {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <Input
-              label="Czas trwania (min)"
-              value={estimatedDuration}
-              onChangeText={setEstimatedDuration}
-              placeholder="np. 45"
-              keyboardType="numeric"
-            />
-            <View className="w-full">
-              <TouchableOpacity
-                onPress={() => setShowDuePicker(!showDuePicker)}
-                className="flex-row items-center justify-between bg-surface-container-low rounded-xl px-4 py-3"
-              >
-                <View>
-                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                    Termin
-                  </Text>
-                  <Text className="text-on-surface font-body text-sm mt-1">
-                    {dueDate
-                      ? (() => {
-                          const d = new Date(dueDate);
-                          return `${d.toLocaleDateString("pl-PL", {
-                            day: "numeric",
-                            month: "long",
-                            year: "numeric",
-                          })} ${dueHour}:${dueMin}`;
-                        })()
-                      : "Brak terminu"}
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name={showDuePicker ? "expand-less" : "calendar-today"}
-                  size={20}
-                  color="#777587"
-                />
-              </TouchableOpacity>
-              {showDuePicker && (
-                <View className="mt-2">
-                  <InlineDatePicker
-                    value={dueDateObj}
-                    onChange={(d) => {
-                      setDueDateObj(d);
-                      setDueDate(d.toISOString());
-                    }}
-                  />
-                  <View className="flex-row items-center gap-2 mt-3">
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                      Godzina
-                    </Text>
-                    <TextInput
-                      value={dueHour}
-                      onChangeText={(v) =>
-                        setDueHour(v.replace(/\D/g, "").slice(0, 2))
-                      }
-                      maxLength={2}
-                      placeholder="HH"
-                      placeholderTextColor="#777587"
-                      keyboardType="numeric"
-                      className="bg-surface-container-low rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm"
-                    />
-                    <Text className="text-on-surface font-headline text-base">
-                      :
-                    </Text>
-                    <TextInput
-                      value={dueMin}
-                      onChangeText={(v) =>
-                        setDueMin(v.replace(/\D/g, "").slice(0, 2))
-                      }
-                      maxLength={2}
-                      placeholder="MM"
-                      placeholderTextColor="#777587"
-                      keyboardType="numeric"
-                      className="bg-surface-container-low rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm"
-                    />
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => {
-                      setDueDate("");
-                      setShowDuePicker(false);
-                    }}
-                    className="mt-2 self-start"
-                  >
-                    <Text className="text-error font-label text-xs">
-                      Usuń termin
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-            <View className="flex-row gap-3 justify-end mt-2">
-              <Button variant="outline" label="Anuluj" onPress={onClose} />
-              <Button
-                label="Zapisz i akceptuj"
-                loading={loading}
-                onPress={() =>
-                  onSave({
-                    title,
-                    description,
-                    priority,
-                    statusId,
-                    categoryId: categoryId ?? undefined,
-                    estimatedDuration: estimatedDuration
-                      ? parseInt(estimatedDuration, 10)
-                      : undefined,
-                    dueDateTime: dueDate
-                      ? new Date(
-                          dueDateObj.getFullYear(),
-                          dueDateObj.getMonth(),
-                          dueDateObj.getDate(),
-                          parseInt(dueHour) || 0,
-                          parseInt(dueMin) || 0,
-                        ).toISOString()
-                      : undefined,
-                  })
-                }
-              />
-            </View>
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
+      <Text className="text-on-surface font-headline text-body-md">
+        Analyzing your plan...
+      </Text>
+      <Text className="text-on-surface-variant font-body text-sm text-center">
+        Generating tasks and events. This may take a few seconds.
+      </Text>
+    </View>
   );
 }
 
@@ -534,7 +166,8 @@ function EditEventModal({
                   maxLength={2}
                   placeholder="HH"
                   placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                  className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
+                  style={NO_OUTLINE}
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
                 <TextInput
@@ -545,7 +178,8 @@ function EditEventModal({
                   maxLength={2}
                   placeholder="MM"
                   placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                  className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
+                  style={NO_OUTLINE}
                 />
               </View>
             </View>
@@ -562,7 +196,8 @@ function EditEventModal({
                   maxLength={2}
                   placeholder="HH"
                   placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                  className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
+                  style={NO_OUTLINE}
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
                 <TextInput
@@ -573,7 +208,8 @@ function EditEventModal({
                   maxLength={2}
                   placeholder="MM"
                   placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                  className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
+                  style={NO_OUTLINE}
                 />
               </View>
             </View>
@@ -585,7 +221,7 @@ function EditEventModal({
             <MaterialIcons
               name={allDay ? "check-box" : "check-box-outline-blank"}
               size={22}
-              color="#4d41df"
+              color="#9ca3af"
             />
             <Text className="text-on-surface font-body text-sm">
               Cały dzień
@@ -631,6 +267,7 @@ export default function AiTaskScreen() {
   const acceptEvent = useAcceptAiEvent();
   const rejectEvent = useRejectAiEvent();
 
+  const [previewTask, setPreviewTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
@@ -753,9 +390,13 @@ export default function AiTaskScreen() {
   const totalCount = taskCount + eventCount;
 
   const isGenerating = generatePlan.isPending;
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 768;
+  const isXl = Platform.OS === "web" && width >= 1280;
+  const proposalCardWidth = isXl ? "31.5%" : isWide ? "48%" : "100%";
 
   return (
-    <PageLayout title="AI Task">
+    <PageLayout>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
@@ -764,359 +405,268 @@ export default function AiTaskScreen() {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ gap: 24, paddingBottom: 32 }}
         >
-          <Card variant="surface">
-            <View className="gap-4">
-              <View className="flex-row items-center gap-2">
-                <MaterialIcons name="auto-awesome" size={24} color="#006b58" />
-                <Text className="text-on-surface font-headline text-lg">
-                  Generuj zadania z AI
-                </Text>
-              </View>
-              <Text className="text-on-surface-variant font-body text-sm">
-                Opisz swój plan, projekt lub listę rzeczy do zrobienia — AI
-                automatycznie utworzy zadania i wydarzenia.
+          <View className="gap-3">
+            <View className="flex-row items-center gap-1.5 self-start px-3 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
+              <MaterialIcons name="auto-awesome" size={13} color="#9ca3af" />
+              <Text className="text-on-surface-variant font-label text-xs">
+                AI Assistant
               </Text>
-              <View className="relative">
-                <TextInput
-                  className="bg-surface-container-low rounded-xl p-4 pr-14 text-on-surface font-body text-base"
-                  style={{
-                    minHeight: 120,
-                    borderWidth: isListening ? 2 : 0,
-                    borderColor: isListening ? "#dc2626" : "transparent",
+            </View>
+            <Text className="text-on-surface font-headline text-headline-md">
+              AI Task Creation
+            </Text>
+            <Text className="text-on-surface-variant font-body text-body-md">
+              Describe your day in natural language — AI will suggest tasks and events.
+            </Text>
+          </View>
+
+          <View className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 gap-4">
+            <View className="flex-row items-center gap-2">
+              <MaterialIcons name="auto-awesome" size={16} color="#9ca3af" />
+              <Text className="text-on-surface font-headline text-title-lg">
+                What would you like to plan?
+              </Text>
+            </View>
+            <View className="relative">
+              <TextInput
+                className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-base border border-outline-variant"
+                style={[
+                  {
+                    minHeight: 140,
+                    paddingRight: 16,
+                    paddingBottom: 56,
+                    borderColor: isListening ? "#ef4444" : undefined,
                     opacity: generatePlan.isPending ? 0.5 : 1,
-                  }}
-                  placeholder="Np. Muszę przygotować prezentację na piątek, spotkanie z klientem w środę o 14..."
-                  placeholderTextColor="#777587"
-                  multiline
-                  textAlignVertical="top"
-                  value={text}
-                  onChangeText={setText}
-                  editable={!generatePlan.isPending}
-                  onKeyPress={(e: any) => {
-                    if (
-                      e.nativeEvent.key === "Enter" &&
-                      !e.nativeEvent.shiftKey
-                    ) {
-                      e.preventDefault();
-                      handleGenerate();
-                    }
-                  }}
-                />
+                  },
+                  NO_OUTLINE,
+                ]}
+                placeholder="e.g. Schedule a team sync tomorrow at 2 PM, prepare the Q3 report by Friday, and remind me to call Sarah."
+                placeholderTextColor="#9ca3af"
+                multiline
+                textAlignVertical="top"
+                value={text}
+                onChangeText={setText}
+                editable={!generatePlan.isPending}
+                onKeyPress={(e: any) => {
+                  if (
+                    e.nativeEvent.key === "Enter" &&
+                    !e.nativeEvent.shiftKey
+                  ) {
+                    e.preventDefault();
+                    handleGenerate();
+                  }
+                }}
+              />
+              <View className="absolute bottom-3 right-3 flex-row items-center gap-2">
                 {speechSupported && (
                   <TouchableOpacity
                     onPress={toggleSpeech}
                     disabled={generatePlan.isPending}
-                    className="absolute right-3 top-3 items-center justify-center rounded-full"
-                    style={{
-                      width: 36,
-                      height: 36,
-                      backgroundColor: isListening
-                        ? "#dc2626"
-                        : "rgba(77, 65, 223, 0.1)",
-                      opacity: generatePlan.isPending ? 0.4 : 1,
-                    }}
+                    className="w-9 h-9 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest"
+                    style={{ opacity: generatePlan.isPending ? 0.4 : 1 }}
                   >
                     <MaterialIcons
                       name={isListening ? "stop" : "mic"}
-                      size={20}
-                      color={isListening ? "#fff" : "#4d41df"}
+                      size={18}
+                      color={isListening ? "#ef4444" : "#6b7280"}
                     />
                   </TouchableOpacity>
                 )}
-                {isListening && (
-                  <View className="flex-row items-center gap-2 mt-2">
-                    <View
-                      style={{
-                        width: 8,
-                        height: 8,
-                        borderRadius: 4,
-                        backgroundColor: "#dc2626",
-                      }}
-                    />
-                    <Text className="text-error font-label text-xs">
-                      Nasłuchuję... mów teraz
-                    </Text>
-                  </View>
-                )}
+                <TouchableOpacity
+                  onPress={handleGenerate}
+                  disabled={text.length < 10 || generatePlan.isPending}
+                  className="flex-row items-center gap-1.5 bg-action px-4 py-2.5 rounded-xl"
+                  style={{ opacity: text.length < 10 ? 0.45 : 1 }}
+                >
+                  <MaterialIcons name="north" size={16} color="#f0f0f0" />
+                  <Text className="text-on-action font-headline text-sm">
+                    {generatePlan.isPending ? "..." : "Generate"}
+                  </Text>
+                </TouchableOpacity>
               </View>
-              <Button
-                label="Generuj zadania"
-                loading={generatePlan.isPending}
-                disabled={text.length < 10}
-                fullWidth
-                onPress={handleGenerate}
-              />
             </View>
-          </Card>
+            {isListening && (
+              <View className="flex-row items-center gap-2">
+                <View className="w-2 h-2 rounded-full bg-error" />
+                <Text className="text-error font-label text-xs">Listening...</Text>
+              </View>
+            )}
+          </View>
 
           {isGenerating && <AiLoadingAnimation />}
 
           {!isGenerating && totalCount > 0 && (
-            <View className="gap-6">
-              <View>
-                <Text className="text-on-surface font-headline text-xl">
-                  AI wygenerowało {taskCount} task
-                  {taskCount !== 1 ? "i" : ""} i {eventCount} event
-                  {eventCount !== 1 ? "y" : ""}
-                </Text>
-                <Text className="text-on-surface-variant font-body text-sm mt-1">
-                  Zaakceptuj, edytuj lub odrzuć każdą propozycję.
-                </Text>
+            <View className="gap-5">
+              <View className="flex-row items-start justify-between gap-4">
+                <View className="flex-1">
+                  <Text className="text-on-surface font-headline text-title-lg">
+                    AI Proposals
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-body-md mt-1">
+                    Review and accept the generated items.
+                  </Text>
+                </View>
+                <View className="px-2.5 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
+                  <Text className="text-on-surface-variant font-label text-xs">
+                    {totalCount} pending
+                  </Text>
+                </View>
               </View>
 
-              {taskCount > 0 && (
-                <View className="gap-4">
-                  <Text className="text-on-surface font-headline text-base">
-                    Zadania
-                  </Text>
-                  {proposals!.tasks.map((task) => {
-                    const cat = task.categoryId
-                      ? categoryMap.get(task.categoryId)
-                      : undefined;
-                    return (
-                      <View
-                        key={task.taskId}
-                        className="bg-surface-container-lowest rounded-2xl overflow-hidden"
-                        style={{
-                          borderLeftWidth: 4,
-                          borderLeftColor: PRIORITY_COLORS[task.priority],
-                        }}
-                      >
-                        <View className="p-5 gap-3">
-                          <View className="flex-row flex-wrap gap-2">
-                            <PriorityBadge priority={task.priority} />
-                            {cat && (
-                              <ColorBadge label={cat.name} color={cat.color} />
-                            )}
-                          </View>
-                          <Text className="font-headline text-on-surface text-base">
-                            {task.title}
-                          </Text>
-                          {task.description ? (
-                            <Text className="text-on-surface-variant font-body text-sm">
-                              {task.description}
-                            </Text>
-                          ) : null}
-                          <View className="flex-row items-center gap-4 flex-wrap">
-                            {task.estimatedDuration > 0 && (
-                              <View className="flex-row items-center gap-1">
-                                <MaterialIcons
-                                  name="schedule"
-                                  size={14}
-                                  color="#777587"
-                                />
-                                <Text className="text-on-surface-variant font-body text-xs">
-                                  {formatDuration(task.estimatedDuration)}
-                                </Text>
-                              </View>
-                            )}
-                            {task.dueDateTime && (
-                              <View className="flex-row items-center gap-1">
-                                <MaterialIcons
-                                  name="event"
-                                  size={14}
-                                  color="#777587"
-                                />
-                                <Text className="text-on-surface-variant font-body text-xs">
-                                  {formatDateTime(task.dueDateTime)}
-                                </Text>
-                              </View>
-                            )}
-                          </View>
-                          <View className="flex-row items-center gap-3 mt-1">
-                            <TouchableOpacity
-                              onPress={() => rejectTask.mutate(task.taskId)}
-                              className="p-2"
-                            >
-                              <MaterialIcons
-                                name="close"
-                                size={22}
-                                color="#ba1a1a"
-                              />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => setEditingTask(task)}
-                              className="p-2"
-                            >
-                              <MaterialIcons
-                                name="edit"
-                                size={22}
-                                color="#777587"
-                              />
-                            </TouchableOpacity>
-                            <Button
-                              label="✓ Akceptuj"
-                              onPress={() =>
-                                acceptTask.mutate({
-                                  taskId: task.taskId,
-                                  data: {
-                                    title: task.title,
-                                    description: task.description,
-                                    priority: task.priority,
-                                    statusId: task.statusId,
-                                    categoryId: task.categoryId ?? undefined,
-                                    estimatedDuration: task.estimatedDuration,
-                                    dueDateTime: task.dueDateTime ?? undefined,
-                                  },
-                                })
-                              }
-                              loading={acceptTask.isPending}
-                            />
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
+              <View className="flex-row flex-wrap gap-4">
+                {manualEvents.map((event) => {
+                  const start = new Date(event.startDateTime);
+                  const end = new Date(event.endDateTime);
+                  const duration = `${start.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`;
+                  const dueDate = start.toLocaleDateString("pl-PL", {
+                    day: "numeric",
+                    month: "short",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  });
+                  return (
+                    <View key={event.eventId} style={{ width: proposalCardWidth }}>
+                      <AiProposedCard
+                        type="event"
+                        title={event.title}
+                        duration={duration}
+                        dueDate={dueDate}
+                        onDismiss={() => rejectEvent.mutate(event.eventId)}
+                        onEdit={() => setEditingEvent(event)}
+                        onAccept={() =>
+                          acceptEvent.mutate({
+                            eventId: event.eventId,
+                            data: {
+                              title: event.title,
+                              startDateTime: event.startDateTime,
+                              endDateTime: event.endDateTime,
+                              allDay: event.allDay,
+                              status: EventStatus.ACCEPTED,
+                            },
+                          })
+                        }
+                        loading={acceptEvent.isPending}
+                      />
+                    </View>
+                  );
+                })}
 
-              {eventCount > 0 && (
-                <View className="gap-4">
-                  <Text className="text-on-surface font-headline text-base">
-                    Wydarzenia
-                  </Text>
-                  {manualEvents.map((event) => {
-                    const startTime = new Date(
-                      event.startDateTime,
-                    ).toLocaleTimeString("pl-PL", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    const endTime = new Date(
-                      event.endDateTime,
-                    ).toLocaleTimeString("pl-PL", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-                    const dateStr = new Date(
-                      event.startDateTime,
-                    ).toLocaleDateString("pl-PL", {
-                      day: "numeric",
-                      month: "short",
-                    });
-
-                    return (
-                      <View
-                        key={event.eventId}
-                        className="bg-surface-container-lowest rounded-2xl border border-dashed border-secondary overflow-hidden"
-                        style={{
-                          borderLeftWidth: 4,
-                          borderLeftColor: "#f59e0b",
-                        }}
-                      >
-                        <View className="p-5 gap-3">
-                          <View className="flex-row items-center gap-2">
-                            <View className="bg-secondary/10 px-2 py-0.5 rounded">
-                              <Text className="text-secondary font-label text-[10px] uppercase">
-                                Proposed by: AI
-                              </Text>
-                            </View>
-                          </View>
-                          <Text className="font-headline text-on-surface text-base">
-                            {event.title}
-                          </Text>
-                          <View className="flex-row items-center gap-4">
-                            <View className="flex-row items-center gap-1">
-                              <MaterialIcons
-                                name="schedule"
-                                size={14}
-                                color="#777587"
-                              />
-                              <Text className="text-on-surface-variant font-body text-xs">
-                                {startTime} - {endTime}
-                              </Text>
-                            </View>
-                            <View className="flex-row items-center gap-1">
-                              <MaterialIcons
-                                name="event"
-                                size={14}
-                                color="#777587"
-                              />
-                              <Text className="text-on-surface-variant font-body text-xs">
-                                {dateStr}
-                              </Text>
-                            </View>
-                            <Text className="text-on-surface-variant font-body text-xs">
-                              All Day: {event.allDay ? "Yes" : "No"}
-                            </Text>
-                          </View>
-                          <View className="flex-row items-center gap-3 mt-1">
-                            <TouchableOpacity
-                              onPress={() => rejectEvent.mutate(event.eventId)}
-                              className="p-2"
-                            >
-                              <MaterialIcons
-                                name="close"
-                                size={22}
-                                color="#ba1a1a"
-                              />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() => setEditingEvent(event)}
-                              className="p-2"
-                            >
-                              <MaterialIcons
-                                name="edit"
-                                size={22}
-                                color="#777587"
-                              />
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              onPress={() =>
-                                acceptEvent.mutate({
-                                  eventId: event.eventId,
-                                  data: {
-                                    title: event.title,
-                                    startDateTime: event.startDateTime,
-                                    endDateTime: event.endDateTime,
-                                    allDay: event.allDay,
-                                    status: EventStatus.ACCEPTED,
-                                  },
-                                })
-                              }
-                              className="p-2"
-                            >
-                              <MaterialIcons
-                                name="check-circle"
-                                size={24}
-                                color="#006b58"
-                              />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              )}
+                {proposals!.tasks.map((task) => (
+                  <View key={task.taskId} style={{ width: proposalCardWidth }}>
+                    <AiProposedCard
+                      type="task"
+                      title={task.title}
+                      description={task.description ?? undefined}
+                      priority={task.priority}
+                      duration={
+                        task.estimatedDuration > 0
+                          ? formatDuration(task.estimatedDuration)
+                          : undefined
+                      }
+                      dueDate={
+                        task.dueDateTime
+                          ? new Date(task.dueDateTime).toLocaleDateString("pl-PL", {
+                              day: "numeric",
+                              month: "short",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : undefined
+                      }
+                      onDismiss={() => rejectTask.mutate(task.taskId)}
+                      onPreview={() => setPreviewTask(task)}
+                      onEdit={() => setEditingTask(task)}
+                      onAccept={() =>
+                        acceptTask.mutate({
+                          taskId: task.taskId,
+                          data: {
+                            title: task.title,
+                            description: task.description,
+                            priority: task.priority,
+                            statusId: task.statusId,
+                            categoryId: task.categoryId ?? undefined,
+                            estimatedDuration: task.estimatedDuration,
+                            dueDateTime: task.dueDateTime ?? undefined,
+                          },
+                        })
+                      }
+                      loading={acceptTask.isPending}
+                    />
+                  </View>
+                ))}
+              </View>
             </View>
           )}
 
           {totalCount === 0 && !proposalsLoading && !isGenerating && (
-            <EmptyState
-              title="Brak propozycji"
-              description="Wpisz opis i wygeneruj zadania z AI"
-            />
+            <View className="items-center py-8 gap-2">
+              <MaterialIcons name="auto-awesome" size={32} color="#cccccc" />
+              <Text className="text-on-surface-variant font-body text-body-md text-center">
+                No proposals yet. Describe your plan above and tap Generate.
+              </Text>
+            </View>
           )}
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {editingTask && (
-        <EditTaskModal
-          task={editingTask}
-          visible={!!editingTask}
-          onClose={() => setEditingTask(null)}
-          loading={acceptTask.isPending}
-          categories={categories ?? []}
-          statuses={statuses ?? []}
-          onSave={(data) => {
+      <TaskDetailModal
+        task={previewTask}
+        visible={!!previewTask}
+        onClose={() => setPreviewTask(null)}
+        categories={categories ?? []}
+        statuses={statuses ?? []}
+        showDelete={false}
+        rejectAction={{
+          label: "Odrzuć",
+          onPress: () => {
+            if (!previewTask) return;
+            rejectTask.mutate(previewTask.taskId, {
+              onSuccess: () => setPreviewTask(null),
+            });
+          },
+        }}
+        acceptAction={{
+          label: "Akceptuj",
+          loading: acceptTask.isPending,
+          onPress: () => {
+            if (!previewTask) return;
             acceptTask.mutate(
-              { taskId: editingTask.taskId, data },
-              { onSuccess: () => setEditingTask(null) },
+              {
+                taskId: previewTask.taskId,
+                data: {
+                  title: previewTask.title,
+                  description: previewTask.description,
+                  priority: previewTask.priority,
+                  statusId: previewTask.statusId,
+                  categoryId: previewTask.categoryId ?? undefined,
+                  estimatedDuration: previewTask.estimatedDuration,
+                  dueDateTime: previewTask.dueDateTime ?? undefined,
+                },
+              },
+              { onSuccess: () => setPreviewTask(null) },
             );
-          }}
-        />
-      )}
+          },
+        }}
+      />
+
+      <TaskDetailModal
+        task={editingTask}
+        visible={!!editingTask}
+        onClose={() => setEditingTask(null)}
+        categories={categories ?? []}
+        statuses={statuses ?? []}
+        forceEdit
+        showDelete={false}
+        saveLabel="Zapisz i akceptuj"
+        saveLoading={acceptTask.isPending}
+        onSaveCustom={(data) => {
+          if (!editingTask) return;
+          acceptTask.mutate(
+            { taskId: editingTask.taskId, data },
+            { onSuccess: () => setEditingTask(null) },
+          );
+        }}
+      />
 
       {editingEvent && (
         <EditEventModal

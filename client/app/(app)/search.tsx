@@ -44,7 +44,7 @@ export default function SearchScreen() {
     results.categories.length > 0;
 
   return (
-    <PageLayout title="Szukaj" showSearch={false}>
+    <PageLayout showSearch={false}>
       <View className="gap-4">
         <SearchBar value={query} onChangeText={setQuery} />
 

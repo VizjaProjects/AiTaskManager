@@ -41,6 +41,7 @@ const expo = spawn("npx", ["expo", "start", "--web", "--port", expoPort], {
     ...process.env,
     BROWSER: "none",
     EXPO_PUBLIC_API_URL: "",
+    EXPO_PUBLIC_API_PREFIX: "/api/v1",
   },
 });
 
@@ -72,6 +73,7 @@ waitForExpo().then(() => {
     env: {
       ...process.env,
       EXPO_PUBLIC_API_URL: "",
+    EXPO_PUBLIC_API_PREFIX: "/api/v1",
       ORDOVITA_ELECTRON_RENDERER_URL: expoUrl,
     },
   });

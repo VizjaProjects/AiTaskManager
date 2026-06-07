@@ -8,6 +8,7 @@ const result = spawnSync("npx", ["expo", "export", "--platform", "web"], {
   env: {
     ...process.env,
     EXPO_PUBLIC_API_URL: "",
+    EXPO_PUBLIC_API_PREFIX: "/api/v1",
   },
 });
 

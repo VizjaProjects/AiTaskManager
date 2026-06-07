@@ -3,12 +3,12 @@ import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
+const API_PREFIX = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
 
 export const api = axios.create({
-  baseURL: `${BASE_URL}/v1/api`,
+  baseURL: `${BASE_URL}${API_PREFIX}`,
   timeout: 60000,
   headers: { "Content-Type": "application/json" },
-  withCredentials: true,
 });
 
 let onRefreshFailed: (() => void) | null = null;
@@ -26,7 +26,16 @@ async function getAccessToken(): Promise<string | null> {
   return SecureStore.getItemAsync("accessToken");
 }
 
-async function setAccessToken(token: string): Promise<void> {
+async function getRefreshToken(): Promise<string | null> {
+  if (Platform.OS === "web") {
+    return typeof window !== "undefined"
+      ? window.localStorage.getItem("refreshToken")
+      : null;
+  }
+  return SecureStore.getItemAsync("refreshToken");
+}
+
+export async function setAccessToken(token: string): Promise<void> {
   if (Platform.OS === "web") {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("accessToken", token);
@@ -36,17 +45,29 @@ async function setAccessToken(token: string): Promise<void> {
   await SecureStore.setItemAsync("accessToken", token);
 }
 
-async function clearTokens(): Promise<void> {
+export async function setRefreshToken(token: string): Promise<void> {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("refreshToken", token);
+    }
+    return;
+  }
+  await SecureStore.setItemAsync("refreshToken", token);
+}
+
+export async function clearTokens(): Promise<void> {
   if (Platform.OS === "web") {
     if (typeof window !== "undefined") {
       window.localStorage.removeItem("accessToken");
       window.localStorage.removeItem("refreshToken");
       window.localStorage.removeItem("user");
+      window.localStorage.removeItem("activeWorkspaceId");
     }
     return;
   }
   await SecureStore.deleteItemAsync("accessToken");
   await SecureStore.deleteItemAsync("refreshToken");
+  await SecureStore.deleteItemAsync("activeWorkspaceId");
 }
 
 let isRefreshing = false;
@@ -96,8 +117,18 @@ api.interceptors.response.use(
     isRefreshing = true;
 
     try {
-      const { data } = await api.put("/auth/refresh");
+      const refreshToken = await getRefreshToken();
+      if (!refreshToken) {
+        throw new Error("No refresh token");
+      }
+
+      const { data } = await axios.post<{
+        accessToken: string;
+        refreshToken: string;
+      }>(`${BASE_URL}${API_PREFIX}/identity/refresh`, { refreshToken });
+
       await setAccessToken(data.accessToken);
+      await setRefreshToken(data.refreshToken);
       processQueue(null, data.accessToken);
       originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
       return api(originalRequest);
@@ -112,4 +143,4 @@ api.interceptors.response.use(
   },
 );
 
-export { getAccessToken, setAccessToken, clearTokens };
+export { getAccessToken, getRefreshToken };

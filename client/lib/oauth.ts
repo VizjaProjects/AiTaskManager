@@ -1,22 +1,19 @@
-import { Linking, Platform } from "react-native";
+import { Alert, Platform } from "react-native";
 import { getDesktopBridge } from "./desktop";
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
-
 export async function startGoogleOAuth(): Promise<void> {
-  const desktop = getDesktopBridge();
-
-  if (desktop) {
-    await desktop.openOAuth();
-    return;
-  }
-
-  const url = `${API_URL}/oauth2/authorization/google`;
+  const message =
+    "Logowanie Google jest w przygotowaniu. Backend .NET nie obsługuje jeszcze OAuth2.";
 
   if (Platform.OS === "web" && typeof window !== "undefined") {
-    window.location.href = url;
+    window.alert(message);
     return;
   }
 
-  await Linking.openURL(url);
+  Alert.alert("W przygotowaniu", message);
+
+  const desktop = getDesktopBridge();
+  if (desktop) {
+    return;
+  }
 }

@@ -1,5 +1,8 @@
-import { View, TextInput, TouchableOpacity } from "react-native";
+import { View, TextInput, TouchableOpacity, Platform } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+
+const NO_OUTLINE =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
 
 interface SearchBarProps {
   value: string;
@@ -15,20 +18,21 @@ export function SearchBar({
   onSubmit,
 }: SearchBarProps) {
   return (
-    <View className="flex-row items-center bg-surface-container-low rounded-full px-4 py-2.5">
-      <MaterialIcons name="search" size={20} color="#94a3b8" />
+    <View className="flex-row items-center bg-surface-container-lowest rounded-full px-4 py-2.5 border border-outline-variant">
+      <MaterialIcons name="search" size={20} color="#9ca3af" />
       <TextInput
         className="flex-1 ml-2 text-sm font-body text-on-surface"
         placeholder={placeholder}
-        placeholderTextColor="#94a3b8"
+        placeholderTextColor="#9ca3af"
         value={value}
         onChangeText={onChangeText}
         onSubmitEditing={onSubmit}
         returnKeyType="search"
+        style={[NO_OUTLINE, { borderWidth: 0 }]}
       />
       {value.length > 0 && (
         <TouchableOpacity onPress={() => onChangeText("")}>
-          <MaterialIcons name="close" size={18} color="#94a3b8" />
+          <MaterialIcons name="close" size={18} color="#9ca3af" />
         </TouchableOpacity>
       )}
     </View>

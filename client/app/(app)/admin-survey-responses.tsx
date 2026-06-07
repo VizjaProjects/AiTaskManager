@@ -9,39 +9,8 @@ import { StatCard } from "@/components/molecules/StatCard";
 import { Skeleton } from "@/components/atoms/Skeleton";
 import { EmptyState } from "@/components/atoms/EmptyState";
 import { useAuthStore } from "@/lib/stores";
-import { Role, QuestionType } from "@/lib/types";
-import { useSurveys, useSurveyQuestions, useUserResponses } from "@/lib/hooks";
-import { questionApi } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
-
-function ResponseBar({
-  label,
-  count,
-  total,
-}: {
-  label: string;
-  count: number;
-  total: number;
-}) {
-  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
-
-  return (
-    <View className="mb-3">
-      <View className="flex-row items-center justify-between mb-1.5">
-        <Text className="text-on-surface font-body text-sm">{label}</Text>
-        <Text className="text-on-surface-variant font-label text-xs">
-          {count} ({pct}%)
-        </Text>
-      </View>
-      <View className="h-2.5 bg-surface-container-low rounded-full overflow-hidden">
-        <View
-          className="h-full bg-primary rounded-full"
-          style={{ width: `${pct}%` }}
-        />
-      </View>
-    </View>
-  );
-}
+import { Role } from "@/lib/types";
+import { useSurveys, useSurveyQuestions, useSurveyResponses } from "@/lib/hooks";
 
 function TextResponseItem({
   answer,
@@ -79,52 +48,22 @@ export default function AdminSurveyResponsesPage() {
   const { data: questions, isLoading: questionsLoading } =
     useSurveyQuestions(surveyId);
   const {
-    data: allResponses,
+    data: surveyResponses,
     isLoading: responsesLoading,
     refetch,
-  } = useUserResponses();
+  } = useSurveyResponses(surveyId);
 
-  // Filter responses for this survey
-  const surveyResponses = useMemo(
-    () => allResponses?.filter((r) => r.surveyId === surveyId) ?? [],
-    [allResponses, surveyId],
-  );
+  const responses = surveyResponses ?? [];
 
   // Group responses by questionId
   const responsesByQuestion = useMemo(() => {
     const grouped: Record<string, string[]> = {};
-    surveyResponses.forEach((r) => {
+    responses.forEach((r) => {
       if (!grouped[r.questionId]) grouped[r.questionId] = [];
       grouped[r.questionId].push(r.textAnswer);
     });
     return grouped;
-  }, [surveyResponses]);
-
-  // Fetch options for all LIST questions
-  const questionIds = questions
-    ?.filter((q) => q.questionType === QuestionType.LIST)
-    .map((q) => q.questionId);
-
-  const { data: optionsMap } = useQuery({
-    queryKey: ["all-question-options", surveyId, questionIds],
-    queryFn: async () => {
-      if (!questionIds?.length) return {};
-      const result: Record<
-        string,
-        Array<{ questionOptionId: string; optionText: string }>
-      > = {};
-      for (const qid of questionIds) {
-        try {
-          const { data } = await questionApi.getOptions(qid);
-          result[qid] = data;
-        } catch {
-          result[qid] = [];
-        }
-      }
-      return result;
-    },
-    enabled: !!questionIds?.length,
-  });
+  }, [responses]);
 
   if (user?.role !== Role.ADMIN) {
     return <Redirect href="/(app)/dashboard" />;
@@ -135,12 +74,11 @@ export default function AdminSurveyResponsesPage() {
   }
 
   const isLoading = questionsLoading || responsesLoading;
-  const uniqueRespondents = new Set(surveyResponses.map((r) => r.surveyId))
-    .size;
-  const totalResponseEntries = surveyResponses.length;
+  const uniqueRespondents = new Set(responses.map((r) => r.userResponseId)).size;
+  const totalResponseEntries = responses.length;
 
   return (
-    <PageLayout title="Survey Responses">
+    <PageLayout>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -238,31 +176,15 @@ export default function AdminSurveyResponsesPage() {
               />
             ) : (
               <View className="gap-6">
-                {questions.map((q, qIdx) => {
+                {questions.map((q) => {
                   const answers = responsesByQuestion[q.questionId] ?? [];
-                  const options = optionsMap?.[q.questionId];
 
                   return (
                     <Card key={q.questionId} variant="glass">
-                      {/* Question badge */}
                       <View className="flex-row items-center gap-3 mb-4">
-                        <View
-                          className={`px-3 py-1 rounded-full ${
-                            q.questionType === QuestionType.LIST
-                              ? "bg-secondary/15"
-                              : "bg-primary-fixed/30"
-                          }`}
-                        >
-                          <Text
-                            className={`font-label text-[10px] uppercase tracking-widest font-bold ${
-                              q.questionType === QuestionType.LIST
-                                ? "text-secondary"
-                                : "text-primary"
-                            }`}
-                          >
-                            {q.questionType === QuestionType.LIST
-                              ? "Multiple Choice"
-                              : "Open Text"}
+                        <View className="px-3 py-1 rounded-full bg-primary-fixed/30">
+                          <Text className="font-label text-[10px] uppercase tracking-widest font-bold text-primary">
+                            Open Text
                           </Text>
                         </View>
                       </View>
@@ -271,39 +193,21 @@ export default function AdminSurveyResponsesPage() {
                         {q.questionText}
                       </Text>
 
-                      {q.questionType === QuestionType.LIST && options ? (
-                        <View>
-                          {options.map((opt) => {
-                            const count = answers.filter(
-                              (a) => a === opt.optionText,
-                            ).length;
-                            return (
-                              <ResponseBar
-                                key={opt.questionOptionId}
-                                label={opt.optionText}
-                                count={count}
-                                total={answers.length}
-                              />
-                            );
-                          })}
-                        </View>
-                      ) : (
-                        <View>
-                          {answers.length === 0 ? (
-                            <Text className="text-on-surface-variant font-body text-sm italic">
-                              No responses yet.
-                            </Text>
-                          ) : (
-                            answers.map((a, aIdx) => (
-                              <TextResponseItem
-                                key={aIdx}
-                                answer={a}
-                                index={aIdx}
-                              />
-                            ))
-                          )}
-                        </View>
-                      )}
+                      <View>
+                        {answers.length === 0 ? (
+                          <Text className="text-on-surface-variant font-body text-sm italic">
+                            No responses yet.
+                          </Text>
+                        ) : (
+                          answers.map((a, aIdx) => (
+                            <TextResponseItem
+                              key={aIdx}
+                              answer={a}
+                              index={aIdx}
+                            />
+                          ))
+                        )}
+                      </View>
 
                       {/* Footer */}
                       <View className="flex-row items-center justify-between mt-4 pt-3 border-t border-outline-variant/10">

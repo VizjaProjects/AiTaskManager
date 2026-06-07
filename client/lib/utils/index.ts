@@ -29,17 +29,24 @@ export const PRIORITY_BORDER: Record<TaskPriority, string> = {
 };
 
 export const PRIORITY_BADGE_BG: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "bg-red-600/10 dark:bg-red-600/25",
-  [TaskPriority.HIGH]: "bg-rose-500/10 dark:bg-rose-500/25",
-  [TaskPriority.MEDIUM]: "bg-amber-500/10 dark:bg-amber-500/25",
-  [TaskPriority.LOW]: "bg-blue-500/10 dark:bg-blue-500/25",
+  [TaskPriority.CRITICAL]: "bg-red-50 dark:bg-red-950/40",
+  [TaskPriority.HIGH]: "bg-rose-50 dark:bg-rose-950/40",
+  [TaskPriority.MEDIUM]: "bg-amber-50 dark:bg-amber-950/40",
+  [TaskPriority.LOW]: "bg-blue-50 dark:bg-blue-950/40",
 };
 
 export const PRIORITY_TEXT: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "text-red-600 dark:text-red-400",
-  [TaskPriority.HIGH]: "text-rose-500 dark:text-rose-400",
-  [TaskPriority.MEDIUM]: "text-amber-500 dark:text-amber-400",
-  [TaskPriority.LOW]: "text-blue-500 dark:text-blue-400",
+  [TaskPriority.CRITICAL]: "text-red-700 dark:text-red-400",
+  [TaskPriority.HIGH]: "text-rose-600 dark:text-rose-400",
+  [TaskPriority.MEDIUM]: "text-amber-700 dark:text-amber-400",
+  [TaskPriority.LOW]: "text-blue-600 dark:text-blue-400",
+};
+
+export const PRIORITY_LABEL_SOFT: Record<TaskPriority, string> = {
+  [TaskPriority.CRITICAL]: "Critical",
+  [TaskPriority.HIGH]: "High priority",
+  [TaskPriority.MEDIUM]: "Medium",
+  [TaskPriority.LOW]: "Low",
 };
 
 export const DEFAULT_CATEGORY_COLORS = [
@@ -128,4 +135,40 @@ export function getInitials(fullName: string): string {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+}
+
+/** Parse API datetime — no offset is treated as local wall-clock, Z/offset as instant. */
+export function parseApiDateTime(value: string): Date {
+  if (/[zZ]$|[+-]\d{2}:\d{2}$/.test(value)) {
+    return new Date(value);
+  }
+  const [datePart, timePart = "00:00:00"] = value.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const timeBits = timePart.split(":");
+  const hours = Number(timeBits[0] ?? 0);
+  const minutes = Number(timeBits[1] ?? 0);
+  const seconds = Number((timeBits[2] ?? "0").split(".")[0]);
+  return new Date(year, month - 1, day, hours, minutes, seconds, 0);
+}
+
+/** Send local wall-clock datetime to API (no UTC shift). */
+export function toLocalDateTimeString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  const h = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const s = String(date.getSeconds()).padStart(2, "0");
+  return `${y}-${m}-${d}T${h}:${min}:${s}`;
+}
+
+export function resolveTaskCategoryId(
+  categoryId: string | null | undefined,
+  categories: Array<{ categoryId: string }> | undefined,
+): string | undefined {
+  if (!categoryId) return undefined;
+  const empty = "00000000-0000-0000-0000-000000000000";
+  if (categoryId === empty) return undefined;
+  if (!categories?.some((c) => c.categoryId === categoryId)) return undefined;
+  return categoryId;
 }

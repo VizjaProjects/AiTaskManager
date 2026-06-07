@@ -7,185 +7,90 @@ import {
   Platform,
   useWindowDimensions,
   ActivityIndicator,
-  Image,
 } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useLayoutEffect, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MaterialIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { cssInterop } from "nativewind";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { OrdovitaLogo } from "@/components/atoms/OrdovitaLogo";
+import { Button } from "@/components/atoms/Button";
 import {
   useActiveSurveys,
   useSurveyQuestions,
-  useQuestionOptions,
   useMyResponses,
   useSubmitResponse,
+  useEditResponse,
+  useSurveyGate,
 } from "@/lib/hooks";
-import { useThemeStore, useAuthStore } from "@/lib/stores";
+import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
+import { normalizeSurveyId } from "@/lib/surveys/utils";
 
-cssInterop(LinearGradient, { className: "style" });
+const NO_OUTLINE =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
 
 interface LoadedQuestion {
   questionId: string;
   questionText: string;
-  questionType: "TEXT" | "LIST";
   isRequired: boolean;
   surveyId: string;
   hint: string | null;
 }
 
-/* ─── Option Chips for LIST questions ─── */
-function OptionChips({
-  questionId,
-  selected,
-  onToggle,
-}: {
-  questionId: string;
-  selected: string[];
-  onToggle: (option: string) => void;
-}) {
-  const { data: options, isLoading } = useQuestionOptions(questionId);
-  const mode = useThemeStore((s) => s.mode);
-
-  if (isLoading) {
-    return (
-      <View className="flex-row flex-wrap gap-3 mt-4">
-        {[1, 2, 3, 4].map((i) => (
-          <View
-            key={i}
-            className="h-11 w-32 rounded-full bg-surface-variant/50 animate-pulse"
-          />
-        ))}
-      </View>
-    );
-  }
-
-  const CHIP_ICONS: Record<string, string> = {
-    "Praca zawodowa": "work",
-    "Zdrowie i Sport": "fitness-center",
-    Edukacja: "school",
-    Hobby: "extension",
-    "Dom i Rodzina": "home",
-    Finanse: "account-balance-wallet",
-    "Rozwój osobisty": "favorite",
-  };
-
-  return (
-    <View className="flex-row flex-wrap gap-3 mt-4">
-      {(options ?? []).map((opt) => {
-        const isSelected = selected.includes(opt.optionText);
-        const iconName = CHIP_ICONS[opt.optionText] ?? "label";
-        return (
-          <TouchableOpacity
-            key={opt.questionOptionId}
-            onPress={() => onToggle(opt.optionText)}
-            className={`flex-row items-center gap-2 px-5 py-3 rounded-full border ${
-              isSelected
-                ? "bg-primary border-primary"
-                : mode === "dark"
-                  ? "bg-surface-variant/30 border-outline-variant"
-                  : "bg-surface border-outline-variant"
-            }`}
-          >
-            <MaterialIcons
-              name={iconName as any}
-              size={18}
-              color={isSelected ? "#fff" : mode === "dark" ? "#aaa" : "#555"}
-            />
-            <Text
-              className={`font-headline text-sm ${
-                isSelected ? "text-white" : "text-on-surface"
-              }`}
-            >
-              {opt.optionText}
-            </Text>
-            {isSelected && (
-              <MaterialIcons name="close" size={16} color="#fff" />
-            )}
-          </TouchableOpacity>
-        );
-      })}
-    </View>
-  );
-}
-
-/* ─── Progress sidebar (desktop) ─── */
 function ProgressSidebar({
   currentStep,
-  totalSteps,
   questions,
+  answers,
+  savedQuestionIds,
+  onSelectStep,
 }: {
   currentStep: number;
-  totalSteps: number;
   questions: LoadedQuestion[];
+  answers: Record<string, string>;
+  savedQuestionIds: Set<string>;
+  onSelectStep: (idx: number) => void;
 }) {
-  const mode = useThemeStore((s) => s.mode);
-
-  const STEP_LABELS = questions.map((q) => {
-    const text = q.questionText;
-    return text.length > 30 ? text.slice(0, 30) + "…" : text;
+  const stepLabels = questions.map((q, idx) => {
+    const fallback = `Question ${idx + 1}`;
+    const text = q.questionText?.trim() || fallback;
+    return text.length > 28 ? `${text.slice(0, 28)}…` : text;
   });
 
   return (
-    <View
-      className={`w-80 rounded-2xl p-6 ${
-        mode === "dark" ? "bg-surface-variant/30" : "bg-[#f5f4ff]"
-      }`}
-    >
-      {/* AI curator card */}
-      <View
-        className={`rounded-xl p-5 mb-6 ${
-          mode === "dark" ? "bg-[#2a2d3e]" : "bg-white"
-        }`}
-      >
-        <View className="flex-row items-center gap-3 mb-3">
-          <View className="w-10 h-10 rounded-full bg-primary/20 items-center justify-center">
-            <MaterialIcons name="smart-toy" size={22} color="#4d41df" />
-          </View>
-          <View>
-            <Text className="text-xs font-headline text-primary uppercase tracking-wider">
-              TWÓJ KURATOR AI
-            </Text>
-            <Text className="font-headline text-base text-on-surface">
-              Alex
-            </Text>
-          </View>
-        </View>
-        <Text className="text-on-surface-variant text-sm italic leading-5">
-          "Widzę, że Twoje cele skupiają się na harmonii między pracą a rozwojem
-          osobistym. To świetny kierunek! Kolejne pytania pomogą mi dopasować
-          priorytety Twojego kalendarza."
-        </Text>
-      </View>
-
-      {/* Steps list */}
-      <Text className="text-xs font-headline text-on-surface-variant uppercase tracking-wider mb-4">
-        TWÓJ POSTĘP
+    <View className="w-72 shrink-0 rounded-2xl bg-surface-container-low border border-outline-variant p-5 gap-4">
+      <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
+        Your progress
       </Text>
-      {STEP_LABELS.map((label, idx) => {
-        const isCompleted = idx < currentStep;
+
+      {stepLabels.map((label, idx) => {
+        const qId = normalizeSurveyId(questions[idx].questionId);
+        const hasAnswer =
+          savedQuestionIds.has(qId) ||
+          (answers[questions[idx].questionId]?.trim().length ?? 0) > 0;
         const isCurrent = idx === currentStep;
+        const isCompleted = hasAnswer && !isCurrent;
+
         return (
-          <View key={idx} className="flex-row items-center gap-3 mb-3">
+          <TouchableOpacity
+            key={questions[idx].questionId}
+            onPress={() => onSelectStep(idx)}
+            className="flex-row items-center gap-3"
+            activeOpacity={0.7}
+          >
             {isCompleted ? (
-              <View className="w-7 h-7 rounded-full bg-primary items-center justify-center">
-                <MaterialIcons name="check" size={16} color="#fff" />
+              <View className="w-7 h-7 rounded-full bg-action items-center justify-center">
+                <MaterialIcons name="check" size={14} color="#f0f0f0" />
               </View>
             ) : (
               <View
                 className={`w-7 h-7 rounded-full items-center justify-center ${
-                  isCurrent
-                    ? "bg-primary"
-                    : mode === "dark"
-                      ? "bg-surface-variant"
-                      : "bg-[#e0dff5]"
+                  isCurrent ? "bg-action" : "bg-surface-container-high"
                 }`}
               >
                 <Text
                   className={`text-xs font-headline ${
-                    isCurrent ? "text-white" : "text-on-surface-variant"
+                    isCurrent ? "text-on-action" : "text-on-surface-variant"
                   }`}
                 >
                   {idx + 1}
@@ -201,23 +106,51 @@ function ProgressSidebar({
             >
               {label}
             </Text>
-          </View>
+          </TouchableOpacity>
         );
       })}
 
-      {/* Privacy note */}
-      <View className="flex-row items-start gap-2 mt-6 pt-4 border-t border-outline-variant/30">
-        <MaterialIcons name="verified-user" size={18} color="#4d41df" />
+      <View className="flex-row items-start gap-2 pt-4 border-t border-outline-variant">
+        <MaterialIcons name="verified-user" size={16} color="#9ca3af" />
         <Text className="text-xs text-on-surface-variant flex-1 leading-4">
-          Twoje dane są szyfrowane i wykorzystywane wyłącznie do personalizacji
-          Twojego workspace.
+          Your answers are encrypted and used only to personalize your workspace.
         </Text>
       </View>
     </View>
   );
 }
 
-/* ─── Main Screen ─── */
+function LoadingView({ message }: { message: string }) {
+  return (
+    <View className="flex-1 items-center justify-center bg-background px-6">
+      <ActivityIndicator size="large" color="#111111" />
+      <Text className="mt-4 font-body text-base text-center text-on-surface-variant">
+        {message}
+      </Text>
+    </View>
+  );
+}
+
+function ErrorView({
+  message,
+  onContinue,
+}: {
+  message: string;
+  onContinue: () => void;
+}) {
+  return (
+    <View className="flex-1 items-center justify-center bg-background px-6">
+      <MaterialIcons name="error-outline" size={48} color="#dc2626" />
+      <Text className="text-on-surface font-headline text-lg mt-4 text-center">
+        {message}
+      </Text>
+      <View className="mt-6">
+        <Button label="Go to app" onPress={onContinue} />
+      </View>
+    </View>
+  );
+}
+
 export default function SurveyOnboardingScreen() {
   const router = useRouter();
   const { surveyId: paramSurveyId } = useLocalSearchParams<{
@@ -225,298 +158,397 @@ export default function SurveyOnboardingScreen() {
   }>();
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
-  const mode = useThemeStore((s) => s.mode);
+  const user = useAuthStore((s) => s.user);
 
-  const { data: surveys, isLoading: surveysLoading } = useActiveSurveys();
-  const { data: myResponses, isLoading: responsesLoading } = useMyResponses();
+  const {
+    hasPendingSurvey,
+    firstPendingSurveyId,
+    isLoading: gateLoading,
+  } = useSurveyGate();
+
+  const {
+    data: surveys,
+    isLoading: surveysLoading,
+    isError: surveysError,
+  } = useActiveSurveys();
+  const {
+    data: myResponses,
+    isLoading: responsesLoading,
+    isError: responsesError,
+  } = useMyResponses();
+  const qc = useQueryClient();
   const submitResponse = useSubmitResponse();
+  const editResponse = useEditResponse();
 
-  // Pick survey by param or fall back to first active
-  const survey = paramSurveyId
-    ? (surveys?.find((s) => s.surveyId === paramSurveyId) ?? surveys?.[0])
-    : surveys?.[0];
+  const targetSurveyId =
+    paramSurveyId ?? firstPendingSurveyId ?? surveys?.[0]?.surveyId;
 
-  const { data: rawQuestions, isLoading: questionsLoading } =
-    useSurveyQuestions(survey?.surveyId);
+  const survey = useMemo(() => {
+    if (!surveys?.length || !targetSurveyId) return undefined;
+    return (
+      surveys.find(
+        (s) => normalizeSurveyId(s.surveyId) === normalizeSurveyId(targetSurveyId),
+      ) ?? surveys[0]
+    );
+  }, [surveys, targetSurveyId]);
 
-  // Build questions list with surveyId
+  const {
+    data: rawQuestions,
+    isLoading: questionsLoading,
+    isError: questionsError,
+  } = useSurveyQuestions(survey?.surveyId);
+
   const questions: LoadedQuestion[] = useMemo(() => {
     if (!rawQuestions || !survey) return [];
-    return rawQuestions.map((q: any) => ({
+    return rawQuestions.map((q) => ({
       questionId: q.questionId,
       questionText: q.questionText,
-      questionType: q.questionType,
       isRequired: q.isRequired ?? false,
       surveyId: survey.surveyId,
-      hint: q.hint ?? null,
+      hint: q.hint ?? "",
     }));
   }, [rawQuestions, survey]);
 
-  // Filter out already-answered questions
-  const unansweredQuestions = useMemo(() => {
-    if (!questions.length) return [];
-    const answeredIds = new Set(
-      (myResponses ?? []).map((r: any) => r.questionId),
-    );
-    return questions.filter((q) => !answeredIds.has(q.questionId));
-  }, [questions, myResponses]);
+  const responseByQuestionId = useMemo(() => {
+    const map = new Map<
+      string,
+      { userResponseId: string; textAnswer: string }
+    >();
+    if (!survey) return map;
+    const surveyKey = normalizeSurveyId(survey.surveyId);
+    for (const r of myResponses ?? []) {
+      if (normalizeSurveyId(r.surveyId) === surveyKey) {
+        map.set(normalizeSurveyId(r.questionId), {
+          userResponseId: r.userResponseId,
+          textAnswer: r.textAnswer,
+        });
+      }
+    }
+    return map;
+  }, [myResponses, survey]);
+
+  const savedQuestionIds = useMemo(
+    () => new Set(responseByQuestionId.keys()),
+    [responseByQuestionId],
+  );
 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
+  const stepInitialized = useRef(false);
 
-  const user = useAuthStore((s) => s.user);
+  const goToApp = useCallback(() => {
+    router.replace("/(app)/dashboard" as never);
+  }, [router]);
 
-  // Admin skips survey, redirect to dashboard
   useEffect(() => {
+    if (!questions.length || stepInitialized.current) return;
+    const initial: Record<string, string> = {};
+    for (const q of questions) {
+      const saved = responseByQuestionId.get(normalizeSurveyId(q.questionId));
+      if (saved) initial[q.questionId] = saved.textAnswer;
+    }
+    const firstUnansweredIdx = questions.findIndex(
+      (q) => !responseByQuestionId.has(normalizeSurveyId(q.questionId)),
+    );
+    const startStep = firstUnansweredIdx >= 0 ? firstUnansweredIdx : 0;
+    setAnswers((prev) => ({ ...initial, ...prev }));
+    setCurrentStep(startStep);
+    stepInitialized.current = true;
+  }, [questions, responseByQuestionId]);
+
+  useLayoutEffect(() => {
     if (user?.role === Role.ADMIN) {
-      router.replace("/(app)/dashboard");
+      goToApp();
       return;
     }
-    if (
-      !surveysLoading &&
-      !responsesLoading &&
-      !questionsLoading &&
-      (unansweredQuestions.length === 0 || !survey)
-    ) {
-      router.replace("/(app)/surveys");
+    if (gateLoading || surveysLoading || responsesLoading || questionsLoading) {
+      return;
+    }
+    if (!hasPendingSurvey) {
+      goToApp();
+      return;
+    }
+    if (surveys && surveys.length === 0) {
+      goToApp();
+      return;
+    }
+    if (rawQuestions && rawQuestions.length === 0) {
+      goToApp();
     }
   }, [
-    user,
-    unansweredQuestions,
-    survey,
+    user?.role,
+    gateLoading,
+    hasPendingSurvey,
+    surveys,
     surveysLoading,
     responsesLoading,
     questionsLoading,
-    router,
+    rawQuestions,
+    goToApp,
   ]);
 
-  const totalSteps = unansweredQuestions.length;
-  const currentQuestion = unansweredQuestions[currentStep];
+  const isInitialLoading =
+    gateLoading ||
+    (surveysLoading && surveys === undefined) ||
+    (responsesLoading && myResponses === undefined) ||
+    (questionsLoading && rawQuestions === undefined);
+
+  const totalSteps = questions.length;
+  const safeStep =
+    totalSteps > 0 ? Math.min(currentStep, totalSteps - 1) : 0;
+  const currentQuestion = questions[safeStep];
+
   const currentAnswer = currentQuestion
-    ? (answers[currentQuestion.questionId] ?? "")
+    ? (answers[currentQuestion.questionId] ??
+      responseByQuestionId.get(normalizeSurveyId(currentQuestion.questionId))
+        ?.textAnswer ??
+      "")
     : "";
 
   const canProceed =
     currentQuestion &&
     (currentQuestion.isRequired ? currentAnswer.trim().length > 0 : true);
 
-  const handleNext = useCallback(async () => {
-    if (!currentQuestion || !survey) return;
+  const progressPct =
+    totalSteps > 0 ? ((safeStep + 1) / totalSteps) * 100 : 0;
 
-    setSubmitting(true);
+  const saveCurrentAnswer = useCallback(async () => {
+    if (!currentQuestion || !survey) return false;
+    const answer = currentAnswer.trim();
+    const qKey = normalizeSurveyId(currentQuestion.questionId);
+
+    await qc.refetchQueries({ queryKey: ["my-responses"] });
+    const refreshed = qc.getQueryData<
+      Array<{
+        surveyId: string;
+        questionId: string;
+        userResponseId: string;
+      }>
+    >(["my-responses"]);
+    const saved = refreshed?.find(
+      (r) =>
+        normalizeSurveyId(r.questionId) === qKey &&
+        normalizeSurveyId(r.surveyId) === normalizeSurveyId(survey.surveyId) &&
+        !!r.userResponseId,
+    );
+
     try {
-      await submitResponse.mutateAsync({
-        surveyId: survey.surveyId,
-        questionId: currentQuestion.questionId,
-        answer: currentAnswer,
-      });
-
-      if (currentStep >= totalSteps - 1) {
-        router.replace("/(app)/dashboard");
+      if (saved?.userResponseId) {
+        await editResponse.mutateAsync({
+          userResponseId: saved.userResponseId,
+          newAnswer: answer,
+        });
+      } else {
+        await submitResponse.mutateAsync({
+          surveyId: survey.surveyId,
+          questionId: currentQuestion.questionId,
+          questionText: currentQuestion.questionText,
+          answer,
+        });
       }
-      // Don't increment currentStep — the answered question is removed from
-      // unansweredQuestions after my-responses refetches, so the same index
-      // naturally points to the next question.
-    } catch {
-      // Allow retry
-    } finally {
-      setSubmitting(false);
+      setAnswers((prev) => ({
+        ...prev,
+        [currentQuestion.questionId]: answer,
+      }));
+      return true;
+    } catch (e: unknown) {
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 409) {
+        await qc.refetchQueries({ queryKey: ["my-responses"] });
+        const again = qc.getQueryData<
+          Array<{
+            surveyId: string;
+            questionId: string;
+            userResponseId: string;
+          }>
+        >(["my-responses"]);
+        const existing = again?.find(
+          (r) =>
+            normalizeSurveyId(r.questionId) === qKey &&
+            normalizeSurveyId(r.surveyId) ===
+              normalizeSurveyId(survey.surveyId) &&
+            !!r.userResponseId,
+        );
+        if (existing?.userResponseId) {
+          await editResponse.mutateAsync({
+            userResponseId: existing.userResponseId,
+            newAnswer: answer,
+          });
+        }
+        setAnswers((prev) => ({
+          ...prev,
+          [currentQuestion.questionId]: answer,
+        }));
+        return true;
+      }
+      return false;
     }
   }, [
     currentQuestion,
     survey,
     currentAnswer,
-    currentStep,
-    totalSteps,
     submitResponse,
-    router,
+    editResponse,
+    qc,
+  ]);
+
+  const handleNext = useCallback(async () => {
+    if (!currentQuestion || !survey) return;
+    setSubmitting(true);
+    const ok = await saveCurrentAnswer();
+    setSubmitting(false);
+    if (!ok) return;
+
+    if (safeStep < totalSteps - 1) {
+      setCurrentStep((s) => s + 1);
+    } else {
+      goToApp();
+    }
+  }, [
+    currentQuestion,
+    survey,
+    saveCurrentAnswer,
+    safeStep,
+    totalSteps,
+    goToApp,
   ]);
 
   const handleBack = useCallback(() => {
-    if (currentStep > 0) setCurrentStep((s) => s - 1);
-  }, [currentStep]);
+    if (safeStep > 0) setCurrentStep((s) => s - 1);
+  }, [safeStep]);
 
-  const handleToggleChip = useCallback(
-    (option: string) => {
-      if (!currentQuestion) return;
-      const qid = currentQuestion.questionId;
-      const current = answers[qid] ?? "";
-      const selected = current ? current.split(",") : [];
-      const idx = selected.indexOf(option);
-      if (idx >= 0) {
-        selected.splice(idx, 1);
-      } else {
-        selected.push(option);
-      }
-      setAnswers((a) => ({ ...a, [qid]: selected.join(",") }));
-    },
-    [currentQuestion, answers],
-  );
+  const handleSelectStep = useCallback((idx: number) => {
+    setCurrentStep(idx);
+  }, []);
 
-  const isLoading = surveysLoading || responsesLoading || questionsLoading;
+  if (user?.role === Role.ADMIN || (!gateLoading && !hasPendingSurvey)) {
+    return <LoadingView message="Redirecting to app…" />;
+  }
 
-  if (isLoading) {
+  if (isInitialLoading) {
+    return <LoadingView message="Loading survey…" />;
+  }
+
+  if (surveysError || responsesError) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#4d41df" />
-        <Text className="text-on-surface-variant mt-4 font-body">
-          Ładowanie ankiety…
-        </Text>
-      </View>
+      <ErrorView
+        message="Could not connect to the server. Check that the backend is running."
+        onContinue={goToApp}
+      />
     );
+  }
+
+  if (!surveys?.length) {
+    return <LoadingView message="No surveys — redirecting…" />;
+  }
+
+  if (questionsError) {
+    return (
+      <ErrorView
+        message="Could not load survey questions."
+        onContinue={goToApp}
+      />
+    );
+  }
+
+  if (!questions.length) {
+    return <LoadingView message="No questions — redirecting…" />;
   }
 
   if (!currentQuestion) {
-    return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#4d41df" />
-      </View>
-    );
+    return <LoadingView message="Redirecting to app…" />;
   }
 
-  /* ─── Question content ─── */
+  const sectionLabel =
+    survey?.title?.trim() || `Question ${safeStep + 1}`;
+
   const questionContent = (
     <View className="flex-1">
-      {/* Category badge */}
-      <View className="flex-row items-center gap-2 mb-4">
-        <MaterialIcons name="bolt" size={16} color="#4d41df" />
-        <Text className="text-xs font-headline text-primary uppercase tracking-wider">
-          {survey?.title ?? "ANKIETA"}
+      <View className="self-start px-3 py-1 rounded-lg bg-surface-container-low border border-outline-variant mb-5">
+        <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
+          {sectionLabel}
         </Text>
       </View>
 
-      {/* Question title */}
-      <Text className="text-3xl font-headline text-on-surface mb-3">
+      <Text className="text-3xl font-headline text-on-surface mb-4 leading-9">
         {currentQuestion.questionText}
       </Text>
 
-      {/* Hint */}
       {currentQuestion.hint ? (
-        <View className="flex-row items-start gap-2 mb-4 bg-primary-fixed/10 rounded-xl px-4 py-3">
-          <MaterialIcons name="lightbulb" size={18} color="#4d41df" />
+        <View className="flex-row items-start gap-2 mb-6">
+          <MaterialIcons name="lightbulb-outline" size={18} color="#9ca3af" />
           <Text className="text-on-surface-variant text-sm flex-1 leading-5">
             {currentQuestion.hint}
           </Text>
         </View>
       ) : null}
 
-      {/* Subtitle */}
-      <Text className="text-on-surface-variant text-base mb-6 leading-6">
-        {survey?.description ?? ""}
-      </Text>
-
-      {/* Answer input */}
-      {currentQuestion.questionType === "TEXT" ? (
-        <TextInput
-          className={`rounded-xl p-4 min-h-[140px] text-base font-body ${
-            mode === "dark"
-              ? "bg-[#2a2d3e] text-white border-outline-variant"
-              : "bg-[#f8f8fc] text-on-surface border-outline-variant"
-          } border`}
-          placeholder="Wpisz swoją odpowiedź..."
-          placeholderTextColor={mode === "dark" ? "#777" : "#999"}
-          multiline
-          textAlignVertical="top"
-          value={currentAnswer}
-          onChangeText={(text) =>
-            setAnswers((a) => ({
-              ...a,
-              [currentQuestion.questionId]: text,
-            }))
-          }
-        />
-      ) : (
-        <>
-          <Text className="text-on-surface font-headline text-lg mb-1">
-            Które kategorie Cię interesują?
-          </Text>
-          <OptionChips
-            questionId={currentQuestion.questionId}
-            selected={currentAnswer ? currentAnswer.split(",") : []}
-            onToggle={handleToggleChip}
-          />
-        </>
-      )}
+      <TextInput
+        className="rounded-xl p-4 min-h-[140px] text-base font-body text-on-surface border border-outline-variant bg-surface-container-lowest"
+        placeholder="Type your answer..."
+        placeholderTextColor="#9ca3af"
+        multiline
+        textAlignVertical="top"
+        value={currentAnswer}
+        style={NO_OUTLINE}
+        onChangeText={(text) =>
+          setAnswers((a) => ({
+            ...a,
+            [currentQuestion.questionId]: text,
+          }))
+        }
+      />
     </View>
   );
 
-  /* ─── Navigation buttons ─── */
   const navigationButtons = (
-    <View className="flex-row items-center justify-between pt-6 mt-6 border-t border-outline-variant/30">
-      {currentStep > 0 ? (
+    <View className="flex-row items-center justify-between pt-8 mt-4 border-t border-outline-variant">
+      {safeStep > 0 ? (
         <TouchableOpacity
           onPress={handleBack}
-          className="flex-row items-center gap-2 px-4 py-3"
+          className="flex-row items-center gap-2 px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest"
         >
-          <MaterialIcons
-            name="arrow-back"
-            size={20}
-            color={mode === "dark" ? "#aaa" : "#555"}
-          />
-          <Text className="text-on-surface-variant font-headline text-sm uppercase tracking-wider">
-            WSTECZ
+          <MaterialIcons name="arrow-back" size={18} color="#9ca3af" />
+          <Text className="text-on-surface-variant font-headline text-sm">
+            Back
           </Text>
         </TouchableOpacity>
       ) : (
         <View />
       )}
 
-      <TouchableOpacity
+      <Button
+        label={safeStep === totalSteps - 1 ? "Finish" : "Next"}
+        loading={submitting}
+        disabled={!canProceed}
         onPress={handleNext}
-        disabled={!canProceed || submitting}
-        activeOpacity={0.85}
-      >
-        <LinearGradient
-          colors={["#4d41df", "#6c63ff"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          className={`px-10 py-4 rounded-xl ${
-            !canProceed || submitting ? "opacity-50" : ""
-          }`}
-        >
-          {submitting ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text className="text-white font-headline text-sm uppercase tracking-wider">
-              {currentStep === totalSteps - 1 ? "ZAKOŃCZ" : "DALEJ"}
-            </Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
+      />
     </View>
   );
 
-  /* ─── Desktop layout ─── */
+  const header = (
+    <View className="border-b border-outline-variant bg-background">
+      <View className="flex-row items-center justify-between px-6 py-4">
+        <OrdovitaLogo size="sm" showTagline={false} />
+        <Text className="text-on-surface-variant font-body text-sm">
+          {safeStep + 1} / {totalSteps}
+        </Text>
+      </View>
+      <View className="h-1 bg-surface-container-low mx-6 rounded-full overflow-hidden">
+        <View
+          className="h-full bg-action rounded-full"
+          style={{ width: `${progressPct}%` }}
+        />
+      </View>
+      <View className="h-4" />
+    </View>
+  );
+
   if (isDesktop) {
     return (
       <View className="flex-1 bg-background">
-        {/* Top bar */}
-        <View className="flex-row items-center justify-between px-8 py-4 border-b border-outline-variant/30">
-          <View className="flex-row items-center gap-3">
-            <View className="w-9 h-9 rounded-lg bg-primary items-center justify-center">
-              <MaterialIcons name="auto-awesome" size={20} color="#fff" />
-            </View>
-            <View>
-              <Text className="font-headline text-lg text-on-surface">
-                INTELLIGENT CURATOR
-              </Text>
-              <Text className="text-xs text-on-surface-variant">
-                AI-DRIVEN FOCUS
-              </Text>
-            </View>
-          </View>
-          <View className="flex-row items-center gap-3">
-            <Text className="text-on-surface-variant font-body text-sm">
-              Krok {currentStep + 1} z {totalSteps}
-            </Text>
-            <View className="w-8 h-8 rounded-full bg-surface-variant items-center justify-center">
-              <MaterialIcons name="help-outline" size={18} color="#777" />
-            </View>
-          </View>
-        </View>
-
-        {/* Content area */}
+        {header}
         <ScrollView
           className="flex-1"
           contentContainerStyle={{
@@ -525,53 +557,29 @@ export default function SurveyOnboardingScreen() {
             paddingVertical: 40,
           }}
         >
-          <View className="flex-row gap-10 max-w-[1200px] mx-auto w-full">
-            {/* Left: question */}
-            <View className="flex-1">
+          <View className="flex-row gap-10 max-w-[1100px] mx-auto w-full">
+            <View className="flex-1 min-w-0">
               {questionContent}
               {navigationButtons}
             </View>
-
-            {/* Right: progress */}
             <ProgressSidebar
-              currentStep={currentStep}
-              totalSteps={totalSteps}
-              questions={unansweredQuestions}
+              currentStep={safeStep}
+              questions={questions}
+              answers={answers}
+              savedQuestionIds={savedQuestionIds}
+              onSelectStep={handleSelectStep}
             />
           </View>
         </ScrollView>
-
-        {/* Footer */}
-        <View className="flex-row items-center justify-between px-8 py-3 border-t border-outline-variant/20">
-          <View className="flex-row gap-6">
-            <Text className="text-xs text-on-surface-variant uppercase tracking-wider">
-              POLITYKA PRYWATNOŚCI
-            </Text>
-            <Text className="text-xs text-on-surface-variant uppercase tracking-wider">
-              WARUNKI KORZYSTANIA
-            </Text>
-          </View>
-          <Text className="text-xs text-on-surface-variant">
-            POWERED BY CURATOR ENGINE 2.0 · © 2024
-          </Text>
-        </View>
       </View>
     );
   }
 
-  /* ─── Mobile layout ─── */
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      {/* Top bar */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-outline-variant/30">
-        <Text className="font-headline text-base text-on-surface">Ankieta</Text>
-        <Text className="text-on-surface-variant font-body text-sm">
-          Krok {currentStep + 1} z {totalSteps}
-        </Text>
-      </View>
-
+      {header}
       <ScrollView
-        className="flex-1 px-4 py-6"
+        className="flex-1 px-5 py-6"
         contentContainerStyle={{ flexGrow: 1 }}
       >
         {questionContent}

@@ -5,6 +5,8 @@ namespace Ordovita.Application.Surveys.Questions.CreateQuestion;
 public sealed record CreateQuestionCommand(
     Guid SurveyId,
     string QuestionText,
+    string QuestionType,
+    IReadOnlyList<string> OptionTextValue,
     bool IsRequired,
     string Hint) : ICommand<CreateQuestionResult>;
 

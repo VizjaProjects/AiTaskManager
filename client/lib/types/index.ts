@@ -30,6 +30,7 @@ export enum ProposedBy {
 export enum EventStatus {
   PROPOSED = "PROPOSED",
   ACCEPTED = "ACCEPTED",
+  REJECTED = "REJECTED",
   RESCHEDULED = "RESCHEDULED",
   CANCELLED = "CANCELLED",
 }
@@ -41,8 +42,23 @@ export interface User {
   role: Role;
 }
 
+export interface WorkspaceUser {
+  userId: UUID;
+  assignedAt: string;
+}
+
+export interface Workspace {
+  workspaceId: UUID;
+  workspaceName: string;
+  createdBy: UUID;
+  assignedUsers: WorkspaceUser[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   taskId: UUID;
+  workspaceId?: UUID;
   title: string;
   description: string;
   priority: TaskPriority;
@@ -58,6 +74,7 @@ export interface Task {
 
 export interface Category {
   categoryId: UUID;
+  workspaceId?: UUID;
   name: string;
   color: string;
   createdAt: string;
@@ -66,6 +83,7 @@ export interface Category {
 
 export interface TaskStatus {
   statusId: UUID;
+  workspaceId?: UUID;
   name: string;
   color: string;
   createdAt: string;
@@ -100,6 +118,7 @@ export interface Question {
   questionText: string;
   questionType: QuestionType;
   isRequired: boolean;
+  hint?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -127,7 +146,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   accessToken: string;
-  tokenType: string;
+  refreshToken: string;
   userId: UUID;
   email: string;
   fullName: string;
@@ -137,20 +156,25 @@ export interface LoginResponse {
 export interface RegisterRequest {
   fullName: string;
   email: string;
-  rawPassword: string;
+  password: string;
 }
 
 export interface RegisterResponse {
   userId: UUID;
-  email: string;
-  createdAt: string;
 }
 
 export interface TokenResponse {
   accessToken: string;
-  tokenType: string;
+  refreshToken: string;
 }
 
+export interface ResetPasswordRequest {
+  email: string;
+  resetCode: string;
+  newPassword: string;
+}
+
+/** @deprecated Use ResetPasswordRequest */
 export interface RemindPasswordRequest {
   email: string;
   token: UUID;

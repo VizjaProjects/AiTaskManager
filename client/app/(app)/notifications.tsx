@@ -92,7 +92,7 @@ export default function NotificationsScreen() {
   }, [refetchTasks, refetchEvents, refetchProposals]);
 
   return (
-    <PageLayout title="Powiadomienia" showSearch={false}>
+    <PageLayout showSearch={false}>
       {notifications.length === 0 ? (
         <EmptyState
           title="Brak powiadomień"

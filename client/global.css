@@ -4,36 +4,78 @@
 
 :root {
   color-scheme: light;
-  --color-background: #fbf8ff;
-  --color-surface: #fbf8ff;
+  --color-background: #f9fafb;
+  --color-surface: #ffffff;
+  --color-surface-dim: #f3f4f6;
+  --color-surface-bright: #ffffff;
   --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f4f2ff;
-  --color-surface-container: #ececff;
-  --color-surface-container-high: #e5e6fe;
-  --color-surface-container-highest: #dfe1f9;
-  --color-surface-variant: #dfe1f9;
-  --color-on-surface: #181b2b;
-  --color-on-surface-variant: #464555;
-  --color-on-background: #181b2b;
-  --color-outline: #777587;
-  --color-outline-variant: #c7c4d8;
-  --color-primary-fixed: #e3dfff;
+  --color-surface-container-low: #f3f4f6;
+  --color-surface-container: #e5e7eb;
+  --color-surface-container-high: #d1d5db;
+  --color-surface-container-highest: #9ca3af;
+  --color-surface-variant: #f3f4f6;
+  --color-on-surface: #111111;
+  --color-on-surface-variant: #6b7280;
+  --color-on-background: #111111;
+  --color-inverse-surface: #111111;
+  --color-inverse-on-surface: #ffffff;
+  --color-outline: #9ca3af;
+  --color-outline-variant: #e5e7eb;
+  --color-surface-tint: #111111;
+  --color-primary: #111111;
+  --color-on-primary: #ffffff;
+  --color-primary-fixed: #f3f4f6;
+  --color-primary-fixed-dim: #e5e7eb;
+  --color-accent: #4d41df;
+  --color-action: #111111;
+  --color-on-action: #ffffff;
 }
 
 .dark {
   color-scheme: dark;
-  --color-background: #0f1117;
-  --color-surface: #141620;
-  --color-surface-container-lowest: #1a1d2e;
-  --color-surface-container-low: #1e2132;
-  --color-surface-container: #232638;
-  --color-surface-container-high: #2a2d40;
-  --color-surface-container-highest: #313448;
-  --color-surface-variant: #2a2d40;
-  --color-on-surface: #e8e8f0;
-  --color-on-surface-variant: #c0bfd0;
-  --color-on-background: #e8e8f0;
-  --color-outline: #8e8d9e;
-  --color-outline-variant: #464560;
-  --color-primary-fixed: #2a2550;
+  --color-background: #0f0f0f;
+  --color-surface: #0f0f0f;
+  --color-surface-dim: #0f0f0f;
+  --color-surface-bright: #161616;
+  --color-surface-container-lowest: #1a1a1a;
+  --color-surface-container-low: #222222;
+  --color-surface-container: #2a2a2a;
+  --color-surface-container-high: #333333;
+  --color-surface-container-highest: #3d3d3d;
+  --color-surface-variant: #222222;
+  --color-on-surface: #ededed;
+  --color-on-surface-variant: #a0a0a5;
+  --color-on-background: #ededed;
+  --color-inverse-surface: #3a3a3c;
+  --color-inverse-on-surface: #f0f0f0;
+  --color-outline: #5c5c60;
+  --color-outline-variant: #2a2a2a;
+  --color-surface-tint: #e8e8e8;
+  --color-primary: #e8e8e8;
+  --color-on-primary: #121212;
+  --color-primary-fixed: #242426;
+  --color-primary-fixed-dim: #2c2c2e;
+  --color-accent: #9b8cff;
+  --color-action: #4a4a4e;
+  --color-on-action: #f0f0f0;
+}
+
+/* Remove browser default focus rings on web */
+input,
+textarea,
+select {
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+}
+
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+select:focus,
+select:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: inherit !important;
 }

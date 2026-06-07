@@ -101,6 +101,7 @@ function prepareMacIcon() {
 run("npx", ["expo", "export", "--platform", "web"], {
   ...process.env,
   EXPO_PUBLIC_API_URL: "",
+  EXPO_PUBLIC_API_PREFIX: "/api/v1",
 });
 
 prepareDesktopPngIcon();

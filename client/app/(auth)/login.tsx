@@ -12,10 +12,11 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
-import { Button, Input, OrdovitaLogo } from "@/components/atoms";
+import { Button, Input } from "@/components/atoms";
+import { AuthCard, AuthHeader } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
-import { startGoogleOAuth } from "@/lib/oauth";
+import { InProgressBanner } from "@/components/molecules/InProgressBanner";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -45,29 +46,25 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-          keyboardShouldPersistTaps="handled"
-          className="px-8"
-        >
-          <View className="max-w-md w-full self-center gap-8">
-            <View className="items-center gap-3">
-              <OrdovitaLogo size="lg" />
-              <Text className="text-on-surface-variant font-body text-sm text-center">
-                Zaloguj się, aby zarządzać swoimi zadaniami
-              </Text>
-            </View>
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <AuthCard>
+            <TouchableOpacity
+              onPress={() => router.push("/")}
+              className="flex-row items-center gap-1.5 mb-6 self-start"
+            >
+              <MaterialIcons name="arrow-back" size={18} color="#888888" />
+              <Text className="text-on-surface-variant font-body text-sm">Back to home</Text>
+            </TouchableOpacity>
+            <AuthHeader subtitle="Welcome back. Please log in to continue." />
 
             {error && (
-              <View className="bg-error-container rounded-xl px-4 py-3">
-                <Text className="text-on-error-container font-body text-sm">
-                  {error}
-                </Text>
+              <View className="bg-error-container rounded-xl px-4 py-3 mb-4">
+                <Text className="text-on-error-container font-body text-sm">{error}</Text>
               </View>
             )}
 
@@ -77,9 +74,9 @@ export default function LoginScreen() {
                 name="email"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Email"
+                    label="Email Address"
                     icon="email"
-                    placeholder="name@company.com"
+                    placeholder="you@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
                     autoComplete="email"
@@ -89,93 +86,59 @@ export default function LoginScreen() {
                   />
                 )}
               />
-              <Controller
-                control={control}
-                name="password"
-                render={({ field: { onChange, value } }) => (
-                  <Input
-                    label="Hasło"
-                    icon="lock"
-                    placeholder="••••••••"
-                    secureTextEntry
-                    autoComplete="password"
-                    value={value}
-                    onChangeText={onChange}
-                    error={errors.password?.message}
-                    returnKeyType="go"
-                    onSubmitEditing={handleSubmit(onSubmit)}
-                  />
-                )}
+              <View>
+                <View className="flex-row justify-between items-center mb-2">
+                  <Text className="text-on-surface font-label text-body-md">Password</Text>
+                  <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")}>
+                    <Text className="text-primary font-label text-sm">Forgot password?</Text>
+                  </TouchableOpacity>
+                </View>
+                <Controller
+                  control={control}
+                  name="password"
+                  render={({ field: { onChange, value } }) => (
+                    <Input
+                      icon="lock"
+                      placeholder="••••••••"
+                      secureToggle
+                      secureTextEntry
+                      autoComplete="password"
+                      value={value}
+                      onChangeText={onChange}
+                      error={errors.password?.message}
+                      returnKeyType="go"
+                      onSubmitEditing={handleSubmit(onSubmit)}
+                    />
+                  )}
+                />
+              </View>
+            </View>
+
+            <View className="mt-6">
+              <Button
+                label="Zaloguj się"
+                icon="login"
+                loading={loading}
+                fullWidth
+                onPress={handleSubmit(onSubmit)}
               />
             </View>
 
-            <TouchableOpacity
-              onPress={() => router.push("/(auth)/forgot-password")}
-              className="self-end"
-            >
-              <Text className="text-primary font-label text-sm">
-                Zapomniałeś hasła?
-              </Text>
-            </TouchableOpacity>
-
-            <Button
-              label="Zaloguj się"
-              loading={loading}
-              fullWidth
-              onPress={handleSubmit(onSubmit)}
-            />
-
-            <View className="flex-row items-center gap-3">
-              <View className="flex-1 h-px bg-outline-variant" />
-              <Text className="text-on-surface-variant font-body text-xs">
-                lub
-              </Text>
-              <View className="flex-1 h-px bg-outline-variant" />
+            <View className="mt-6 opacity-50" pointerEvents="none">
+              <View className="flex-row items-center justify-center gap-3 bg-surface-container-low rounded-xl px-4 py-3">
+                <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
+                <Text className="text-on-surface font-headline text-sm">Kontynuuj z Google</Text>
+              </View>
             </View>
+            <InProgressBanner message="Logowanie Google będzie dostępne po implementacji OAuth w backendzie .NET." />
 
-            <TouchableOpacity
-              onPress={() =>
-                startGoogleOAuth().catch(() =>
-                  setError("Nie udało się rozpocząć logowania Google"),
-                )
-              }
-              className="flex-row items-center justify-center gap-3 bg-surface-container-high border border-outline-variant rounded-xl px-4 py-3"
-            >
-              <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
-              <Text className="text-on-surface font-headline text-sm">
-                Kontynuuj z Google
-              </Text>
-            </TouchableOpacity>
-
-            <View className="flex-row items-center justify-center gap-1">
-              <Text className="text-on-surface-variant font-body text-sm">
-                Nie masz konta?
-              </Text>
+            <View className="flex-row items-center justify-center gap-1 mt-6">
+              <Text className="text-on-surface-variant font-body text-sm">Nie masz konta?</Text>
               <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
-                <Text className="text-primary font-headline text-sm">
-                  Zarejestruj się
-                </Text>
+                <Text className="text-primary font-headline text-sm">Zarejestruj się</Text>
               </TouchableOpacity>
             </View>
-
-            <View className="flex-row items-center justify-center gap-3 mt-2">
-              <TouchableOpacity
-                onPress={() => router.push("/privacy-policy" as never)}
-              >
-                <Text className="text-on-surface-variant font-body text-xs underline">
-                  Polityka prywatności
-                </Text>
-              </TouchableOpacity>
-              <Text className="text-on-surface-variant text-xs">•</Text>
-              <TouchableOpacity
-                onPress={() => router.push("/terms-of-service" as never)}
-              >
-                <Text className="text-on-surface-variant font-body text-xs underline">
-                  Regulamin
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

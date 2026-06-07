@@ -50,7 +50,7 @@ export default function MyResponsesScreen() {
 
   if (isLoading) {
     return (
-      <PageLayout title="Moje odpowiedzi">
+      <PageLayout>
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#4d41df" />
         </View>
@@ -60,7 +60,7 @@ export default function MyResponsesScreen() {
 
   if (!responses || responses.length === 0) {
     return (
-      <PageLayout title="Moje odpowiedzi">
+      <PageLayout>
         <EmptyState
           icon="quiz"
           title="Brak odpowiedzi"
@@ -71,7 +71,7 @@ export default function MyResponsesScreen() {
   }
 
   return (
-    <PageLayout title="Moje odpowiedzi">
+    <PageLayout>
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1"

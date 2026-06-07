@@ -1,11 +1,15 @@
 export {
   api,
   getAccessToken,
+  getRefreshToken,
   setAccessToken,
+  setRefreshToken,
   clearTokens,
   setOnRefreshFailed,
 } from "./client";
-export { authApi, userApi } from "./auth";
+export { identityApi, authApi } from "./identity";
+export { userApi } from "./user";
+export { workspaceApi } from "./workspace";
 export {
   taskApi,
   categoryApi,

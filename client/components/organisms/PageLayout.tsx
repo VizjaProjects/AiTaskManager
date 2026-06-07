@@ -1,25 +1,72 @@
 import { View, Platform, useWindowDimensions } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { SideNavBar } from "./SideNavBar";
-import { TopAppBar } from "./TopAppBar";
+import { AppHeader } from "./AppHeader";
 
 interface PageLayoutProps {
-  title: string;
+  title?: string;
   showSearch?: boolean;
+  searchPlaceholder?: string;
+  rightRail?: React.ReactNode;
+  /** Caps content width on very wide monitors without squeezing desktop layouts */
+  constrained?: boolean;
   children: React.ReactNode;
 }
 
-export function PageLayout({ title, showSearch, children }: PageLayoutProps) {
+function getContentMaxWidth(
+  viewportWidth: number,
+  isDesktop: boolean,
+  constrained: boolean,
+): number | undefined {
+  if (!constrained) return undefined;
+  if (!isDesktop) return undefined;
+  const available = viewportWidth - 256 - 80;
+  return Math.min(Math.max(available, 720), 1400);
+}
+
+export function PageLayout({
+  title,
+  showSearch = true,
+  searchPlaceholder,
+  rightRail,
+  constrained = false,
+  children,
+}: PageLayoutProps) {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
+  const contentMaxWidth = getContentMaxWidth(width, isDesktop, constrained);
+
+  const inner = (
+    <View className={`flex-1 w-full ${isDesktop ? "flex-row gap-6" : ""}`}>
+      <View className="flex-1 min-w-0 w-full">{children}</View>
+      {isDesktop && rightRail && (
+        <View className="w-80 shrink-0">{rightRail}</View>
+      )}
+    </View>
+  );
+
+  const content =
+    contentMaxWidth != null ? (
+      <View className="flex-1 w-full self-stretch" style={{ maxWidth: contentMaxWidth }}>
+        {inner}
+      </View>
+    ) : (
+      inner
+    );
 
   if (isDesktop) {
     return (
       <View className="flex-1 flex-row bg-background">
         <SideNavBar />
-        <View className="flex-1">
-          <TopAppBar title={title} showSearch={showSearch} />
-          <View className="flex-1 px-8 py-4">{children}</View>
+        <View className="flex-1 min-w-0">
+          <AppHeader
+            title={title}
+            showSearch={showSearch}
+            searchPlaceholder={searchPlaceholder}
+          />
+          <View className="flex-1 px-margin-desktop py-4 overflow-hidden">
+            {content}
+          </View>
         </View>
       </View>
     );
@@ -27,8 +74,15 @@ export function PageLayout({ title, showSearch, children }: PageLayoutProps) {
 
   return (
     <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <TopAppBar title={title} showSearch={showSearch} />
-      <View className="flex-1 px-4 py-2 overflow-hidden">{children}</View>
+      <AppHeader
+        title={title}
+        showSearch={showSearch}
+        searchPlaceholder={searchPlaceholder}
+      />
+      <View className="flex-1 px-5 py-3 overflow-hidden">
+        {content}
+        {rightRail && <View className="mt-4">{rightRail}</View>}
+      </View>
     </SafeAreaView>
   );
 }

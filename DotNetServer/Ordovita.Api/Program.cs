@@ -1,17 +1,21 @@
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Ordovita.Api.Common;
 using Ordovita.Api.Endpoints;
+using Ordovita.Api.Endpoints.Identity;
 using Ordovita.Application;
 using Ordovita.Infrastructure;
 using Ordovita.Infrastructure.Identity;
 using Ordovita.Infrastructure.Persistence;
+using Ordovita.Infrastructure.Survey;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddApplication();
+builder.Services.AddIdentityEndpointServices();
 
 builder.Services.AddIdentityApiEndpoints<AspIdentityUser>()
     .AddRoles<IdentityRole>()
@@ -32,6 +36,11 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
+
 builder.Services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
 
 
@@ -44,6 +53,12 @@ using (var scope = app.Services.CreateScope())
 
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await RoleSeeder.SeedAsync(roleManager);
+
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AspIdentityUser>>();
+    await DomainUserRoleSeeder.SyncAsync(db, userManager);
+
+    await SurveyDataSeeder.EnsureQuestionOptionsTableAsync(db);
+    await SurveyDataSeeder.PublishLegacySurveysAsync(db);
 }
 
 if (app.Environment.IsDevelopment())
@@ -62,6 +77,8 @@ app.UseExceptionHandler();
 app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/health", () => Results.Ok("ok")).AllowAnonymous();
 
 app.MapApiEndpoints();
 

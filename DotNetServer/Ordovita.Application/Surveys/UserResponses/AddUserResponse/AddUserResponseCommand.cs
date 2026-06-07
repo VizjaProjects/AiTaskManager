@@ -8,6 +8,7 @@ public sealed record AddUserResponseCommand(
     string Answer) : ICommand<AddUserResponseResult>;
 
 public sealed record AddUserResponseResult(
+    Guid UserResponseId,
     Guid QuestionId,
     Guid SurveyId,
     string Answer,

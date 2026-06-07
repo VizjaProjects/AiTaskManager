@@ -66,6 +66,7 @@ public static class DependencyInjection
 
         services.AddScoped<ISurveyRepository, SurveyRepository>();
         services.AddScoped<IQuestionRepository, QuestionRepository>();
+        services.AddScoped<IQuestionOptionRepository, QuestionOptionRepository>();
         services.AddScoped<IUserResponseRepository, UserResponseRepository>();
 
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();

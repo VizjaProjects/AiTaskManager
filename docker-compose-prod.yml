@@ -4,23 +4,17 @@ services:
     container_name: ordovita-backend
     restart: unless-stopped
     environment:
-      DB_URL: ${DB_URL}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      MAIL_HOST: ${MAIL_HOST}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
-      GEMINI_API_KEY: ${GEMINI_API_KEY}
-      GROQ_API_KEY: ${GROQ_API_KEY}
-      AI_PROVIDER: ${AI_PROVIDER}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      OAUTH2_FRONTEND_URL: ${OAUTH2_FRONTEND_URL}
-      OAUTH2_DESKTOP_REDIRECT_URL: ${OAUTH2_DESKTOP_REDIRECT_URL}
-      OAUTH2_DESKTOP_BROWSER_CALLBACK_URL: ${OAUTH2_DESKTOP_BROWSER_CALLBACK_URL}
-      SPRING_PROFILES_ACTIVE: prod
-      JAVA_TOOL_OPTIONS: "-Xmx512m -Xms256m"
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Database: ${DB_URL}
+      GroqSection__ApiKey: ${GROQ_API_KEY}
+      GroqSection__Model: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      EmailSection__Host: ${MAIL_HOST}
+      EmailSection__Port: ${MAIL_PORT:-587}
+      EmailSection__Username: ${MAIL_USERNAME}
+      EmailSection__Password: ${MAIL_PASSWORD}
+      EmailSection__FromAddress: ${MAIL_FROM:-kontakt@ordovita.pl}
+      EmailSection__FromName: ${MAIL_FROM_NAME:-Ordovita}
+      EmailSection__UseStartTls: "true"
     deploy:
       resources:
         limits:
@@ -31,7 +25,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget -qO- --spider http://localhost:8080/swagger-ui/index.html || exit 1",
+          "wget -qO- http://127.0.0.1:8080/health | grep -q ok || exit 1",
         ]
       interval: 15s
       timeout: 5s
@@ -52,14 +46,12 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=traefik_proxy_network"
 
-      # Main domain
       - "traefik.http.routers.ordovita.rule=Host(`ordovita.pl`)"
       - "traefik.http.routers.ordovita.entrypoints=websecure"
       - "traefik.http.routers.ordovita.tls.certresolver=my-resolver"
       - "traefik.http.routers.ordovita.service=ordovita"
       - "traefik.http.services.ordovita.loadbalancer.server.port=80"
 
-      # www redirect (HTTP only — no separate TLS cert needed)
       - "traefik.http.routers.ordovita-www.rule=Host(`www.ordovita.pl`)"
       - "traefik.http.routers.ordovita-www.entrypoints=web"
       - "traefik.http.routers.ordovita-www.middlewares=ordovita-www-redirect"

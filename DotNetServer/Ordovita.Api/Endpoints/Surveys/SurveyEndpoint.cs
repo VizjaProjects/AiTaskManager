@@ -14,6 +14,12 @@ public static class SurveyEndpoint
 {
     public static RouteGroupBuilder MapSurveyEndpoints(this IEndpointRouteBuilder root)
     {
+        var user = root.MapGroup("/survey").WithTags("Surveys").RequireAuthorization();
+
+        user.MapGet("/allAcrive", GetActiveSurveys)
+            .WithName("GetActiveSurveys")
+            .Produces<IReadOnlyList<SurveySummaryDto>>(200);
+
         var g = root.MapGroup("/survey").WithTags("Surveys")
             .RequireAuthorization(policy => policy.RequireRole("ADMIN"));
 
@@ -34,10 +40,6 @@ public static class SurveyEndpoint
 
         g.MapGet("/all", GetAllSurveys)
             .WithName("GetAllSurveys")
-            .Produces<IReadOnlyList<SurveySummaryDto>>(200);
-
-        g.MapGet("/allAcrive", GetActiveSurveys)
-            .WithName("GetActiveSurveys")
             .Produces<IReadOnlyList<SurveySummaryDto>>(200);
 
         g.MapDelete("/delete/{surveyId:guid}", DeleteSurvey)

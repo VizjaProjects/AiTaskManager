@@ -1,0 +1,58 @@
+import { api } from "./client";
+import type { Workspace } from "../types";
+
+function mapWorkspace(raw: Record<string, unknown>): Workspace {
+  const assignedUsers = (raw.assignedUsers as Array<Record<string, unknown>>) ?? [];
+  return {
+    workspaceId: raw.workspaceId as string,
+    workspaceName: raw.workspaceName as string,
+    createdBy: raw.createdBy as string,
+    assignedUsers: assignedUsers.map((u) => ({
+      userId: u.userId as string,
+      assignedAt: new Date(u.assignedAt as string).toISOString(),
+    })),
+    createdAt: new Date(raw.createdAt as string).toISOString(),
+    updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}
+
+export const workspaceApi = {
+  getAll: async () => {
+    const { data } = await api.get<Record<string, unknown>[]>("/workspace/all");
+    return (Array.isArray(data) ? data : []).map(mapWorkspace);
+  },
+
+  getById: async (workspaceId: string) => {
+    const { data } = await api.get<Record<string, unknown>>(
+      `/workspace/${encodeURIComponent(workspaceId)}`,
+    );
+    return mapWorkspace(data);
+  },
+
+  create: async (workspaceName: string, assignedUserIds?: string[]) => {
+    const { data } = await api.post<Record<string, unknown>>(
+      "/workspace/create",
+      { workspaceName, assignedUserIds },
+    );
+    return mapWorkspace(data);
+  },
+
+  assignUsers: async (workspaceId: string, userIds: string[]) => {
+    const { data } = await api.post<Record<string, unknown>>(
+      `/workspace/${encodeURIComponent(workspaceId)}/assignUsers`,
+      { userIds },
+    );
+    return mapWorkspace(data);
+  },
+
+  removeUsers: async (workspaceId: string, userIds: string[]) => {
+    const { data } = await api.patch<Record<string, unknown>>(
+      `/workspace/${encodeURIComponent(workspaceId)}/removeUsers`,
+      { userIds },
+    );
+    return mapWorkspace(data);
+  },
+
+  delete: (workspaceId: string) =>
+    api.delete(`/workspace/delete/${encodeURIComponent(workspaceId)}`),
+};

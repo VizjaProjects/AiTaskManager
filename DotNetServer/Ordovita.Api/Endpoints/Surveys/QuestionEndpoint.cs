@@ -4,7 +4,9 @@ using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.Questions.CreateQuestion;
 using Ordovita.Application.Surveys.Questions.DeleteQuestion;
 using Ordovita.Application.Surveys.Questions.EditQuestion;
+using Ordovita.Application.Surveys.Questions.GetQuestionOptions;
 using Ordovita.Application.Surveys.Questions.GetQuestionsBySurvey;
+using Ordovita.Domain.Surveys.port;
 
 namespace Ordovita.Api.Endpoints.Surveys;
 
@@ -25,6 +27,11 @@ public static class QuestionEndpoint
             .Produces<IReadOnlyList<QuestionDto>>(200)
             .Produces(404);
 
+        g.MapGet("/questionOptions/{questionId:guid}", GetQuestionOptions)
+            .WithName("GetQuestionOptions")
+            .Produces<IReadOnlyList<QuestionOptionDto>>(200)
+            .Produces(404);
+
         g.MapPut("/edit/{questionId:guid}", EditQuestion)
             .WithName("EditQuestion")
             .Produces<EditQuestionResult>(200)
@@ -42,7 +49,12 @@ public static class QuestionEndpoint
         Guid surveyId, QuestionRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new CreateQuestionCommand(
-            surveyId, request.QuestionText, request.IsRequired, request.Hint), ct);
+            surveyId,
+            request.QuestionText,
+            request.QuestionType ?? "TEXT",
+            request.OptionTextValue ?? [],
+            request.IsRequired,
+            request.Hint), ct);
 
         return result.IsSuccess
             ? Results.Created($"/api/v1/question/{result.Value!.QuestionId}", result.Value)
@@ -52,6 +64,12 @@ public static class QuestionEndpoint
     private static async Task<IResult> GetQuestionsBySurvey(Guid surveyId, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new GetQuestionsBySurveyQuery(surveyId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetQuestionOptions(Guid questionId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetQuestionOptionsQuery(questionId), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -70,7 +88,12 @@ public static class QuestionEndpoint
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
-    private sealed record QuestionRequest(string QuestionText, bool IsRequired, string Hint);
+    private sealed record QuestionRequest(
+        string QuestionText,
+        string? QuestionType,
+        IReadOnlyList<string>? OptionTextValue,
+        bool IsRequired,
+        string Hint);
 
     private sealed record EditQuestionRequest(string QuestionText, bool IsRequired, string Hint);
 }

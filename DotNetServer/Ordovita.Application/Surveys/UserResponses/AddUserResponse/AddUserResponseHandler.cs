@@ -54,9 +54,10 @@ public sealed class AddUserResponseHandler(
         await uow.SaveChangesAsync(ct);
 
         return Result.Success(new AddUserResponseResult(
+            response.Value!.Id.Value,
             questionId.Value,
             command.SurveyId,
             textAnswer.Value,
-            response.Value!.CreatedAt));
+            response.Value.CreatedAt));
     }
 }

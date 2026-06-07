@@ -1,8 +1,12 @@
 using Ordovita.Api.Common;
+using Ordovita.Api.Endpoints.Identity;
+using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
 using Ordovita.Application.User;
+using Ordovita.Application.Workspaces;
+using Ordovita.Domain.Identity;
 
 
 namespace Ordovita.Api.Endpoints.DomainUser;
@@ -14,6 +18,10 @@ public static class DomainUserEndpoint
         var g = root.MapGroup("/user")
             .WithTags("Users").RequireAuthorization();
 
+        g.MapGet("/me", GetCurrentUser)
+            .WithName("GetCurrentUser")
+            .Produces<CurrentUserResponse>(200)
+            .Produces(401);
 
         g.MapPost("/fullname", ChangeFullname)
             .WithName("ChangeFullName")
@@ -32,6 +40,23 @@ public static class DomainUserEndpoint
 
 
         return g;
+    }
+
+    public static async Task<IResult> GetCurrentUser(
+        IUserContext userContext,
+        IUserRepository userRepository,
+        CancellationToken ct)
+    {
+        var userResult = await WorkspaceUserResolver.GetCurrentDomainUserAsync(userContext, userRepository, ct);
+        if (userResult.IsFailure)
+            return userResult.Error.ToProblem();
+
+        var user = userResult.Value!;
+        return Results.Ok(new CurrentUserResponse(
+            user.Id.Value,
+            user.Email.Value,
+            user.FullName,
+            user.Role.ToString()));
     }
 
     public static async Task<IResult> ChangeFullname(string newFullName, ISender sender, CancellationToken ct)

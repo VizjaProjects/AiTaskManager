@@ -1,5 +1,6 @@
 using Ordovita.Api.Common;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Surveys.GetSurveyResponses;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Application.Surveys.UserResponses.AddUserResponse;
 using Ordovita.Application.Surveys.UserResponses.ChangeUserResponse;
@@ -38,7 +39,22 @@ public static class UserResponseEndpoint
             .Produces<GetAllUserResponsesResponse>(200)
             .Produces(401);
 
+        g.MapGet("/survey/{surveyId:guid}", GetSurveyResponses)
+            .WithName("GetSurveyResponses")
+            .RequireAuthorization(policy => policy.RequireRole("ADMIN"))
+            .Produces<GetAllUserResponsesResponse>(200)
+            .Produces(404);
+
         return g;
+    }
+
+    private static async Task<IResult> GetSurveyResponses(
+        Guid surveyId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetSurveyResponsesQuery(surveyId), ct);
+        return result.IsSuccess
+            ? Results.Ok(new GetAllUserResponsesResponse(result.Value!))
+            : result.Error.ToProblem();
     }
 
     private static async Task<IResult> AddUserResponse(

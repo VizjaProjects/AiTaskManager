@@ -42,6 +42,7 @@ import {
   formatDate,
   formatDuration,
   getCategoryDisplayColor,
+  resolveTaskCategoryId,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 
@@ -67,83 +68,6 @@ function saveColumnOrder(order: string[]) {
   }
 }
 
-function KanbanTaskCard({
-  task,
-  category,
-  onPress,
-  isCompleted,
-}: {
-  task: Task;
-  category?: Category;
-  onPress: () => void;
-  isCompleted?: boolean;
-}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      className="bg-surface-container-lowest rounded-2xl overflow-hidden"
-      style={[
-        {
-          borderLeftWidth: 4,
-          borderLeftColor: PRIORITY_COLORS[task.priority],
-        },
-        isCompleted ? { opacity: 0.6 } : undefined,
-      ]}
-    >
-      <View className="p-4 gap-2.5">
-        <View className="flex-row items-center gap-2 flex-wrap">
-          <PriorityBadge priority={task.priority} />
-          {task.source === TaskSource.AI_PARSED && (
-            <View className="flex-row items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/10">
-              <MaterialIcons name="auto-awesome" size={10} color="#006b58" />
-              <Text className="text-secondary text-[9px] font-label">AI</Text>
-            </View>
-          )}
-        </View>
-        <Text
-          className="font-headline text-on-surface text-sm"
-          numberOfLines={2}
-          style={
-            isCompleted ? { textDecorationLine: "line-through" } : undefined
-          }
-        >
-          {task.title}
-        </Text>
-        {task.description ? (
-          <Text
-            className="text-on-surface-variant font-body text-xs"
-            numberOfLines={2}
-            style={
-              isCompleted ? { textDecorationLine: "line-through" } : undefined
-            }
-          >
-            {task.description}
-          </Text>
-        ) : null}
-        <View className="flex-row items-center gap-3 flex-wrap">
-          {category && (
-            <ColorBadge label={category.name} color={category.color} />
-          )}
-          {task.estimatedDuration > 0 && (
-            <View className="flex-row items-center gap-1">
-              <MaterialIcons name="schedule" size={12} color="#777587" />
-              <Text className="text-on-surface-variant font-body text-[11px]">
-                {formatDuration(task.estimatedDuration)}
-              </Text>
-            </View>
-          )}
-        </View>
-        {task.dueDateTime && (
-          <Text className="text-on-surface-variant font-body text-[11px]">
-            {formatDate(task.dueDateTime)}
-          </Text>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
-}
-
 function DraggableCard({
   taskId,
   children,
@@ -159,7 +83,10 @@ function DraggableCard({
     el.draggable = true;
     el.style.cursor = "grab";
     const onStart = (e: DragEvent) => {
+      e.stopPropagation();
       e.dataTransfer?.setData("application/task-id", taskId);
+      e.dataTransfer?.setData("text/plain", taskId);
+      if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
       el.style.opacity = "0.5";
     };
     const onEnd = () => {
@@ -170,10 +97,75 @@ function DraggableCard({
     return () => {
       el.removeEventListener("dragstart", onStart);
       el.removeEventListener("dragend", onEnd);
+      el.draggable = false;
+      el.style.cursor = "";
     };
   }, [taskId]);
 
   return <View ref={ref}>{children}</View>;
+}
+
+function KanbanTaskCard({
+  task,
+  category,
+  onPress,
+  isCompleted,
+}: {
+  task: Task;
+  category?: Category;
+  onPress: () => void;
+  isCompleted?: boolean;
+}) {
+  return (
+    <DraggableCard taskId={task.taskId}>
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={onPress}
+      className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 gap-3"
+      style={isCompleted ? { opacity: 0.55 } : undefined}
+    >
+      <View className="flex-row items-center gap-2 flex-wrap">
+        <PriorityBadge priority={task.priority} />
+        {category && (
+          <ColorBadge label={category.name} color={category.color} />
+        )}
+        {task.source === TaskSource.AI_PARSED && (
+          <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed">
+            <MaterialIcons name="auto-awesome" size={10} color="#4d41df" />
+            <Text className="text-primary text-[9px] font-label">AI</Text>
+          </View>
+        )}
+      </View>
+
+      <Text
+        className="font-headline text-on-surface text-body-md"
+        numberOfLines={2}
+        style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
+      >
+        {task.title}
+      </Text>
+
+      {task.description ? (
+        <Text
+          className="text-on-surface-variant font-body text-body-md"
+          numberOfLines={2}
+          style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
+        >
+          {task.description}
+        </Text>
+      ) : null}
+
+      {task.dueDateTime && (
+        <View className="flex-row items-center gap-1.5">
+          <MaterialIcons name="calendar-today" size={14} color="#777587" />
+          <Text className="text-on-surface-variant font-body text-xs">
+            {formatDate(task.dueDateTime)}
+          </Text>
+        </View>
+      )}
+    </TouchableOpacity>
+    </DraggableCard>
+  );
 }
 
 function DropColumn({
@@ -195,8 +187,13 @@ function DropColumn({
     if (Platform.OS !== "web" || !ref.current) return;
     const el = ref.current as unknown as HTMLElement;
     const handleOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types.includes("application/task-id")) {
+      const types = e.dataTransfer?.types ?? [];
+      if (
+        types.includes("application/task-id") ||
+        types.includes("text/plain")
+      ) {
         e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
         setDragOverId(statusId);
       }
     };
@@ -207,8 +204,11 @@ function DropColumn({
     };
     const handleDrop = (e: DragEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       setDragOverId(null);
-      const taskId = e.dataTransfer?.getData("application/task-id");
+      const taskId =
+        e.dataTransfer?.getData("application/task-id") ||
+        e.dataTransfer?.getData("text/plain");
       if (taskId) onDrop(taskId, statusId);
     };
     el.addEventListener("dragover", handleOver);
@@ -486,20 +486,20 @@ export default function TasksScreen() {
           description: task.description,
           priority: task.priority,
           statusId: newStatusId,
-          categoryId: task.categoryId ?? undefined,
+          categoryId: resolveTaskCategoryId(task.categoryId, categories),
           estimatedDuration: task.estimatedDuration,
           dueDateTime: task.dueDateTime ?? undefined,
         },
       });
     },
-    [tasks, editTask],
+    [tasks, editTask, categories],
   );
 
   const priorities = Object.values(TaskPriority);
 
   if (isLoading) {
     return (
-      <PageLayout title="Tasks">
+      <PageLayout>
         <View className="gap-3 mt-4">
           {Array.from({ length: 5 }).map((_, i) => (
             <TaskCardSkeleton key={i} />
@@ -510,8 +510,19 @@ export default function TasksScreen() {
   }
 
   return (
-    <PageLayout title="Tasks">
+    <PageLayout searchPlaceholder="Search tasks...">
       <View className="gap-4 flex-1">
+        <View className="flex-row items-center gap-2">
+          <Text className="text-on-surface font-headline text-headline-md">
+            All Tasks
+          </Text>
+          <View className="bg-surface-container px-2.5 py-0.5 rounded-full">
+            <Text className="text-on-surface-variant font-label text-label-md">
+              {tasks?.length ?? 0}
+            </Text>
+          </View>
+        </View>
+
         <View className="flex-row items-center justify-between flex-wrap gap-2">
           <View className="flex-row items-center gap-3">
             <View className="flex-row bg-surface-container-low rounded-full p-1">
@@ -605,7 +616,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -686,7 +697,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -779,7 +790,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -864,7 +875,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl border border-outline-variant/50 py-1"
+              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
               style={{
                 position: "fixed" as any,
                 top: sortMenuPos.top,
@@ -1097,10 +1108,6 @@ export default function TasksScreen() {
                 setShowCreate(true);
               },
             }}
-            secondaryAction={{
-              label: "AI Planner",
-              onPress: () => router.push("/(app)/ai-task" as never),
-            }}
           />
         ) : viewMode === "kanban" ? (
           <ScrollView
@@ -1207,33 +1214,20 @@ export default function TasksScreen() {
                     style={{ flex: 1 }}
                   >
                     {statusTasks.map((task) => (
-                      <DraggableCard key={task.taskId} taskId={task.taskId}>
-                        <KanbanTaskCard
-                          task={task}
-                          category={
-                            task.categoryId
-                              ? categoryMap.get(task.categoryId)
-                              : undefined
-                          }
-                          onPress={() => setSelectedTask(task)}
-                          isCompleted={isDoneStatus(task.statusId)}
-                        />
-                      </DraggableCard>
+                      <KanbanTaskCard
+                        key={task.taskId}
+                        task={task}
+                        category={
+                          task.categoryId
+                            ? categoryMap.get(task.categoryId)
+                            : undefined
+                        }
+                        onPress={() => setSelectedTask(task)}
+                        isCompleted={isDoneStatus(task.statusId)}
+                      />
                     ))}
                   </ScrollView>
 
-                  <TouchableOpacity
-                    onPress={() => {
-                      setCreateStatusId(status.statusId);
-                      setShowCreate(true);
-                    }}
-                    className="flex-row items-center gap-2 mt-3 px-2 py-2"
-                  >
-                    <MaterialIcons name="add" size={18} color="#4d41df" />
-                    <Text className="text-primary font-label text-sm">
-                      Add Task
-                    </Text>
-                  </TouchableOpacity>
                 </DropColumn>
               );
             })}
@@ -1353,21 +1347,6 @@ export default function TasksScreen() {
         statuses={statuses ?? []}
       />
 
-      {!showCreate && (
-        <TouchableOpacity
-          onPress={() => {
-            setCreateStatusId(orderedStatuses[0]?.statusId);
-            setShowCreate(true);
-          }}
-          className="absolute right-6 bg-secondary rounded-2xl px-6 py-4 flex-row items-center gap-2 shadow-lg"
-          style={{ elevation: 8, bottom: isDesktop ? 24 : 88 }}
-        >
-          <MaterialIcons name="auto-awesome" size={20} color="#fff" />
-          <Text className="text-white font-headline text-sm">
-            Generate Smart Tasks
-          </Text>
-        </TouchableOpacity>
-      )}
     </PageLayout>
   );
 }

@@ -270,7 +270,7 @@ export default function AdminSurveysPage() {
   ];
 
   return (
-    <PageLayout title="Surveys">
+    <PageLayout searchPlaceholder="Search surveys...">
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -285,7 +285,7 @@ export default function AdminSurveysPage() {
               Survey Management
             </Text>
             <Text className="text-on-surface-variant font-body text-sm">
-              Create and monitor your research campaigns
+              Manage and analyze your feedback campaigns
             </Text>
           </View>
           <Button
@@ -323,8 +323,8 @@ export default function AdminSurveysPage() {
 
         {/* Filter + Search Row */}
         <View className="flex-row items-center justify-between mb-6">
-          <Text className="text-on-surface font-headline text-xl font-bold">
-            Recent Surveys
+          <Text className="text-on-surface font-headline text-title-lg">
+            Existing Surveys
           </Text>
           <View className="flex-row items-center gap-4">
             <View className="flex-row bg-surface-container-low rounded-xl overflow-hidden">
@@ -381,40 +381,72 @@ export default function AdminSurveysPage() {
             }}
           />
         ) : (
-          <View className="flex-row flex-wrap gap-4">
+          <Card variant="elevated" className="p-0 overflow-hidden">
+            <View className="flex-row px-4 py-3 bg-surface-container-low border-b border-outline-variant/30">
+              <Text className="flex-[2] text-label-md font-headline uppercase text-on-surface-variant">
+                Survey Title
+              </Text>
+              <Text className="flex-1 text-label-md font-headline uppercase text-on-surface-variant">
+                Status
+              </Text>
+              <Text className="flex-1 text-label-md font-headline uppercase text-on-surface-variant">
+                Responses
+              </Text>
+              <Text className="w-28 text-label-md font-headline uppercase text-on-surface-variant text-right">
+                Actions
+              </Text>
+            </View>
             {filtered.map((survey) => (
-              <View key={survey.surveyId} className="w-[32%]">
-                <SurveyCardWithQuestions
-                  survey={survey}
-                  responseCount={responseCounts[survey.surveyId] ?? 0}
-                  onEdit={() =>
-                    router.push(
-                      `/(app)/admin-survey-builder?surveyId=${survey.surveyId}` as never,
-                    )
-                  }
-                  onViewResults={() =>
-                    router.push(
-                      `/(app)/admin-survey-responses?surveyId=${survey.surveyId}` as never,
-                    )
-                  }
-                  onToggleVisibility={() =>
-                    toggleVisibility.mutate({
-                      surveyId: survey.surveyId,
-                      isVisible: !survey.isVisible,
-                    })
-                  }
-                  onDelete={() => deleteSurvey.mutate(survey.surveyId)}
-                />
+              <View
+                key={survey.surveyId}
+                className="flex-row items-center px-4 py-4 border-b border-outline-variant/20"
+              >
+                <View className="flex-[2] pr-4">
+                  <Text className="font-headline text-on-surface text-body-md">
+                    {survey.title}
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-xs mt-0.5">
+                    Updated{" "}
+                    {new Date(survey.updatedAt).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </Text>
+                </View>
+                <View className="flex-1">
+                  <StatusBadge isVisible={survey.isVisible} />
+                </View>
+                <Text className="flex-1 text-on-surface font-body text-body-md">
+                  {responseCounts[survey.surveyId] ?? "-"}
+                </Text>
+                <View className="w-28 flex-row justify-end gap-2">
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(
+                        `/(app)/admin-survey-builder?surveyId=${survey.surveyId}` as never,
+                      )
+                    }
+                  >
+                    <MaterialIcons name="edit" size={20} color="#4d41df" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push(
+                        `/(app)/admin-survey-responses?surveyId=${survey.surveyId}` as never,
+                      )
+                    }
+                  >
+                    <MaterialIcons name="bar-chart" size={20} color="#4d41df" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => deleteSurvey.mutate(survey.surveyId)}
+                  >
+                    <MaterialIcons name="delete-outline" size={20} color="#b90538" />
+                  </TouchableOpacity>
+                </View>
               </View>
             ))}
-            <View className="w-[32%]">
-              <CreateSurveyCard
-                onPress={() =>
-                  router.push("/(app)/admin-survey-builder" as never)
-                }
-              />
-            </View>
-          </View>
+          </Card>
         )}
       </ScrollView>
     </PageLayout>

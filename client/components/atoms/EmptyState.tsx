@@ -18,9 +18,9 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <View className="flex-1 items-center justify-center px-8 py-16" {...props}>
-      <View className="w-20 h-20 rounded-full bg-primary-fixed/30 items-center justify-center mb-6">
-        <View className="w-12 h-12 rounded-full bg-primary-fixed items-center justify-center">
-          <View className="w-4 h-4 rounded-full bg-primary" />
+      <View className="w-20 h-20 rounded-full bg-surface-container-low items-center justify-center mb-6 border border-outline-variant">
+        <View className="w-12 h-12 rounded-full bg-surface-container-lowest items-center justify-center border border-outline-variant">
+          <View className="w-4 h-4 rounded-full bg-inverse-surface" />
         </View>
       </View>
       <Text className="text-on-surface font-headline text-xl text-center mb-2">

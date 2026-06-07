@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useThemeStore } from "@/lib/stores";
 
-const ACTIVE_COLOR = "#4d41df";
+const ACTIVE_COLOR = "#111111";
 const INACTIVE_COLOR = "#777587";
 
 export default function AppLayout() {
@@ -91,6 +91,9 @@ export default function AppLayout() {
       <Tabs.Screen name="survey-onboarding" options={{ href: null }} />
       <Tabs.Screen name="surveys" options={{ href: null }} />
       <Tabs.Screen name="my-responses" options={{ href: null }} />
+      <Tabs.Screen name="workspaces" options={{ href: null }} />
+      <Tabs.Screen name="workspace-create" options={{ href: null }} />
+      <Tabs.Screen name="workspace-settings" options={{ href: null }} />
     </Tabs>
   );
 }

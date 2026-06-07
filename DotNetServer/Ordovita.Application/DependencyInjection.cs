@@ -14,7 +14,9 @@ using Ordovita.Application.Surveys.CreateSurvey;
 using Ordovita.Application.Surveys.DeleteSurvey;
 using Ordovita.Application.Surveys.EditSurvey;
 using Ordovita.Application.Surveys.GetActiveSurveys;
+using Ordovita.Application.Surveys.Questions.GetQuestionOptions;
 using Ordovita.Application.Surveys.GetAllSurveys;
+using Ordovita.Application.Surveys.GetSurveyResponses;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Application.Surveys.Questions.CreateQuestion;
 using Ordovita.Application.Surveys.Questions.DeleteQuestion;
@@ -24,6 +26,7 @@ using Ordovita.Application.Surveys.UserResponses.AddUserResponse;
 using Ordovita.Application.Surveys.UserResponses.ChangeUserResponse;
 using Ordovita.Application.Surveys.UserResponses.DeleteUserResponse;
 using Ordovita.Application.User;
+using Ordovita.Domain.Surveys.port;
 using Ordovita.Application.Workspaces;
 using Ordovita.Application.Workspaces.AssignUsersToWorkspace;
 using Ordovita.Application.Workspaces.CreateWorkspace;
@@ -87,6 +90,9 @@ public static class DependencyInjection
         services
             .AddScoped<IQueryHandler<GetQuestionsBySurveyQuery, IReadOnlyList<QuestionDto>>,
                 GetQuestionsBySurveyHandler>();
+        services
+            .AddScoped<IQueryHandler<GetQuestionOptionsQuery, IReadOnlyList<QuestionOptionDto>>,
+                GetQuestionOptionsHandler>();
 
         services.AddScoped<ICommandHandler<AddUserResponseCommand, AddUserResponseResult>, AddUserResponseHandler>();
         services
@@ -96,6 +102,9 @@ public static class DependencyInjection
         services
             .AddScoped<IQueryHandler<GetUserAnswersQuery, IReadOnlyList<SurveyWithAnswersDto>>,
                 GetUserAnswersHandler>();
+        services
+            .AddScoped<IQueryHandler<GetSurveyResponsesQuery, IReadOnlyList<SurveyWithAnswersDto>>,
+                GetSurveyResponsesHandler>();
 
         services.AddScoped<ICommandHandler<CreateWorkspaceCommand, WorkspaceDto>, CreateWorkspaceHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceByIdQuery, WorkspaceDto>, GetWorkspaceByIdHandler>();
@@ -107,6 +116,7 @@ public static class DependencyInjection
                 RemoveUsersFromWorkspaceHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkspaceCommand, Unit>, DeleteWorkspaceHandler>();
 
+        services.AddScoped<WorkspaceTaskEnsurer>();
         services.AddScoped<WorkspaceAccessGuard>();
 
         services.AddScoped<ICommandHandler<CreateWorkTaskCommand, CreateWorkTaskResult>, CreateWorkTaskHandler>();

@@ -43,19 +43,15 @@ public sealed class EditWorkTaskHandler(
         if (status is null || !status.BelongsToWorkspace(workspaceId))
             return Result.Failure<EditWorkTaskResult>(TaskStatusExceptions.NotFound);
 
-        if (command.CategoryId is { } categoryIdValue)
-        {
-            var category = await categoryRepository.GetByIdAsync(TaskCategoryId.From(categoryIdValue), ct);
-            if (category is null || !category.BelongsToWorkspace(workspaceId))
-                return Result.Failure<EditWorkTaskResult>(CategoryExceptions.NotFound);
-        }
+        var categoryForEdit = await ResolveCategoryForEditAsync(
+            command.CategoryId, task.CategoryId, workspaceId, categoryRepository, ct);
 
         var previousDueDate = task.DueDateTime;
         var editResult = task.Edit(
             command.Title,
             command.Description,
             command.Priority,
-            command.CategoryId.HasValue ? TaskCategoryId.From(command.CategoryId.Value) : null,
+            categoryForEdit,
             command.EstimatedDuration,
             command.DueDateTime,
             TaskStatusId.From(command.StatusId));
@@ -79,17 +75,42 @@ public sealed class EditWorkTaskHandler(
         else if (previousDueDate is not null && command.DueDateTime is not null)
         {
             var existingEvent = await eventRepository.GetByTaskIdAsync(task.Id, ct);
-            if (existingEvent is null)
-                return Result.Failure<EditWorkTaskResult>(EventExceptions.NotFound);
-
             var start = command.DueDateTime.Value.AddMinutes(-command.EstimatedDuration);
-            var eventEdit = existingEvent.Edit(
-                command.Title, start, command.DueDateTime.Value, false, EventStatus.ACCEPTED);
-            if (eventEdit.IsFailure)
-                return Result.Failure<EditWorkTaskResult>(eventEdit.Error);
+            if (existingEvent is null)
+            {
+                var eventResult = CalendarEvent.Create(
+                    task.Id, task.Title, start, command.DueDateTime.Value, false, ProposedBy.USER, calendar.Id);
+                if (eventResult.IsFailure)
+                    return Result.Failure<EditWorkTaskResult>(eventResult.Error);
+                await eventRepository.AddAsync(eventResult.Value!, ct);
+            }
+            else
+            {
+                var eventEdit = existingEvent.Edit(
+                    command.Title, start, command.DueDateTime.Value, false, EventStatus.ACCEPTED);
+                if (eventEdit.IsFailure)
+                    return Result.Failure<EditWorkTaskResult>(eventEdit.Error);
+            }
         }
 
         await uow.SaveChangesAsync(ct);
         return Result.Success(new EditWorkTaskResult(task.Id.Value, task.UpdatedAt));
+    }
+
+    private static async Task<TaskCategoryId?> ResolveCategoryForEditAsync(
+        Guid? requestedCategoryId,
+        TaskCategoryId? currentCategoryId,
+        WorkspaceId workspaceId,
+        ITaskCategoryRepository categoryRepository,
+        CancellationToken ct)
+    {
+        if (requestedCategoryId is not { } categoryId || categoryId == Guid.Empty)
+            return currentCategoryId;
+
+        var category = await categoryRepository.GetByIdAsync(TaskCategoryId.From(categoryId), ct);
+        if (category is not null && category.BelongsToWorkspace(workspaceId))
+            return TaskCategoryId.From(categoryId);
+
+        return currentCategoryId;
     }
 }

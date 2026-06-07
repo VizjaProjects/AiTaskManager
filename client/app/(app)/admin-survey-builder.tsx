@@ -7,15 +7,12 @@ import {
   TextInput,
   Alert,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter, useLocalSearchParams, Redirect } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { cssInterop } from "nativewind";
 import { PageLayout } from "@/components/organisms/PageLayout";
-import { Card } from "@/components/atoms/Card";
 import { Button } from "@/components/atoms/Button";
-import { Input } from "@/components/atoms/Input";
 import { Skeleton } from "@/components/atoms/Skeleton";
 import { useAuthStore } from "@/lib/stores";
 import { Role, QuestionType } from "@/lib/types";
@@ -28,80 +25,66 @@ import {
   useCreateQuestion,
   useEditQuestion,
   useDeleteQuestion,
-  useQuestionOptions,
-  useDeleteQuestionOption,
 } from "@/lib/hooks";
-import { questionApi } from "@/lib/api";
 
-cssInterop(LinearGradient, { className: "style" });
+type BuilderQuestionKind = "text" | "single" | "multiple";
 
 interface LocalQuestion {
   id: string;
   questionText: string;
-  questionType: QuestionType;
   isRequired: boolean;
-  options: string[];
   saved: boolean;
   serverQuestionId?: string;
   hint: string;
+  kind: BuilderQuestionKind;
+  options: string[];
 }
 
-const QUESTION_TYPE_LABELS: Record<QuestionType, string> = {
-  [QuestionType.TEXT]: "Text Input",
-  [QuestionType.LIST]: "List / Multiple Choice",
+const KIND_LABELS: Record<BuilderQuestionKind, string> = {
+  text: "Text Answer",
+  single: "Single Choice",
+  multiple: "Multiple Choice",
 };
 
-function QuestionTypeDropdown({
-  value,
-  onChange,
-}: {
-  value: QuestionType;
-  onChange: (t: QuestionType) => void;
-}) {
-  const [open, setOpen] = useState(false);
+const NO_OUTLINE: Record<string, unknown> =
+  Platform.OS === "web" ? { outlineStyle: "none" } : {};
 
+function toApiType(kind: BuilderQuestionKind): QuestionType {
+  return kind === "text" ? QuestionType.TEXT : QuestionType.LIST;
+}
+
+function FieldLabel({ children }: { children: string }) {
   return (
-    <View className="relative">
-      <TouchableOpacity
-        className="flex-row items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-lg"
-        onPress={() => setOpen(!open)}
-      >
-        <Text className="text-primary font-label text-xs uppercase tracking-widest font-bold">
-          {QUESTION_TYPE_LABELS[value]}
-        </Text>
-        <MaterialIcons
-          name={open ? "expand-less" : "expand-more"}
-          size={18}
-          color="#4d41df"
-        />
-      </TouchableOpacity>
-      {open && (
-        <View className="absolute top-9 right-0 z-50 bg-surface-container-lowest rounded-xl shadow-lg py-1 min-w-[200px]">
-          {Object.entries(QUESTION_TYPE_LABELS).map(([key, label]) => (
-            <TouchableOpacity
-              key={key}
-              className={`px-4 py-2.5 ${
-                value === key ? "bg-primary-fixed/20" : ""
-              }`}
-              onPress={() => {
-                onChange(key as QuestionType);
-                setOpen(false);
-              }}
-            >
-              <Text
-                className={`font-body text-sm ${
-                  value === key
-                    ? "text-primary font-bold"
-                    : "text-on-surface-variant"
-                }`}
-              >
-                {label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )}
-    </View>
+    <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest mb-2">
+      {children}
+    </Text>
+  );
+}
+
+function BorderedInput({
+  value,
+  onChangeText,
+  placeholder,
+  multiline,
+  minHeight,
+}: {
+  value: string;
+  onChangeText: (t: string) => void;
+  placeholder: string;
+  multiline?: boolean;
+  minHeight?: number;
+}) {
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor="#9ca3af"
+      multiline={multiline}
+      textAlignVertical={multiline ? "top" : "center"}
+      className="rounded-xl px-4 py-3.5 text-on-surface font-body text-sm border border-outline-variant bg-surface-container-lowest"
+      style={[NO_OUTLINE, minHeight ? { minHeight } : undefined]}
+    />
   );
 }
 
@@ -116,141 +99,172 @@ function QuestionCard({
   onUpdate: (q: LocalQuestion) => void;
   onDelete: () => void;
 }) {
-  const updateText = (questionText: string) =>
-    onUpdate({ ...question, questionText });
-  const updateType = (questionType: QuestionType) => {
-    const options =
-      questionType === QuestionType.LIST && question.options.length === 0
-        ? ["", ""]
-        : question.options;
-    onUpdate({ ...question, questionType, options });
-  };
-  const updateOption = (i: number, text: string) => {
-    const opts = [...question.options];
-    opts[i] = text;
-    onUpdate({ ...question, options: opts });
-  };
-  const removeOption = (i: number) => {
-    const opts = question.options.filter((_, idx) => idx !== i);
-    onUpdate({ ...question, options: opts });
-  };
-  const addOption = () =>
-    onUpdate({ ...question, options: [...question.options, ""] });
+  const isList = question.kind !== "text";
 
   return (
-    <Card variant="surface" className="relative">
-      {/* Header: label + type + delete */}
-      <View className="flex-row items-center justify-between mb-4">
-        <View className="bg-primary-fixed/20 px-3 py-1 rounded-lg">
-          <Text className="text-primary font-label text-[10px] uppercase tracking-widest font-bold">
+    <View className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-6 gap-5">
+      <View className="flex-row items-center justify-between">
+        <View className="flex-row items-center gap-3">
+          <MaterialIcons name="drag-indicator" size={22} color="#c4c4c4" />
+          <Text className="text-on-surface-variant font-label text-[11px] uppercase tracking-[0.15em] font-semibold">
             Question {String(index + 1).padStart(2, "0")}
           </Text>
         </View>
-        <View className="flex-row items-center gap-2">
-          <QuestionTypeDropdown
-            value={question.questionType}
-            onChange={updateType}
-          />
+        <View className="flex-row items-center gap-3">
+          <View className="px-3 py-1.5 rounded-lg bg-surface-container-low">
+            <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-wide font-semibold">
+              {KIND_LABELS[question.kind]}
+            </Text>
+          </View>
           <TouchableOpacity onPress={onDelete} className="p-1">
-            <MaterialIcons name="delete-outline" size={20} color="#ba1a1a" />
+            <MaterialIcons name="delete-outline" size={22} color="#9ca3af" />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Question text */}
-      <TextInput
-        value={question.questionText}
-        onChangeText={updateText}
-        placeholder="Enter your question here..."
-        placeholderTextColor="#777587"
-        className="text-on-surface font-headline text-lg font-bold mb-1 py-2 border-b border-outline-variant/15"
-      />
+      <View>
+        <FieldLabel>Question title</FieldLabel>
+        <BorderedInput
+          value={question.questionText}
+          onChangeText={(questionText) =>
+            onUpdate({ ...question, questionText, saved: false })
+          }
+          placeholder="Enter your question here..."
+        />
+      </View>
 
-      {/* Hint */}
-      <TextInput
-        value={question.hint}
-        onChangeText={(hint) => onUpdate({ ...question, hint, saved: false })}
-        placeholder="Podpowiedź dla użytkownika (opcjonalnie)..."
-        placeholderTextColor="#999"
-        className="text-on-surface-variant font-body text-sm mt-2 py-2 border-b border-outline-variant/10"
-      />
+      <View>
+        <FieldLabel>Helper text (optional)</FieldLabel>
+        <BorderedInput
+          value={question.hint}
+          onChangeText={(hint) => onUpdate({ ...question, hint, saved: false })}
+          placeholder="Short hint shown to the respondent..."
+        />
+      </View>
 
-      {question.questionType === QuestionType.TEXT && (
-        <Text className="text-on-surface-variant font-body text-sm mt-2 italic">
-          User will provide a short text response...
-        </Text>
-      )}
-
-      {question.questionType === QuestionType.LIST && (
-        <View className="mt-4 gap-2">
-          {question.options.map((opt, i) => (
-            <View key={i} className="flex-row items-center gap-3">
-              <View className="w-5 h-5 rounded-full border-2 border-outline-variant/30" />
-              <TextInput
+      {isList && (
+        <View className="gap-2">
+          <FieldLabel>Answer options</FieldLabel>
+          {question.options.map((opt, optIdx) => (
+            <View key={optIdx} className="flex-row items-center gap-2">
+              <BorderedInput
                 value={opt}
-                onChangeText={(t) => updateOption(i, t)}
-                placeholder={`Option ${i + 1}`}
-                placeholderTextColor="#777587"
-                className="flex-1 text-on-surface font-body text-sm py-2 border-b border-outline-variant/15"
+                onChangeText={(v) => {
+                  const options = [...question.options];
+                  options[optIdx] = v;
+                  onUpdate({ ...question, options, saved: false });
+                }}
+                placeholder={`Option ${optIdx + 1}`}
               />
-              <TouchableOpacity onPress={() => removeOption(i)} className="p-1">
-                <MaterialIcons name="close" size={18} color="#777587" />
+              <TouchableOpacity
+                onPress={() => {
+                  const options = question.options.filter((_, i) => i !== optIdx);
+                  onUpdate({ ...question, options, saved: false });
+                }}
+              >
+                <MaterialIcons name="close" size={18} color="#9ca3af" />
               </TouchableOpacity>
             </View>
           ))}
           <TouchableOpacity
-            onPress={addOption}
-            className="flex-row items-center gap-3 mt-1"
+            onPress={() =>
+              onUpdate({
+                ...question,
+                options: [...question.options, ""],
+                saved: false,
+              })
+            }
+            className="flex-row items-center gap-1 self-start mt-1"
           >
-            <View className="w-5 h-5 rounded-full border-2 border-dashed border-outline-variant/30" />
-            <Text className="text-on-surface-variant font-body text-sm italic">
-              Add an option...
+            <MaterialIcons name="add" size={16} color="#9ca3af" />
+            <Text className="text-on-surface-variant font-label text-xs">
+              Add option
             </Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* Required toggle */}
+      <Text className="text-on-surface-variant font-body text-sm">
+        {question.kind === "text"
+          ? "User will provide a text response."
+          : question.kind === "single"
+            ? "User will pick one option."
+            : "User can pick multiple options."}
+      </Text>
+
       <TouchableOpacity
-        className="flex-row items-center gap-2 mt-4 self-start"
+        className="flex-row items-center gap-2.5 self-start"
         onPress={() =>
-          onUpdate({ ...question, isRequired: !question.isRequired })
+          onUpdate({ ...question, isRequired: !question.isRequired, saved: false })
         }
       >
         <MaterialIcons
           name={question.isRequired ? "check-box" : "check-box-outline-blank"}
-          size={20}
-          color={question.isRequired ? "#4d41df" : "#777587"}
+          size={22}
+          color={question.isRequired ? "#4d41df" : "#9ca3af"}
         />
         <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
           Required
         </Text>
       </TouchableOpacity>
-    </Card>
+    </View>
   );
 }
 
-function AddQuestionCard({ onPress }: { onPress: () => void }) {
+function createEmptyQuestion(): LocalQuestion {
+  return {
+    id: `local-${Date.now()}`,
+    questionText: "",
+    isRequired: true,
+    saved: false,
+    hint: "",
+    kind: "text",
+    options: [],
+  };
+}
+
+function AddQuestionPanel({
+  onAdd,
+}: {
+  onAdd: (kind: BuilderQuestionKind) => void;
+}) {
+  const types: Array<{
+    kind: BuilderQuestionKind;
+    label: string;
+    icon: keyof typeof MaterialIcons.glyphMap;
+  }> = [
+    { kind: "text", label: "Text", icon: "text-fields" },
+    { kind: "single", label: "Single", icon: "radio-button-checked" },
+    { kind: "multiple", label: "Multiple", icon: "check-box" },
+  ];
+
   return (
-    <TouchableOpacity onPress={onPress}>
-      <View className="rounded-2xl border-2 border-dashed border-outline-variant/30 p-8 items-center justify-center">
-        <View className="w-12 h-12 rounded-full bg-surface-container-low items-center justify-center mb-3">
-          <MaterialIcons name="add" size={24} color="#777587" />
-        </View>
-        <Text className="text-on-surface font-headline text-base font-bold mb-1">
-          Click to add a new question
-        </Text>
-        <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
-          Select from multiple choice, text, or scale
-        </Text>
+    <View className="rounded-2xl border-2 border-dashed border-outline-variant p-8 gap-5">
+      <Text className="text-on-surface font-headline text-lg text-center">
+        Add a new question
+      </Text>
+      <View className="flex-row gap-4 justify-center">
+        {types.map((t) => (
+          <TouchableOpacity
+            key={t.kind}
+            onPress={() => onAdd(t.kind)}
+            className="flex-1 max-w-[140px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 items-center gap-3"
+            activeOpacity={0.85}
+          >
+            <MaterialIcons name={t.icon} size={28} color="#9ca3af" />
+            <Text className="text-on-surface font-headline text-sm">{t.label}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 }
 
 export default function AdminSurveyBuilderPage() {
   const router = useRouter();
   const { surveyId } = useLocalSearchParams<{ surveyId?: string }>();
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 900;
   const user = useAuthStore((s) => s.user);
   const isEditMode = !!surveyId;
 
@@ -268,11 +282,12 @@ export default function AdminSurveyBuilderPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [questions, setQuestions] = useState<LocalQuestion[]>([]);
+  const [questions, setQuestions] = useState<LocalQuestion[]>(() =>
+    isEditMode ? [] : [createEmptyQuestion()],
+  );
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(!isEditMode);
 
-  // Populate form when editing
   useEffect(() => {
     if (isEditMode && existingSurvey && !initialized) {
       setTitle(existingSurvey.title);
@@ -281,7 +296,6 @@ export default function AdminSurveyBuilderPage() {
     }
   }, [isEditMode, existingSurvey, initialized]);
 
-  // Load existing questions with their options
   useEffect(() => {
     if (
       isEditMode &&
@@ -289,50 +303,37 @@ export default function AdminSurveyBuilderPage() {
       initialized &&
       questions.length === 0
     ) {
-      const loadQuestions = async () => {
-        const loaded: LocalQuestion[] = [];
-        for (const q of existingQuestions) {
-          let options: string[] = [];
-          if (q.questionType === QuestionType.LIST) {
-            try {
-              const { data } = await questionApi.getOptions(q.questionId);
-              options = data.map((o) => o.optionText);
-            } catch {
-              options = [];
-            }
-          }
-          loaded.push({
-            id: q.questionId,
-            questionText: q.questionText,
-            questionType: q.questionType,
-            isRequired: true,
-            options,
-            saved: true,
-            serverQuestionId: q.questionId,
-            hint: q.hint ?? "",
-          });
-        }
-        setQuestions(loaded);
-      };
-      loadQuestions();
+      setQuestions(
+        existingQuestions.map((q) => ({
+          id: q.questionId,
+          questionText: q.questionText,
+          isRequired: q.isRequired ?? true,
+          saved: true,
+          serverQuestionId: q.questionId,
+          hint: q.hint ?? "",
+          kind:
+            q.questionType === QuestionType.LIST ? "single" : "text",
+          options: [],
+        })),
+      );
     }
-  }, [isEditMode, existingQuestions, initialized]);
+  }, [isEditMode, existingQuestions, initialized, questions.length]);
 
   if (user?.role !== Role.ADMIN) {
     return <Redirect href="/(app)/dashboard" />;
   }
 
-  const addQuestion = () => {
+  const addQuestion = (kind: BuilderQuestionKind) => {
     setQuestions([
       ...questions,
       {
         id: `local-${Date.now()}`,
         questionText: "",
-        questionType: QuestionType.TEXT,
         isRequired: true,
-        options: [],
         saved: false,
         hint: "",
+        kind,
+        options: kind === "text" ? [] : [""],
       },
     ]);
   };
@@ -357,10 +358,10 @@ export default function AdminSurveyBuilderPage() {
     for (let i = 0; i < questions.length; i++) {
       const q = questions[i];
       if (!q.questionText.trim()) return `Question ${i + 1} text is required.`;
-      if (q.questionType === QuestionType.LIST) {
-        const validOpts = q.options.filter((o) => o.trim().length >= 3);
-        if (validOpts.length < 2)
-          return `Question ${i + 1} needs at least 2 options (min 3 chars each).`;
+      if (q.kind !== "text") {
+        const opts = q.options.map((o) => o.trim()).filter(Boolean);
+        if (opts.length < 2)
+          return `Question ${i + 1} needs at least 2 options.`;
       }
     }
     return null;
@@ -370,11 +371,8 @@ export default function AdminSurveyBuilderPage() {
     async (publish: boolean) => {
       const err = validate();
       if (err) {
-        if (Platform.OS === "web") {
-          window.alert(err);
-        } else {
-          Alert.alert("Validation Error", err);
-        }
+        if (Platform.OS === "web") window.alert(err);
+        else Alert.alert("Validation Error", err);
         return;
       }
 
@@ -383,13 +381,11 @@ export default function AdminSurveyBuilderPage() {
         let targetSurveyId = surveyId;
 
         if (isEditMode && targetSurveyId) {
-          // Edit existing survey
           await editSurvey.mutateAsync({
             surveyId: targetSurveyId,
             data: { title: title.trim(), description: description.trim() },
           });
         } else {
-          // Create new survey
           const { data } = await createSurvey.mutateAsync({
             title: title.trim(),
             description: description.trim(),
@@ -397,30 +393,30 @@ export default function AdminSurveyBuilderPage() {
           targetSurveyId = data.surveyId;
         }
 
-        // Save questions
-        for (let i = 0; i < questions.length; i++) {
-          const q = questions[i];
+        for (const q of questions) {
+          const apiType = toApiType(q.kind);
+          const optionTextValue =
+            q.kind === "text"
+              ? []
+              : q.options.map((o) => o.trim()).filter(Boolean);
+
           if (q.serverQuestionId && !q.saved) {
-            // Edit existing question
             await editQuestion.mutateAsync({
               questionId: q.serverQuestionId,
               data: {
                 questionText: q.questionText.trim(),
-                questionType: q.questionType,
+                questionType: apiType,
                 isRequired: q.isRequired,
                 hint: q.hint.trim() || null,
               },
             });
           } else if (!q.serverQuestionId) {
-            // Create new question
-            const validOptions = q.options.filter((o) => o.trim().length >= 3);
             await createQuestion.mutateAsync({
               surveyId: targetSurveyId!,
               data: {
                 questionText: q.questionText.trim(),
-                questionType: q.questionType,
-                optionTextValue:
-                  q.questionType === QuestionType.LIST ? validOptions : [],
+                questionType: apiType,
+                optionTextValue,
                 isRequired: q.isRequired,
                 hint: q.hint.trim() || null,
               },
@@ -428,7 +424,6 @@ export default function AdminSurveyBuilderPage() {
           }
         }
 
-        // Set visibility — only call API when target differs from current state
         const currentVisibility = existingSurvey?.isVisible ?? false;
         if (publish !== currentVisibility) {
           await changeVisibility.mutateAsync({
@@ -438,14 +433,14 @@ export default function AdminSurveyBuilderPage() {
         }
 
         router.push("/(app)/admin-surveys" as never);
-      } catch (e: any) {
+      } catch (e: unknown) {
         const msg =
-          e?.response?.data?.message || e?.message || "Failed to save survey.";
-        if (Platform.OS === "web") {
-          window.alert(msg);
-        } else {
-          Alert.alert("Error", msg);
-        }
+          (e as { response?: { data?: { message?: string } }; message?: string })
+            ?.response?.data?.message ||
+          (e as Error)?.message ||
+          "Failed to save survey.";
+        if (Platform.OS === "web") window.alert(msg);
+        else Alert.alert("Error", msg);
       } finally {
         setSaving(false);
       }
@@ -468,183 +463,120 @@ export default function AdminSurveyBuilderPage() {
 
   const isLoadingEdit = isEditMode && (!initialized || questionsLoading);
 
-  return (
-    <PageLayout title="Survey Builder">
-      {/* Top bar */}
-      <View className="flex-row items-center justify-between mb-6">
-        <View className="flex-row items-center gap-3">
-          <TouchableOpacity
-            onPress={() => router.back()}
-            className="p-2 rounded-xl bg-surface-container-low"
-          >
-            <MaterialIcons name="arrow-back" size={20} color="#464555" />
-          </TouchableOpacity>
-          <Text className="text-on-surface font-headline text-2xl font-black">
-            Survey Builder
+  const body = isLoadingEdit ? (
+    <View className={`${isWide ? "flex-row" : ""} gap-6`}>
+      <View className={isWide ? "w-[34%]" : ""}>
+        <Skeleton height={240} borderRadius={16} />
+      </View>
+      <View className="flex-1 gap-4">
+        <Skeleton height={300} borderRadius={16} />
+      </View>
+    </View>
+  ) : (
+    <View className={`${isWide ? "flex-row" : "gap-6"} gap-6 items-start`}>
+      <View className={isWide ? "w-[34%] shrink-0" : "w-full"}>
+        <View className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-6 gap-5">
+          <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest font-semibold">
+            Survey details
           </Text>
-        </View>
-        <View className="flex-row items-center gap-3">
-          {isEditMode && existingSurvey?.isVisible ? (
-            <>
-              <Button
-                variant="outline"
-                label="Unpublish"
-                loading={saving}
-                onPress={() => save(false)}
-              />
-              <TouchableOpacity onPress={() => save(true)} disabled={saving}>
-                <LinearGradient
-                  colors={["#4d41df", "#675df9"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="flex-row items-center gap-2 px-6 py-3 rounded-xl"
-                >
-                  <MaterialIcons name="save" size={18} color="#ffffff" />
-                  <Text className="text-white font-label text-sm font-bold uppercase tracking-wider">
-                    Save
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Button
-                variant="outline"
-                label="Save Draft"
-                loading={saving}
-                onPress={() => save(false)}
-              />
-              <TouchableOpacity onPress={() => save(true)} disabled={saving}>
-                <LinearGradient
-                  colors={["#4d41df", "#675df9"]}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  className="flex-row items-center gap-2 px-6 py-3 rounded-xl"
-                >
-                  <MaterialIcons
-                    name="rocket-launch"
-                    size={18}
-                    color="#ffffff"
-                  />
-                  <Text className="text-white font-label text-sm font-bold uppercase tracking-wider">
-                    Publish Survey
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
-          )}
+          <View>
+            <FieldLabel>Survey title</FieldLabel>
+            <BorderedInput
+              value={title}
+              onChangeText={setTitle}
+              placeholder="e.g. Customer satisfaction"
+            />
+          </View>
+          <View>
+            <FieldLabel>Description</FieldLabel>
+            <BorderedInput
+              value={description}
+              onChangeText={setDescription}
+              placeholder="What is this survey about?"
+              multiline
+              minHeight={120}
+            />
+          </View>
         </View>
       </View>
 
-      {isLoadingEdit ? (
-        <View className="flex-row gap-6">
-          <View className="w-[35%] gap-4">
-            <Card variant="glass">
-              <Skeleton width="60%" height={16} className="mb-4" />
-              <Skeleton height={44} className="mb-4" />
-              <Skeleton width="60%" height={16} className="mb-4" />
-              <Skeleton height={100} />
-            </Card>
+      <View className="flex-1 min-w-0 gap-5">
+        <View>
+          <Text className="text-on-surface font-headline text-xl font-bold">
+            Question structure
+          </Text>
+          <Text className="text-on-surface-variant font-body text-sm mt-1">
+            {questions.length} question{questions.length === 1 ? "" : "s"} · build
+            your survey sequence
+          </Text>
+        </View>
+
+        {questions.map((q, i) => (
+          <QuestionCard
+            key={q.id}
+            index={i}
+            question={q}
+            onUpdate={(updated) => updateQuestion(i, updated)}
+            onDelete={() => removeQuestion(i)}
+          />
+        ))}
+
+        <AddQuestionPanel onAdd={addQuestion} />
+      </View>
+    </View>
+  );
+
+  return (
+    <PageLayout showSearch={false}>
+      <View className="flex-1 rounded-2xl bg-[#f3f4f6] p-6 md:p-8 min-h-full">
+        <View className="flex-row items-center justify-between mb-8">
+          <View className="flex-row items-center gap-3">
+            <TouchableOpacity
+              onPress={() => router.back()}
+              className="w-10 h-10 items-center justify-center rounded-full border border-outline-variant bg-white"
+            >
+              <MaterialIcons name="arrow-back" size={20} color="#6b7280" />
+            </TouchableOpacity>
+            <Text className="text-on-surface font-headline text-2xl font-bold">
+              Survey Builder
+            </Text>
           </View>
-          <View className="flex-1 gap-4">
-            <Skeleton height={200} borderRadius={16} />
-            <Skeleton height={200} borderRadius={16} />
+          <View className="flex-row items-center gap-3">
+            {isEditMode && existingSurvey?.isVisible ? (
+              <>
+                <Button
+                  variant="outline"
+                  label="Unpublish"
+                  loading={saving}
+                  onPress={() => save(false)}
+                />
+                <Button label="Save" loading={saving} onPress={() => save(true)} />
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="outline"
+                  label="Save draft"
+                  loading={saving}
+                  onPress={() => save(false)}
+                />
+                <Button
+                  label="Publish survey"
+                  loading={saving}
+                  onPress={() => save(true)}
+                />
+              </>
+            )}
           </View>
         </View>
-      ) : (
+
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
         >
-          <View className="flex-row gap-6">
-            {/* Left column — Survey Details */}
-            <View className="w-[35%]">
-              <Card variant="glass">
-                <Text className="text-on-surface font-headline text-xl font-bold mb-6">
-                  Survey Details
-                </Text>
-
-                <Input
-                  label="Survey Title"
-                  value={title}
-                  onChangeText={setTitle}
-                  placeholder="e.g., Q3 Customer Satisfaction"
-                />
-
-                <View className="mt-4">
-                  <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest mb-2">
-                    Description
-                  </Text>
-                  <TextInput
-                    value={description}
-                    onChangeText={setDescription}
-                    placeholder="Briefly describe the purpose of this survey..."
-                    placeholderTextColor="#777587"
-                    multiline
-                    numberOfLines={5}
-                    textAlignVertical="top"
-                    className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-sm min-h-[120px] border border-outline-variant/15"
-                  />
-                </View>
-              </Card>
-
-              {/* AI Tip */}
-              <View className="mt-6 bg-primary-fixed/15 rounded-2xl p-5">
-                <View className="flex-row items-center gap-2 mb-2">
-                  <MaterialIcons
-                    name="auto-awesome"
-                    size={18}
-                    color="#4d41df"
-                  />
-                  <Text className="text-primary font-label text-[10px] uppercase tracking-widest font-bold">
-                    Tip
-                  </Text>
-                </View>
-                <Text className="text-on-surface-variant font-body text-sm leading-relaxed">
-                  Surveys with 5 or fewer questions have an 85% higher
-                  completion rate. Try to keep it concise!
-                </Text>
-              </View>
-            </View>
-
-            {/* Right column — Question Structure */}
-            <View className="flex-1">
-              <View className="flex-row items-center justify-between mb-4">
-                <View>
-                  <Text className="text-on-surface font-headline text-xl font-bold">
-                    Question Structure
-                  </Text>
-                  <Text className="text-on-surface-variant font-body text-sm mt-1">
-                    Build your survey sequence
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  onPress={addQuestion}
-                  className="flex-row items-center gap-1"
-                >
-                  <MaterialIcons name="add" size={18} color="#4d41df" />
-                  <Text className="text-primary font-label text-xs uppercase tracking-widest font-bold">
-                    Add Question
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              <View className="gap-4">
-                {questions.map((q, i) => (
-                  <QuestionCard
-                    key={q.id}
-                    index={i}
-                    question={q}
-                    onUpdate={(updated) => updateQuestion(i, updated)}
-                    onDelete={() => removeQuestion(i)}
-                  />
-                ))}
-                <AddQuestionCard onPress={addQuestion} />
-              </View>
-            </View>
-          </View>
+          {body}
         </ScrollView>
-      )}
+      </View>
     </PageLayout>
   );
 }

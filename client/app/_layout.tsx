@@ -1,7 +1,7 @@
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { View, Platform } from "react-native";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Slot, useRouter, usePathname } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { StatusBar } from "expo-status-bar";
@@ -14,10 +14,11 @@ import {
   Inter_900Black,
 } from "@expo-google-fonts/inter";
 import * as SplashScreen from "expo-splash-screen";
-import { useAuthStore } from "@/lib/stores";
+import { useAuthStore, useWorkspaceStore } from "@/lib/stores";
 import { useThemeStore } from "@/lib/stores";
 import { setOnRefreshFailed } from "@/lib/api";
 import { Role } from "@/lib/types";
+import { useSurveyGate } from "@/lib/hooks";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -27,10 +28,22 @@ const queryClient = new QueryClient({
   },
 });
 
+function routeKey(path: string) {
+  return path
+    .replace(/^\/\(app\)/, "")
+    .replace(/^\/\(auth\)/, "")
+    .replace(/^\//, "");
+}
+
 function AuthGate() {
-  const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
+  const lastRedirectRef = useRef<string | null>(null);
   const { isAuthenticated, isLoading, hydrate, user } = useAuthStore();
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const workspaceLoading = useWorkspaceStore((s) => s.isLoading);
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
+  const { hasPendingSurvey, isLoading: surveyCheckLoading } = useSurveyGate();
 
   useEffect(() => {
     hydrate();
@@ -43,33 +56,113 @@ function AuthGate() {
     });
   }, []);
 
+  const wasAuthenticatedRef = useRef(false);
   useEffect(() => {
-    if (!isAuthenticated) {
+    if (isAuthenticated) {
+      wasAuthenticatedRef.current = true;
+      return;
+    }
+    if (wasAuthenticatedRef.current) {
       queryClient.clear();
+      wasAuthenticatedRef.current = false;
     }
   }, [isAuthenticated]);
 
   useEffect(() => {
     if (isLoading) return;
+    if (isAuthenticated && workspaceLoading) return;
+    if (isAuthenticated && user?.role !== Role.ADMIN && surveyCheckLoading) {
+      return;
+    }
 
-    const inAuthGroup = segments[0] === "(auth)";
+    const inAuthGroup =
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/register") ||
+      pathname.startsWith("/forgot-password");
     const isPublicPage =
-      !segments[0] ||
-      segments[0] === "privacy-policy" ||
-      segments[0] === "terms-of-service" ||
-      segments[0] === "oauth-callback" ||
-      segments[0] === "desktop-oauth-complete";
+      pathname === "/" ||
+      pathname.startsWith("/privacy-policy") ||
+      pathname.startsWith("/terms-of-service") ||
+      pathname.startsWith("/oauth-callback") ||
+      pathname.startsWith("/desktop-oauth-complete");
+    const isSurveyRoute =
+      pathname.includes("survey-onboarding") || pathname.endsWith("/surveys");
+    const isWorkspaceSetup =
+      pathname.includes("workspace-create") ||
+      pathname.endsWith("/workspaces") ||
+      pathname.includes("workspace-settings");
+    const inAppGroup = isAuthenticated && !inAuthGroup && !isPublicPage;
+    const isUser = user?.role !== Role.ADMIN;
+
+    let target: string | null = null;
 
     if (!isAuthenticated && !inAuthGroup && !isPublicPage) {
-      router.replace("/(auth)/login");
+      target = "/(auth)/login";
     } else if (isAuthenticated && inAuthGroup) {
-      const dest =
-        user?.role === Role.ADMIN
-          ? "/(app)/dashboard"
-          : "/(app)/survey-onboarding";
-      router.replace(dest);
+      if (isUser && hasPendingSurvey) {
+        target = "/(app)/survey-onboarding";
+      } else if (workspaces.length === 0) {
+        target = "/(app)/workspace-create";
+      } else {
+        target = "/(app)/dashboard";
+      }
+    } else if (
+      isAuthenticated &&
+      isUser &&
+      hasPendingSurvey &&
+      !surveyCheckLoading &&
+      inAppGroup &&
+      !isSurveyRoute
+    ) {
+      target = "/(app)/survey-onboarding";
+    } else if (
+      isAuthenticated &&
+      inAppGroup &&
+      !isWorkspaceSetup &&
+      !isSurveyRoute &&
+      !hasPendingSurvey &&
+      workspaces.length === 0
+    ) {
+      target = "/(app)/workspace-create";
+    } else if (
+      isAuthenticated &&
+      inAppGroup &&
+      !isWorkspaceSetup &&
+      !isSurveyRoute &&
+      !hasPendingSurvey &&
+      workspaces.length > 0 &&
+      !activeWorkspaceId
+    ) {
+      target = "/(app)/workspaces";
     }
-  }, [isAuthenticated, isLoading, segments, router]);
+
+    if (!target || routeKey(target) === routeKey(pathname)) {
+      lastRedirectRef.current = null;
+      return;
+    }
+
+    if (lastRedirectRef.current === target) {
+      return;
+    }
+
+    lastRedirectRef.current = target;
+    router.replace(target as never);
+  }, [
+    isAuthenticated,
+    isLoading,
+    workspaceLoading,
+    surveyCheckLoading,
+    hasPendingSurvey,
+    workspaces.length,
+    activeWorkspaceId,
+    pathname,
+    router,
+    user?.role,
+  ]);
+
+  useEffect(() => {
+    lastRedirectRef.current = null;
+  }, [pathname]);
 
   return <Slot />;
 }

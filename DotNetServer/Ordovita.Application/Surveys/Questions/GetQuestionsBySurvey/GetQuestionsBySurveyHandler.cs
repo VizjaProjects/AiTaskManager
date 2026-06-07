@@ -19,8 +19,15 @@ public sealed class GetQuestionsBySurveyHandler(
             return Result.Failure<IReadOnlyList<QuestionDto>>(SurveyException.NotFound);
 
         var questions = await questionRepository.GetAllBySurveyIdAsync(surveyId, ct);
+
         var result = questions.Select(q => new QuestionDto(
-            q.Id.Value, q.SurveyId.Value, q.QuestionText, q.IsRequired, q.Hint, q.CreatedAt)).ToList();
+            q.Id.Value,
+            q.SurveyId.Value,
+            q.QuestionText,
+            "TEXT",
+            q.IsRequired,
+            q.Hint,
+            q.CreatedAt)).ToList();
 
         return Result.Success<IReadOnlyList<QuestionDto>>(result);
     }

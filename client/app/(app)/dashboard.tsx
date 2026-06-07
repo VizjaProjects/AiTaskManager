@@ -4,102 +4,93 @@ import {
   Text,
   TouchableOpacity,
   RefreshControl,
+  Platform,
+  useWindowDimensions,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useState, useMemo, useCallback } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { cssInterop } from "nativewind";
 import { PageLayout } from "@/components/organisms";
-import { StatCard, TaskCard, EventCard } from "@/components/molecules";
-import { StatCardSkeleton, TaskCardSkeleton } from "@/components/atoms";
+import {
+  StatCard,
+  DashboardTaskCard,
+  DashboardEventItem,
+} from "@/components/molecules";
+import { StatCardSkeleton } from "@/components/atoms";
 import {
   useTasks,
   useEvents,
   useAiProposals,
   useCategories,
-  useActiveSurveys,
-  useMyResponses,
+  useTaskStatuses,
+  useSurveyGate,
 } from "@/lib/hooks";
+import { useAuthStore, useThemeStore } from "@/lib/stores";
 import type { Category } from "@/lib/types";
-
-cssInterop(LinearGradient, { className: "style" });
 
 function SurveyBanner() {
   const router = useRouter();
-  const { data: surveys } = useActiveSurveys();
-  const { data: myResponses } = useMyResponses();
+  const { hasPendingSurvey, isLoading } = useSurveyGate();
 
-  const pendingCount = useMemo(() => {
-    if (!surveys || !myResponses) return 0;
-    const answeredIds = new Set(
-      (myResponses as any[]).map((r: any) => r.questionId),
-    );
-    // Count unanswered across ALL active surveys (approximate — questions loaded separately)
-    // For the banner we simply count surveys that have at least one response missing
-    return surveys.length;
-  }, [surveys, myResponses]);
-
-  const incompleteSurveys = useMemo(() => {
-    if (!surveys) return 0;
-    const answeredSurveyIds = new Set(
-      (myResponses ?? ([] as any[])).map((r: any) => r.surveyId),
-    );
-    // A survey is "incomplete" if user has NO responses for it at all,
-    // or we can't tell without question data — count surveys user hasn't fully answered
-    return surveys.filter((s) => !answeredSurveyIds.has(s.surveyId)).length;
-  }, [surveys, myResponses]);
-
-  if (!surveys || surveys.length === 0 || incompleteSurveys === 0) return null;
+  if (isLoading || !hasPendingSurvey) return null;
 
   return (
-    <TouchableOpacity
-      onPress={() => router.push("/(app)/surveys" as never)}
-      activeOpacity={0.85}
-    >
-      <LinearGradient
-        colors={["#4d41df", "#6c63ff"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
-        className="rounded-2xl p-5 flex-row items-center gap-4"
+    <View className="rounded-2xl p-5 flex-row items-center gap-4 bg-surface-container-lowest border border-outline-variant">
+      <View className="flex-1">
+        <Text className="text-on-surface font-headline text-title-lg">
+          Weekly AI Setup Needed
+        </Text>
+        <Text className="text-on-surface-variant font-body text-body-md mt-1">
+          Take a quick 2-minute survey to optimize your tasks for the week.
+        </Text>
+      </View>
+      <TouchableOpacity
+        onPress={() => router.push("/(app)/survey-onboarding" as never)}
+        className="bg-action px-5 py-2.5 rounded-xl"
       >
-        <View className="w-11 h-11 rounded-xl bg-white/20 items-center justify-center">
-          <MaterialIcons name="assignment" size={24} color="#fff" />
-        </View>
-        <View className="flex-1">
-          <Text className="text-white font-headline text-base">
-            Masz ankiety do wypełnienia
-          </Text>
-          <Text className="text-white/70 font-body text-sm mt-1">
-            {incompleteSurveys}{" "}
-            {incompleteSurveys === 1
-              ? "ankieta czeka"
-              : incompleteSurveys < 5
-                ? "ankiety czekają"
-                : "ankiet czeka"}{" "}
-            na Twoje odpowiedzi
-          </Text>
-        </View>
-        <MaterialIcons name="arrow-forward" size={22} color="#fff" />
-      </LinearGradient>
-    </TouchableOpacity>
+        <Text className="text-on-action font-headline text-sm">Start Survey</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function getWeekRange() {
+  const now = new Date();
+  const day = now.getDay();
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((day + 6) % 7));
+  monday.setHours(0, 0, 0, 0);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  return { monday, sunday };
+}
+
+function isDoneStatus(statusId: string, statuses: { statusId: string; name: string }[]) {
+  const s = statuses.find((x) => x.statusId === statusId);
+  if (!s) return false;
+  const n = s.name.toLowerCase();
+  return (
+    n === "done" ||
+    n === "completed" ||
+    n === "zakończone" ||
+    n === "ukończone" ||
+    n === "cancelled" ||
+    n === "anulowane"
   );
 }
 
 export default function DashboardScreen() {
   const router = useRouter();
-  const {
-    data: tasks,
-    isLoading: tasksLoading,
-    refetch: refetchTasks,
-  } = useTasks();
-  const {
-    data: events,
-    isLoading: eventsLoading,
-    refetch: refetchEvents,
-  } = useEvents();
+  const { width } = useWindowDimensions();
+  const isWide = Platform.OS === "web" && width >= 768;
+  const isXl = Platform.OS === "web" && width >= 1280;
+  const user = useAuthStore((s) => s.user);
+  const { data: tasks, isLoading: tasksLoading, refetch: refetchTasks } = useTasks();
+  const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useEvents();
   const { data: proposals, refetch: refetchProposals } = useAiProposals();
   const { data: categories } = useCategories();
+  const { data: statuses } = useTaskStatuses();
   const [refreshing, setRefreshing] = useState(false);
 
   const stats = useMemo(() => {
@@ -107,6 +98,7 @@ export default function DashboardScreen() {
     today.setHours(0, 0, 0, 0);
     const endOfDay = new Date(today);
     endOfDay.setHours(23, 59, 59, 999);
+    const { monday, sunday } = getWeekRange();
 
     const todayTasks = tasks?.filter((t) => {
       if (!t.dueDateTime) return false;
@@ -117,21 +109,36 @@ export default function DashboardScreen() {
     const upcomingEvents = events?.filter(
       (e) => new Date(e.startDateTime) > new Date(),
     );
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const weekTasks = tasks?.filter((t) => {
+      if (!t.dueDateTime) return false;
+      const due = new Date(t.dueDateTime);
+      return due >= monday && due <= sunday;
+    });
 
     return {
       tasksToday: todayTasks?.length ?? 0,
       upcomingEvents: upcomingEvents?.length ?? 0,
       pendingAi:
         (proposals?.tasks?.length ?? 0) + (proposals?.events?.length ?? 0),
-      completedWeek: tasks?.filter(() => false).length ?? 0,
+      thisWeek: weekTasks?.length ?? 0,
     };
   }, [tasks, events, proposals]);
 
-  const recentTasks = useMemo(() => (tasks ?? []).slice(0, 5), [tasks]);
+  const todoTasks = useMemo(() => {
+    const list = (tasks ?? []).filter(
+      (t) => !statuses?.length || !isDoneStatus(t.statusId, statuses),
+    );
+    return list
+      .sort((a, b) => {
+        const aDue = a.dueDateTime ? new Date(a.dueDateTime).getTime() : Infinity;
+        const bDue = b.dueDateTime ? new Date(b.dueDateTime).getTime() : Infinity;
+        return aDue - bDue;
+      })
+      .slice(0, 6);
+  }, [tasks, statuses]);
 
-  const upcomingEventsList = useMemo(
+  const scheduleEvents = useMemo(
     () =>
       (events ?? [])
         .filter((e) => new Date(e.startDateTime) > new Date())
@@ -140,7 +147,7 @@ export default function DashboardScreen() {
             new Date(a.startDateTime).getTime() -
             new Date(b.startDateTime).getTime(),
         )
-        .slice(0, 4),
+        .slice(0, 5),
     [events],
   );
 
@@ -157,98 +164,183 @@ export default function DashboardScreen() {
   }, [categories]);
 
   const isLoading = tasksLoading || eventsLoading;
+  const isDark = useThemeStore((s) => s.mode) === "dark";
+  const iconMuted = isDark ? "#a0a0a5" : "#6b7280";
+  const firstName = user?.fullName?.split(" ")[0] ?? "there";
+  const dateLabel = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
 
   return (
-    <PageLayout title="Dashboard">
+    <PageLayout showSearch>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        contentContainerStyle={{ gap: 24, paddingBottom: 32 }}
+        contentContainerStyle={{ gap: 20, paddingBottom: 32 }}
       >
-        <SurveyBanner />
+        <View className="flex-row items-start justify-between">
+          <View className="flex-1">
+            <Text className="text-on-surface font-headline text-headline-md">
+              Good morning, {firstName}.
+            </Text>
+            <Text className="text-on-surface-variant font-body text-body-md mt-1">
+              You have {stats.tasksToday} tasks to complete today and{" "}
+              {stats.upcomingEvents} upcoming events.
+            </Text>
+          </View>
+          <Text className="text-on-surface-variant font-body text-body-md hidden md:flex">
+            {dateLabel}
+          </Text>
+        </View>
 
-        <View className="flex-row flex-wrap gap-4">
+        <View className="flex-row flex-wrap gap-3">
           {isLoading ? (
-            <>
-              <View className="flex-1 min-w-[140px]">
+            Array.from({ length: 4 }).map((_, i) => (
+              <View key={i} className="flex-1 min-w-[120px]">
                 <StatCardSkeleton />
               </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCardSkeleton />
-              </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCardSkeleton />
-              </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCardSkeleton />
-              </View>
-            </>
+            ))
           ) : (
             <>
-              <View className="flex-1 min-w-[140px]">
-                <StatCard
-                  label="Tasks Today"
-                  value={String(stats.tasksToday).padStart(2, "0")}
-                  icon="task-alt"
-                />
+              <View className="flex-1 min-w-[120px]">
+                <StatCard label="Tasks Today" value={stats.tasksToday} icon="task-alt" />
               </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCard
-                  label="Upcoming Events"
-                  value={String(stats.upcomingEvents).padStart(2, "0")}
-                  icon="event"
-                  iconColor="#006b58"
-                />
+              <View className="flex-1 min-w-[120px]">
+                <StatCard label="Upcoming Events" value={stats.upcomingEvents} icon="event" tone="rose" />
               </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCard
-                  label="Pending AI"
-                  value={String(stats.pendingAi).padStart(2, "0")}
-                  icon="auto-awesome"
-                  variant="primary"
-                />
+              <View className="flex-1 min-w-[120px]">
+                <StatCard label="Pending AI" value={stats.pendingAi} icon="auto-awesome" tone="amber" />
               </View>
-              <View className="flex-1 min-w-[140px]">
-                <StatCard
-                  label="This Week"
-                  value={String(stats.completedWeek).padStart(2, "0")}
-                  icon="check-circle"
-                  iconColor="#10B981"
-                />
+              <View className="flex-1 min-w-[120px]">
+                <StatCard label="This Week" value={stats.thisWeek} icon="date-range" tone="emerald" />
               </View>
             </>
           )}
         </View>
 
-        {upcomingEventsList.length > 0 && (
-          <View className="gap-3">
-            {upcomingEventsList.map((event) => (
-              <EventCard key={event.eventId} event={event} />
-            ))}
-          </View>
-        )}
+        <SurveyBanner />
 
-        <View className="gap-3">
-          {isLoading
-            ? Array.from({ length: 3 }).map((_, i) => (
-                <TaskCardSkeleton key={i} />
-              ))
-            : recentTasks.map((task) => (
-                <TaskCard
-                  key={task.taskId}
-                  task={task}
-                  category={
-                    task.categoryId
-                      ? (categoryMap.get(task.categoryId) ?? undefined)
-                      : undefined
-                  }
-                  onPress={() =>
-                    router.push(`/(app)/tasks?taskId=${task.taskId}` as never)
-                  }
-                />
-              ))}
+        <View className={isWide ? "flex-row gap-5 items-start" : "gap-5"}>
+          <View className="flex-1 gap-4">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center gap-2">
+                <MaterialIcons name="checklist" size={18} color={iconMuted} />
+                <Text className="font-headline text-on-surface text-title-lg">
+                  To Do
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push("/(app)/tasks" as never)}>
+                <Text className="text-on-surface-variant font-headline text-sm">
+                  View All
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!isLoading && todoTasks.length === 0 ? (
+              <View className="items-center py-10 gap-3 rounded-2xl bg-surface-container-lowest border border-outline-variant">
+                <View className="w-12 h-12 rounded-xl bg-surface-container-low items-center justify-center">
+                  <MaterialIcons name="check-circle" size={26} color="#10B981" />
+                </View>
+                <Text className="text-on-surface font-headline text-body-md">
+                  All clear
+                </Text>
+                <Text className="text-on-surface-variant font-body text-xs text-center px-6">
+                  No open tasks. Plan your day with AI.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/(app)/ai-task" as never)}
+                  className="mt-1 bg-action px-4 py-2 rounded-lg"
+                >
+                  <Text className="text-on-action font-headline text-xs">
+                    Plan with AI
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View className="flex-row flex-wrap gap-3">
+                {todoTasks.map((task) => (
+                  <View
+                    key={task.taskId}
+                    style={{
+                      width: isXl ? "31.5%" : isWide ? "48%" : "100%",
+                    }}
+                  >
+                    <DashboardTaskCard
+                      task={task}
+                      category={
+                        task.categoryId
+                          ? categoryMap.get(task.categoryId)
+                          : undefined
+                      }
+                      onPress={() =>
+                        router.push(`/(app)/tasks?taskId=${task.taskId}` as never)
+                      }
+                    />
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View
+            className={`bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden ${
+              isWide ? "shrink-0" : ""
+            }`}
+            style={
+              isWide
+                ? { width: "32%", maxWidth: 400, minWidth: 300 }
+                : undefined
+            }
+          >
+            <View className="flex-row items-center justify-between px-5 pt-5 pb-3">
+              <View className="flex-row items-center gap-2">
+                <MaterialIcons name="event" size={18} color="#dc2c4f" />
+                <Text className="font-headline text-on-surface text-title-lg">
+                  Schedule
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push("/(app)/calendar" as never)}>
+                <Text className="text-on-surface-variant font-headline text-sm">
+                  Calendar
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <View className="px-5 pb-5">
+              {!isLoading && scheduleEvents.length === 0 ? (
+                <View className="items-center py-10 gap-2">
+                  <View className="w-12 h-12 rounded-xl bg-surface-container-low items-center justify-center">
+                    <MaterialIcons name="event-available" size={26} color="#cccccc" />
+                  </View>
+                  <Text className="text-on-surface-variant font-body text-sm text-center">
+                    No upcoming events
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push("/(app)/calendar" as never)}
+                    className="mt-1"
+                  >
+                    <Text className="text-on-surface-variant font-headline text-xs">
+                      Add event
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                scheduleEvents.map((event) => (
+                  <DashboardEventItem
+                    key={event.eventId}
+                    event={event}
+                    onPress={() =>
+                      router.push(`/(app)/calendar?eventId=${event.eventId}` as never)
+                    }
+                  />
+                ))
+              )}
+            </View>
+          </View>
         </View>
       </ScrollView>
     </PageLayout>

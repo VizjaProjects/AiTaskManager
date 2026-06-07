@@ -13,9 +13,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Button, Input, OrdovitaLogo } from "@/components/atoms";
+import { AuthCard } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
-import { startGoogleOAuth } from "@/lib/oauth";
+import { InProgressBanner } from "@/components/molecules/InProgressBanner";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -27,6 +28,8 @@ export default function RegisterScreen() {
     control,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -34,8 +37,11 @@ export default function RegisterScreen() {
       email: "",
       rawPassword: "",
       confirmPassword: "",
+      termsAccepted: false,
     },
   });
+
+  const termsAccepted = watch("termsAccepted");
 
   async function onSubmit(data: RegisterFormData) {
     setLoading(true);
@@ -49,7 +55,7 @@ export default function RegisterScreen() {
       router.replace({
         pathname: "/(auth)/verify-email",
         params: { userId, email: data.email },
-      });
+      } as never);
     } catch (e: any) {
       setError(e.response?.data?.message ?? "Błąd rejestracji");
     } finally {
@@ -58,32 +64,31 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1">
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1, justifyContent: "center" }}
-          keyboardShouldPersistTaps="handled"
-          className="px-8"
-        >
-          <View className="max-w-md w-full self-center gap-8">
-            <View className="items-center gap-3">
-              <OrdovitaLogo size="lg" />
-              <Text className="text-on-surface font-headline text-xl text-center">
-                Utwórz konto
-              </Text>
-              <Text className="text-on-surface-variant font-body text-sm text-center">
-                Dołącz do Ordovita
+        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+          <AuthCard>
+            <TouchableOpacity
+              onPress={() => router.push("/")}
+              className="flex-row items-center gap-1.5 mb-6 self-start"
+            >
+              <MaterialIcons name="arrow-back" size={18} color="#888888" />
+              <Text className="text-on-surface-variant font-body text-sm">Back to home</Text>
+            </TouchableOpacity>
+            <View className="items-center gap-3 mb-8">
+              <OrdovitaLogo size="lg" variant="stacked" />
+              <Text className="text-on-surface font-headline text-headline-md">Create account</Text>
+              <Text className="text-on-surface-variant font-body text-body-md text-center">
+                Join your intelligent workspace.
               </Text>
             </View>
 
             {error && (
-              <View className="bg-error-container rounded-xl px-4 py-3">
-                <Text className="text-on-error-container font-body text-sm">
-                  {error}
-                </Text>
+              <View className="bg-error-container rounded-xl px-4 py-3 mb-4">
+                <Text className="text-on-error-container font-body text-sm">{error}</Text>
               </View>
             )}
 
@@ -108,12 +113,11 @@ export default function RegisterScreen() {
                 name="email"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Email"
+                    label="Adres e-mail"
                     icon="email"
-                    placeholder="name@company.com"
+                    placeholder="jan@example.com"
                     keyboardType="email-address"
                     autoCapitalize="none"
-                    autoComplete="email"
                     value={value}
                     onChangeText={onChange}
                     error={errors.email?.message}
@@ -127,7 +131,8 @@ export default function RegisterScreen() {
                   <Input
                     label="Hasło"
                     icon="lock"
-                    placeholder="Min. 8 znaków"
+                    placeholder="••••••••"
+                    secureToggle
                     secureTextEntry
                     value={value}
                     onChangeText={onChange}
@@ -140,9 +145,10 @@ export default function RegisterScreen() {
                 name="confirmPassword"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Powtórz hasło"
-                    icon="lock"
+                    label="Potwierdź hasło"
+                    icon="lock-reset"
                     placeholder="••••••••"
+                    secureToggle
                     secureTextEntry
                     value={value}
                     onChangeText={onChange}
@@ -154,64 +160,61 @@ export default function RegisterScreen() {
               />
             </View>
 
-            <Button
-              label="Zarejestruj się"
-              loading={loading}
-              fullWidth
-              onPress={handleSubmit(onSubmit)}
-            />
-
-            <View className="flex-row items-center gap-3">
-              <View className="flex-1 h-px bg-outline-variant" />
-              <Text className="text-on-surface-variant font-body text-xs">
-                lub
-              </Text>
-              <View className="flex-1 h-px bg-outline-variant" />
-            </View>
-
             <TouchableOpacity
+              className="flex-row items-start gap-3 mt-5"
               onPress={() =>
-                startGoogleOAuth().catch(() =>
-                  setError("Nie udało się rozpocząć logowania Google"),
-                )
+                setValue("termsAccepted", !termsAccepted, {
+                  shouldValidate: true,
+                })
               }
-              className="flex-row items-center justify-center gap-3 bg-surface-container-high border border-outline-variant rounded-xl px-4 py-3"
             >
-              <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
-              <Text className="text-on-surface font-headline text-sm">
-                Kontynuuj z Google
+              <MaterialIcons
+                name={termsAccepted ? "check-box" : "check-box-outline-blank"}
+                size={22}
+                color={termsAccepted ? "#4d41df" : "#777587"}
+              />
+              <Text className="flex-1 text-on-surface-variant font-body text-body-md">
+                Akceptuję{" "}
+                <Text
+                  className="text-primary"
+                  onPress={() => router.push("/terms-of-service" as never)}
+                >
+                  Regulamin
+                </Text>{" "}
+                i{" "}
+                <Text
+                  className="text-primary"
+                  onPress={() => router.push("/privacy-policy" as never)}
+                >
+                  Politykę prywatności
+                </Text>
               </Text>
             </TouchableOpacity>
-
-            <View className="flex-row items-center justify-center gap-1">
-              <Text className="text-on-surface-variant font-body text-sm">
-                Masz już konto?
+            {errors.termsAccepted && (
+              <Text className="text-error font-body text-xs mt-1">
+                {errors.termsAccepted.message}
               </Text>
-              <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-                <Text className="text-primary font-headline text-sm">
-                  Zaloguj się
-                </Text>
-              </TouchableOpacity>
+            )}
+
+            <View className="mt-6">
+              <Button
+                label="Zarejestruj się"
+                icon="arrow-forward"
+                loading={loading}
+                fullWidth
+                onPress={handleSubmit(onSubmit)}
+              />
             </View>
 
-            <Text className="text-on-surface-variant font-body text-xs text-center leading-5">
-              Rejestrując się, akceptujesz{" "}
-              <Text
-                className="text-primary underline"
-                onPress={() => router.push("/terms-of-service" as never)}
-              >
-                Regulamin
-              </Text>{" "}
-              oraz{" "}
-              <Text
-                className="text-primary underline"
-                onPress={() => router.push("/privacy-policy" as never)}
-              >
-                Politykę Prywatności
-              </Text>
-              .
-            </Text>
-          </View>
+            <InProgressBanner message="Rejestracja przez Google będzie dostępna po implementacji OAuth w backendzie .NET." />
+
+            <View className="flex-row items-center justify-center gap-1 mt-6">
+              <Text className="text-on-surface-variant font-body text-sm">Masz już konto?</Text>
+              <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
+                <Text className="text-primary font-headline text-sm">Zaloguj się</Text>
+              </TouchableOpacity>
+            </View>
+          </AuthCard>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
