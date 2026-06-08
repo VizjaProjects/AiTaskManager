@@ -102,6 +102,12 @@ public sealed class WorkTask : AggregateRoot<TaskId>
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void EditDueDateTime(DateTime newDueDateTime)
+    {
+        DueDateTime = newDueDateTime;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public bool BelongsToWorkspace(WorkspaceId workspaceId)
     {
         return WorkspaceId == workspaceId;

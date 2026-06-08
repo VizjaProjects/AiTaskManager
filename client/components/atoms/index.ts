@@ -14,3 +14,4 @@ export { Skeleton, TaskCardSkeleton, StatCardSkeleton } from "./Skeleton";
 export { InlineDatePicker } from "./InlineDatePicker";
 export { OrdovitaLogo } from "./OrdovitaLogo";
 export { AiProposedCard } from "./AiProposedCard";
+export { ProviderBrandIcon, ProviderIcon } from "./ProviderBrandIcon";

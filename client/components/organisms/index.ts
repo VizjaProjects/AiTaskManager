@@ -6,3 +6,4 @@ export { NotificationsDrawer } from "./NotificationsDrawer";
 export { SearchModal } from "./SearchModal";
 export { SystemDefinitionsScreen } from "./SystemDefinitionsScreen";
 export { WorkspaceModal } from "./WorkspaceModal";
+export { LlmSettingsPanel } from "./LlmSettingsPanel";

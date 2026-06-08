@@ -52,7 +52,7 @@ public sealed class LlmPlanningService(
         var nowInUserZone = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, request.TimeZone);
         var prompt = LlmPlanPromptBuilder.Build(request.UserText, surveyAnswers, categories, statuses, nowInUserZone);
 
-        var aiResponse = await aiClient.AskAsync(new AiRequest(prompt), request.LlmSettingId, request.CustomUrl, ct);
+        var aiResponse = await aiClient.AskAsync(new AiRequest(prompt), request.LlmSettingId, ct);
         if (aiResponse.IsFailure || aiResponse.Value is null)
             return Result.Failure<GeneratedLlmPlanResult>(aiResponse.Error);
 

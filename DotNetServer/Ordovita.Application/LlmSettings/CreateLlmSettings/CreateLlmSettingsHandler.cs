@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using FluentValidation;
+using Ordovita.Application.Abstraction.Crypto;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
@@ -17,6 +18,7 @@ public class CreateLlmSettingsHandler(
     ILlmSettingsRepository repository,
     IUserRepository userRepository,
     IUserContext context,
+    ICryptoService cryptoService,
     IUnitOfWork uow) : ICommandHandler<CreateLlmSettingsCommand, LlmSettingsDto>
 {
     public async Task<Result<LlmSettingsDto>> Handle(CreateLlmSettingsCommand requst, CancellationToken ct)
@@ -28,7 +30,7 @@ public class CreateLlmSettingsHandler(
         if (user == null)
             return Result.Failure<LlmSettingsDto>(Error.NotFound("CreateLlmSettingsHandler", "User not found"));
 
-        var hashedApiKey = GetHash(requst.ApiKey);
+        var hashedApiKey = cryptoService.Encrypt(requst.ApiKey);
 
         var llmSettings =
             Domain.LlmSettings.LlmSettings.Create(user.Id, hashedApiKey, requst.Provider, requst.Model,
@@ -42,22 +44,7 @@ public class CreateLlmSettingsHandler(
 
         return Result.Success(new LlmSettingsDto(llmSettings.Value.Id.Value, llmSettings.Value.UserId.Value,
             llmSettings.Value.Provider,
-            llmSettings.Value.Model));
-    }
-
-    private static string GetHash(string inputString)
-    {
-        byte[] hashedApiKey;
-        using (HashAlgorithm algorithm = SHA256.Create())
-        {
-            hashedApiKey = algorithm.ComputeHash(Encoding.UTF8.GetBytes(inputString));
-        }
-
-        var sb = new StringBuilder();
-
-        foreach (var b in hashedApiKey) sb.Append(b.ToString("X2"));
-
-        return sb.ToString();
+            llmSettings.Value.Model, llmSettings.Value.CustomUrl));
     }
 }
 

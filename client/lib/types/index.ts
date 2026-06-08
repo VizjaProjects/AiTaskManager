@@ -251,7 +251,25 @@ export interface EditEventRequest {
 
 export interface GenerateAiPlanRequest {
   text: string;
+  llmSettingsId?: UUID;
 }
+
+export interface LlmSettings {
+  llmSettingsId: UUID;
+  userId: UUID;
+  provider: string | null;
+  model: string;
+  customUrl: string | null;
+}
+
+export interface CreateLlmSettingsRequest {
+  provider: string | null;
+  model: string;
+  apiKey: string;
+  customUrl: string | null;
+}
+
+export type LlmConnectionMode = "provider" | "custom";
 
 export interface AcceptAiTaskRequest {
   title: string;

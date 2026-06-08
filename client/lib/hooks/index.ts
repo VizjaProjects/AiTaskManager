@@ -10,6 +10,7 @@ import {
   eventApi,
   aiApi,
   aiStatisticApi,
+  llmSettingsApi,
   surveyApi,
   questionApi,
   questionOptionApi,
@@ -29,6 +30,7 @@ import type {
   CreateEventRequest,
   EditEventRequest,
   GenerateAiPlanRequest,
+  CreateLlmSettingsRequest,
   AcceptAiTaskRequest,
   AcceptAiEventRequest,
   QuestionType,
@@ -430,6 +432,65 @@ export function useRejectAiEvent() {
       aiApi.rejectEvent(requireWorkspaceId(workspaceId), eventId),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] }),
+  });
+}
+
+/* ───────── LLM Settings ───────── */
+
+export function useLlmSettings() {
+  return useQuery({
+    queryKey: ["llmSettings"],
+    queryFn: async () => {
+      const { settings } = await llmSettingsApi.getAll();
+      return settings;
+    },
+  });
+}
+
+export function useLlmProviders() {
+  return useQuery({
+    queryKey: ["llmProviders"],
+    queryFn: () => llmSettingsApi.getProviders(),
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useLlmModels() {
+  return useQuery({
+    queryKey: ["llmModels"],
+    queryFn: () => llmSettingsApi.getModels(),
+    staleTime: 30 * 60 * 1000,
+  });
+}
+
+export function useCreateLlmSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateLlmSettingsRequest) => llmSettingsApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llmSettings"] }),
+  });
+}
+
+export function useUpdateLlmSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      llmSettingsId,
+      data,
+    }: {
+      llmSettingsId: string;
+      data: CreateLlmSettingsRequest;
+    }) => llmSettingsApi.update(llmSettingsId, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llmSettings"] }),
+  });
+}
+
+export function useDeleteLlmSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (llmSettingsId: string) =>
+      llmSettingsApi.delete(llmSettingsId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["llmSettings"] }),
   });
 }
 

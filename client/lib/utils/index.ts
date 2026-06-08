@@ -88,7 +88,7 @@ export function getCategoryDisplayColor(
 }
 
 export function formatDate(iso: string): string {
-  const date = new Date(iso);
+  const date = parseApiDateTime(iso);
   return date.toLocaleDateString("pl-PL", {
     day: "numeric",
     month: "short",
@@ -96,7 +96,7 @@ export function formatDate(iso: string): string {
 }
 
 export function formatDateTime(iso: string): string {
-  const date = new Date(iso);
+  const date = parseApiDateTime(iso);
   return date.toLocaleDateString("pl-PL", {
     day: "numeric",
     month: "short",
@@ -114,12 +114,12 @@ export function formatDuration(minutes: number): string {
 
 export function isOverdue(dueDateTime: string | null): boolean {
   if (!dueDateTime) return false;
-  return new Date(dueDateTime) < new Date();
+  return parseApiDateTime(dueDateTime) < new Date();
 }
 
 export function isDueToday(dueDateTime: string | null): boolean {
   if (!dueDateTime) return false;
-  const due = new Date(dueDateTime);
+  const due = parseApiDateTime(dueDateTime);
   const today = new Date();
   return (
     due.getFullYear() === today.getFullYear() &&
@@ -149,6 +149,14 @@ export function parseApiDateTime(value: string): Date {
   const minutes = Number(timeBits[1] ?? 0);
   const seconds = Number((timeBits[2] ?? "0").split(".")[0]);
   return new Date(year, month - 1, day, hours, minutes, seconds, 0);
+}
+
+/** Normalize task due datetime for API — preserves local wall-clock, fixes legacy ISO-Z values. */
+export function normalizeDueDateTime(
+  value: string | null | undefined,
+): string | undefined {
+  if (!value) return undefined;
+  return toLocalDateTimeString(parseApiDateTime(value));
 }
 
 /** Send local wall-clock datetime to API (no UTC shift). */

@@ -10,3 +10,9 @@ export {
   DashboardEventItem,
   DashboardAiProposalItem,
 } from "./DashboardFocusItem";
+export { OptionPicker } from "./OptionPicker";
+export { LlmConfigSelector } from "./LlmConfigSelector";
+export { MinimalSelectDropdown } from "./MinimalSelectDropdown";
+export { ProviderSelectList } from "./ProviderSelectList";
+export { ModelSelectList } from "./ModelSelectList";
+export { AiChatConfigButton } from "./AiChatConfigButton";

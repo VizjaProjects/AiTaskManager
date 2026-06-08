@@ -21,10 +21,10 @@ public static class WorkspaceAiPlanEndpoint
         Guid workspaceId, GenerateAiPlanRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(
-            new GenerateAiPlanCommand(request.CustomUrl,request.LlmSettingsId, workspaceId, request.UserText, request.TimeZoneId), ct);
+            new GenerateAiPlanCommand(request.LlmSettingsId, workspaceId, request.UserText, request.TimeZoneId), ct);
 
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
-    private sealed record GenerateAiPlanRequest(Uri? CustomUrl,Guid? LlmSettingsId, string UserText, string? TimeZoneId);
+    private sealed record GenerateAiPlanRequest(Guid? LlmSettingsId, string UserText, string? TimeZoneId);
 }

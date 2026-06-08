@@ -28,7 +28,7 @@ public class GetLlmSettingsHandler(
         var result = await repository.GetAllByUserIdAsync(user.Id, ct);
 
         IReadOnlyList<LlmSettingsDto> llmSettingsDto = result
-            .Select(l => new LlmSettingsDto(l.Id.Value, l.UserId.Value, l.Provider, l.Model)).ToList()
+            .Select(l => new LlmSettingsDto(l.Id.Value, l.UserId.Value, l.Provider, l.Model, l.CustomUrl)).ToList()
             .AsReadOnly();
 
         return Result.Success(llmSettingsDto);

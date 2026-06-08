@@ -8,7 +8,7 @@ namespace Ordovita.Infrastructure.Llm.Groq;
 public class AiGroqClient(HttpClient client, GroqConfiguration configuration, ILogger<AiGroqClient> logger)
     : IAiClient
 {
-    public async Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingsId,Uri? customUrl,
+    public async Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingsId,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(configuration.ApiKey) || string.IsNullOrWhiteSpace(configuration.Model))

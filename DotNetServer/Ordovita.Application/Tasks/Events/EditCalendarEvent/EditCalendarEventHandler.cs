@@ -22,6 +22,7 @@ public sealed class EditCalendarEventHandler(
     WorkspaceAccessGuard accessGuard,
     IWorkCalendarRepository calendarRepository,
     ICalendarEventRepository eventRepository,
+    IWorkTaskRepository taskRepository,
     IUnitOfWork uow) : ICommandHandler<EditCalendarEventCommand, EditCalendarEventResult>
 {
     public async Task<Result<EditCalendarEventResult>> Handle(EditCalendarEventCommand command, CancellationToken ct)
@@ -38,6 +39,16 @@ public sealed class EditCalendarEventHandler(
         var calendarEvent = await eventRepository.GetByIdAsync(EventId.From(command.EventId), ct);
         if (calendarEvent is null || calendarEvent.CalendarId != calendar.Id)
             return Result.Failure<EditCalendarEventResult>(EventExceptions.NotFound);
+
+        if (calendarEvent.TaskId != null)
+        {
+            var task = await taskRepository.GetByIdAsync(calendarEvent.TaskId.Value, ct);
+
+            if (task is null)
+                return Result.Failure<EditCalendarEventResult>(TaskExceptions.NotFound);
+
+            task.EditDueDateTime(command.StartDateTime);
+        }
 
         var editResult = calendarEvent.Edit(
             command.Title, command.StartDateTime, command.EndDateTime, command.AllDay, command.Status);

@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Ordovita.Application.Abstraction.Crypto;
 using Ordovita.Application.Abstraction.Email;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Llm;
@@ -22,6 +23,7 @@ using Ordovita.Infrastructure.Persistence;
 using Ordovita.Domain.Surveys.port;
 using Ordovita.Domain.Tasks.port;
 using Ordovita.Domain.Workspace.port;
+using Ordovita.Infrastructure.Crypto;
 using Ordovita.Infrastructure.Llm;
 using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Llm.LlmTornado;
@@ -85,6 +87,7 @@ public static class DependencyInjection
         services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
         services.AddScoped<IWorkspaceTaskInitializer, WorkspaceTaskInitializer>();
         services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();
+        services.AddScoped<ICryptoService, CryptoService>();
 
         services.AddScoped<ILlmSettingsModels, LlmSettingsModels>();
         services.AddScoped<ILlmSettingsProviders, LlmSettingsProviders>();

@@ -23,6 +23,9 @@ import {
   formatDuration,
   isOverdue,
   getCategoryDisplayColor,
+  parseApiDateTime,
+  toLocalDateTimeString,
+  normalizeDueDateTime,
 } from "@/lib/utils";
 import {
   useEditTask,
@@ -134,9 +137,11 @@ export function TaskDetailModal({
       task.estimatedDuration > 0 ? String(task.estimatedDuration) : "",
     );
     setDueDate(task.dueDateTime ?? "");
-    setDueDateObj(task.dueDateTime ? new Date(task.dueDateTime) : new Date());
+    setDueDateObj(
+      task.dueDateTime ? parseApiDateTime(task.dueDateTime) : new Date(),
+    );
     if (task.dueDateTime) {
-      const d = new Date(task.dueDateTime);
+      const d = parseApiDateTime(task.dueDateTime);
       setDueHour(String(d.getHours()).padStart(2, "0"));
       setDueMin(String(d.getMinutes()).padStart(2, "0"));
     } else {
@@ -159,13 +164,15 @@ export function TaskDetailModal({
         ? parseInt(estimatedDuration, 10)
         : task.estimatedDuration,
       dueDateTime: dueDate
-        ? new Date(
-            dueDateObj.getFullYear(),
-            dueDateObj.getMonth(),
-            dueDateObj.getDate(),
-            parseInt(dueHour) || 0,
-            parseInt(dueMin) || 0,
-          ).toISOString()
+        ? toLocalDateTimeString(
+            new Date(
+              dueDateObj.getFullYear(),
+              dueDateObj.getMonth(),
+              dueDateObj.getDate(),
+              parseInt(dueHour) || 0,
+              parseInt(dueMin) || 0,
+            ),
+          )
         : undefined,
     };
   }
@@ -216,7 +223,7 @@ export function TaskDetailModal({
           statusId: doneStatus.statusId,
           categoryId: task.categoryId ?? undefined,
           estimatedDuration: task.estimatedDuration,
-          dueDateTime: task.dueDateTime ?? undefined,
+          dueDateTime: normalizeDueDateTime(task.dueDateTime),
         },
       },
       { onSuccess: onClose },
@@ -479,7 +486,7 @@ export function TaskDetailModal({
                                 statusId: s.statusId,
                                 categoryId: task.categoryId ?? undefined,
                                 estimatedDuration: task.estimatedDuration,
-                                dueDateTime: task.dueDateTime ?? undefined,
+                                dueDateTime: normalizeDueDateTime(task.dueDateTime),
                               },
                             });
                           }}
@@ -602,7 +609,7 @@ export function TaskDetailModal({
                         <Text className="text-on-surface font-body text-sm">
                           {dueDate
                             ? (() => {
-                                const d = new Date(dueDate);
+                                const d = parseApiDateTime(dueDate);
                                 return `${d.toLocaleDateString("pl-PL", {
                                   day: "numeric",
                                   month: "long",
@@ -625,7 +632,7 @@ export function TaskDetailModal({
                             value={dueDateObj}
                             onChange={(d) => {
                               setDueDateObj(d);
-                              setDueDate(d.toISOString());
+                              setDueDate(toLocalDateTimeString(d));
                             }}
                           />
                           <View className="flex-row items-center gap-2 mt-3">

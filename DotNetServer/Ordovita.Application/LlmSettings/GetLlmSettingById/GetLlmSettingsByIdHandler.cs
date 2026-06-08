@@ -33,7 +33,7 @@ public class GetLlmSettingsByIdHandler(
                 "Llm settings not found"));
 
         var dto = new LlmSettingsDto(llmSettings.Id.Value, llmSettings.UserId.Value, llmSettings.Provider,
-            llmSettings.Model);
+            llmSettings.Model, llmSettings.CustomUrl);
 
 
         return Result.Success(dto);

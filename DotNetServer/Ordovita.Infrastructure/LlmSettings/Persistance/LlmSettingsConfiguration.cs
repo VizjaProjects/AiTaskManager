@@ -16,9 +16,10 @@ public class LlmSettingsConfiguration : IEntityTypeConfiguration<Domain.LlmSetti
             .ValueGeneratedNever();
 
         builder.Property(p => p.UserId).HasConversion(p => p.Value, value => UserId.From(value)).IsRequired();
-        builder.Property(p => p.ApiKey).IsRequired();
+        builder.Property(p => p.ApiKey);
         builder.Property(p => p.Model).HasMaxLength(120).IsRequired();
-        builder.Property(p => p.CustomUrl).HasMaxLength(120).IsRequired();
+        builder.Property(p => p.CustomUrl).HasMaxLength(120);
+        builder.Property(p => p.Provider).HasMaxLength(120);
 
         builder.HasIndex(p => p.UserId);
     }

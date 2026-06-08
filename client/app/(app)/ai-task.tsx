@@ -30,9 +30,16 @@ import {
   useCategories,
   useTaskStatuses,
 } from "@/lib/hooks";
+import { AiChatConfigButton } from "@/components/molecules/AiChatConfigButton";
+import { useLlmSettingsSelectionStore } from "@/lib/stores";
+import {
+  extractApiErrorMessage,
+  isOrdovitaAiSelection,
+} from "@/lib/utils/llmSettings";
 import type { Task, CalendarEvent } from "@/lib/types";
 import { EventStatus } from "@/lib/types";
-import { formatDuration } from "@/lib/utils";
+import { formatDuration, normalizeDueDateTime } from "@/lib/utils";
+import { UI } from "@/lib/utils/uiTokens";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
@@ -81,7 +88,7 @@ function AiLoadingAnimation() {
         Analyzing your plan...
       </Text>
       <Text className="text-on-surface-variant font-body text-sm text-center">
-        Generating tasks and events. This may take a few seconds.
+        Generating tasks and events. This can take up to a few minutes.
       </Text>
     </View>
   );
@@ -252,9 +259,13 @@ function EditEventModal({
 
 export default function AiTaskScreen() {
   const [text, setText] = useState("");
+  const [configError, setConfigError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const generatePlan = useGenerateAiPlan();
+  const activeLlmSettingsId = useLlmSettingsSelectionStore(
+    (s) => s.activeLlmSettingsId,
+  );
   const {
     data: proposals,
     isLoading: proposalsLoading,
@@ -276,13 +287,21 @@ export default function AiTaskScreen() {
   async function handleGenerate() {
     if (text.length < 10) return;
     if (isListening) toggleSpeech();
+    setConfigError(null);
     try {
-      await generatePlan.mutateAsync({ text });
+      await generatePlan.mutateAsync({
+        text,
+        ...(isOrdovitaAiSelection(activeLlmSettingsId)
+          ? {}
+          : { llmSettingsId: activeLlmSettingsId! }),
+      });
       setText("");
-    } catch {
-      // keep text on error so user can retry
+    } catch (e) {
+      setConfigError(extractApiErrorMessage(e));
     }
   }
+
+  const canGenerate = text.length >= 10 && !generatePlan.isPending;
 
   const speechSupported =
     Platform.OS === "web" &&
@@ -420,6 +439,14 @@ export default function AiTaskScreen() {
             </Text>
           </View>
 
+          {configError ? (
+            <View className="bg-error-container rounded-xl px-4 py-3">
+              <Text className="text-on-error-container font-body text-sm">
+                {configError}
+              </Text>
+            </View>
+          ) : null}
+
           <View className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 gap-4">
             <View className="flex-row items-center gap-2">
               <MaterialIcons name="auto-awesome" size={16} color="#9ca3af" />
@@ -435,6 +462,7 @@ export default function AiTaskScreen() {
                     minHeight: 140,
                     paddingRight: 16,
                     paddingBottom: 56,
+                    paddingLeft: 4,
                     borderColor: isListening ? "#ef4444" : undefined,
                     opacity: generatePlan.isPending ? 0.5 : 1,
                   },
@@ -457,13 +485,20 @@ export default function AiTaskScreen() {
                   }
                 }}
               />
-              <View className="absolute bottom-3 right-3 flex-row items-center gap-2">
+              <View className="absolute bottom-3 left-3 right-3 flex-row items-center justify-between">
+                <AiChatConfigButton disabled={generatePlan.isPending} />
+                <View className="flex-row items-center gap-2">
                 {speechSupported && (
                   <TouchableOpacity
                     onPress={toggleSpeech}
                     disabled={generatePlan.isPending}
-                    className="w-9 h-9 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest"
-                    style={{ opacity: generatePlan.isPending ? 0.4 : 1 }}
+                    className="w-9 h-9 items-center justify-center rounded-lg"
+                    style={{
+                      opacity: generatePlan.isPending ? 0.4 : 1,
+                      borderWidth: 1,
+                      borderColor: isListening ? "#ef4444" : UI.borderHover,
+                      backgroundColor: "#FFFFFF",
+                    }}
                   >
                     <MaterialIcons
                       name={isListening ? "stop" : "mic"}
@@ -474,15 +509,16 @@ export default function AiTaskScreen() {
                 )}
                 <TouchableOpacity
                   onPress={handleGenerate}
-                  disabled={text.length < 10 || generatePlan.isPending}
+                  disabled={!canGenerate}
                   className="flex-row items-center gap-1.5 bg-action px-4 py-2.5 rounded-xl"
-                  style={{ opacity: text.length < 10 ? 0.45 : 1 }}
+                  style={{ opacity: canGenerate ? 1 : 0.45 }}
                 >
                   <MaterialIcons name="north" size={16} color="#f0f0f0" />
                   <Text className="text-on-action font-headline text-sm">
                     {generatePlan.isPending ? "..." : "Generate"}
                   </Text>
                 </TouchableOpacity>
+                </View>
               </View>
             </View>
             {isListening && (
@@ -586,7 +622,7 @@ export default function AiTaskScreen() {
                             statusId: task.statusId,
                             categoryId: task.categoryId ?? undefined,
                             estimatedDuration: task.estimatedDuration,
-                            dueDateTime: task.dueDateTime ?? undefined,
+                            dueDateTime: normalizeDueDateTime(task.dueDateTime),
                           },
                         })
                       }
@@ -640,7 +676,7 @@ export default function AiTaskScreen() {
                   statusId: previewTask.statusId,
                   categoryId: previewTask.categoryId ?? undefined,
                   estimatedDuration: previewTask.estimatedDuration,
-                  dueDateTime: previewTask.dueDateTime ?? undefined,
+                  dueDateTime: normalizeDueDateTime(previewTask.dueDateTime),
                 },
               },
               { onSuccess: () => setPreviewTask(null) },

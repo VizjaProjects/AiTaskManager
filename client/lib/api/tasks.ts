@@ -135,10 +135,16 @@ export const aiApi = {
     data: GenerateAiPlanRequest,
     timeZoneId?: string,
   ) =>
-    api.post(ws(workspaceId) + "/ai/plan", {
-      userText: data.text,
-      timeZoneId: timeZoneId ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
-    }, { timeout: 120000 }),
+    api.post(
+      ws(workspaceId) + "/ai/plan",
+      {
+        ...(data.llmSettingsId ? { llmSettingsId: data.llmSettingsId } : {}),
+        userText: data.text,
+        timeZoneId:
+          timeZoneId ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      { timeout: 300000 },
+    ),
 
   getPendingProposals: async (workspaceId: string) => {
     const { data } = await api.get<{

@@ -44,7 +44,7 @@ export function mapTaskDto(raw: Record<string, unknown>): Task {
     categoryId: (raw.categoryId as string) ?? null,
     estimatedDuration: raw.estimatedDuration as number,
     dueDateTime: raw.dueDateTime
-      ? new Date(raw.dueDateTime as string).toISOString()
+      ? toLocalDateTimeString(parseApiDateTime(raw.dueDateTime as string))
       : null,
     statusId: raw.statusId as string,
     source: raw.source as Task["source"],

@@ -4,5 +4,5 @@ namespace Ordovita.Application.Abstraction.Llm;
 
 public interface IAiClient
 {
-    Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingsId, Uri? customUrl, CancellationToken ct);
+    Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingsId, CancellationToken ct);
 }

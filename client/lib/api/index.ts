@@ -24,3 +24,4 @@ export {
   questionOptionApi,
   userResponseApi,
 } from "./surveys";
+export { llmSettingsApi } from "./llmSettings";

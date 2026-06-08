@@ -58,7 +58,7 @@ public class UpdateLlmSettingsHandler(
 
         return Result.Success(new LlmSettingsDto(updatedLlmSettings.Value.Id.Value,
             updatedLlmSettings.Value.UserId.Value,
-            updatedLlmSettings.Value.Provider, updatedLlmSettings.Value.Model));
+            updatedLlmSettings.Value.Provider, updatedLlmSettings.Value.Model, updatedLlmSettings.Value.CustomUrl));
     }
 
     private static string GetHash(string inputString)

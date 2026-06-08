@@ -43,6 +43,7 @@ import {
   formatDuration,
   getCategoryDisplayColor,
   resolveTaskCategoryId,
+  normalizeDueDateTime,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 
@@ -488,7 +489,7 @@ export default function TasksScreen() {
           statusId: newStatusId,
           categoryId: resolveTaskCategoryId(task.categoryId, categories),
           estimatedDuration: task.estimatedDuration,
-          dueDateTime: task.dueDateTime ?? undefined,
+          dueDateTime: normalizeDueDateTime(task.dueDateTime),
         },
       });
     },

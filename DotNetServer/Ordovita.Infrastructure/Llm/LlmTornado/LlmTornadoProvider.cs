@@ -2,6 +2,7 @@ using LlmTornado;
 using LlmTornado.Chat;
 using LlmTornado.Chat.Models;
 using LlmTornado.Code;
+using Ordovita.Application.Abstraction.Crypto;
 using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Abstraction.Llm;
 using Ordovita.Domain.Common;
@@ -16,57 +17,77 @@ public class LlmTornadoProvider(
     GroqConfiguration configuration,
     ILlmSettingsRepository repository,
     IUserRepository userRepository,
+    ICryptoService cryptoService,
     IUserContext context) : IAiClient
 {
-    public async Task<Result<AiResponse>> AskAsync(AiRequest request, Guid? llmSettingId, Uri? customUrl, CancellationToken ct)
+    public async Task<Result<AiResponse>> AskAsync(
+        AiRequest request,
+        Guid? llmSettingId,
+        CancellationToken ct)
     {
-        if (context.UserId == null)
+        if (context.UserId is null)
             return Result.Failure<AiResponse>(Error.Unauthorized("AskAsync", "Access denied"));
 
         var user = await userRepository.GetAsyncByAspId(context.UserId.Value.ToString(), ct);
 
-        if (user == null)
+        if (user is null)
             return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "User not found"));
 
-        Domain.LlmSettings.LlmSettings llmSettings;
 
-        if (llmSettingId != null)
-            llmSettings = await repository.GetByIdAsync(LlmSettingsId.From(llmSettingId.Value), user.Id, ct);
-        else
-            llmSettings = null;
-        
-        TornadoApi api;
-        ChatModel model;
-        if (llmSettings == null)
-        {
-            api = GetTornadoApi("Groq", configuration.ApiKey);
-            model = ChatModel.Groq.OpenAi.GptOss120B;
-        }
-        else if (llmSettings != null && llmSettings.CustomUrl != null)
-        {
-            api = GetTornadoApi(llmSettings.CustomUrl);
-            model = new ChatModel(llmSettings.Model);
-        }
-        else
-        {
-            api = GetTornadoApi(llmSettings.Provider, llmSettings.ApiKey);
-            model = new ChatModel(llmSettings.Model, llmSettings.ApiKey);
-        }
+        var llmSettings = llmSettingId.HasValue
+            ? await repository.GetByIdAsync(LlmSettingsId.From(llmSettingId.Value), user.Id, ct)
+            : null;
 
+        var (api, model) = ResolveApiAndModel(llmSettings);
 
         var result = await api.Chat.CreateChatCompletion(new ChatRequest
         {
             Model = model,
-            Messages =
-            [
-                new ChatMessage(ChatMessageRoles.User, request.Prompt)
-            ]
+            Messages = [new ChatMessage(ChatMessageRoles.User, request.Prompt)]
         });
 
         var content = result?.Choices?[0].Message?.Content;
-        if (content == null) return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "Message is empty!"));
+
+        if (content is null)
+            return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "Message is empty!"));
 
         return Result.Success(new AiResponse(content, 123, request.Prompt));
+    }
+
+    private (TornadoApi Api, ChatModel Model) ResolveApiAndModel(Domain.LlmSettings.LlmSettings? llmSettings)
+    {
+        if (llmSettings is null)
+            return (GetTornadoApi("Groq", configuration.ApiKey), ChatModel.Groq.OpenAi.GptOss120B);
+
+        if (llmSettings.CustomUrl is not null)
+            return (GetTornadoApi(llmSettings.CustomUrl), new ChatModel(llmSettings.Model));
+
+        if (llmSettings.Provider is null || llmSettings.ApiKey is null)
+            throw new InvalidOperationException($"LlmSettings '{llmSettings.Id}' is missing Provider or ApiKey.");
+
+        if (!Enum.TryParse<LLmProviders>(llmSettings.Provider, true, out var providerEnum))
+            throw new ArgumentException($"Unsupported LLM provider: {llmSettings.Provider}",
+                nameof(llmSettings.Provider));
+
+        var decryptedApiKey = cryptoService.Decrypt(llmSettings.ApiKey);
+        var api = new TornadoApi([new ProviderAuthentication(providerEnum, decryptedApiKey)]);
+
+        ChatModel model;
+
+        if (llmSettings.Model.Contains("gpt-oss-120b", StringComparison.OrdinalIgnoreCase))
+        {
+            model = ChatModel.Groq.OpenAi.GptOss120B;
+        }
+        else
+        {
+            var cleanModelName = llmSettings.Model.Contains('/')
+                ? llmSettings.Model.Split('/').Last()
+                : llmSettings.Model;
+
+            model = new ChatModel(cleanModelName, providerEnum);
+        }
+
+        return (api, model);
     }
 
     private static TornadoApi GetTornadoApi(string provider, string apiKey)
@@ -74,12 +95,7 @@ public class LlmTornadoProvider(
         if (!Enum.TryParse<LLmProviders>(provider, true, out var providerEnum))
             throw new ArgumentException($"Unsupported LLM provider: {provider}", nameof(provider));
 
-        var tornadoApi = new TornadoApi(new[]
-        {
-            new ProviderAuthentication(providerEnum, apiKey)
-        });
-
-        return tornadoApi;
+        return new TornadoApi([new ProviderAuthentication(providerEnum, apiKey)]);
     }
 
     private static TornadoApi GetTornadoApi(Uri customUrl)
