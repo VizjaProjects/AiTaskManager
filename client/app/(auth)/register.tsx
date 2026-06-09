@@ -16,12 +16,13 @@ import { Button, Input, OrdovitaLogo } from "@/components/atoms";
 import { AuthCard } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
-import { InProgressBanner } from "@/components/molecules/InProgressBanner";
+import { startGoogleOAuth } from "@/lib/oauth";
 
 export default function RegisterScreen() {
   const router = useRouter();
   const register = useAuthStore((s) => s.register);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -60,6 +61,25 @@ export default function RegisterScreen() {
       setError(e.response?.data?.message ?? "Błąd rejestracji");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onGoogleRegister() {
+    if (!termsAccepted) {
+      setError("Zaakceptuj regulamin i politykę prywatności, aby kontynuować.");
+      return;
+    }
+
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      await startGoogleOAuth();
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : "Nie udało się rozpocząć rejestracji Google.";
+      setError(message);
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -206,7 +226,21 @@ export default function RegisterScreen() {
               />
             </View>
 
-            <InProgressBanner message="Rejestracja przez Google będzie dostępna po implementacji OAuth w backendzie .NET." />
+            <View className="mt-6">
+              <TouchableOpacity
+                onPress={onGoogleRegister}
+                disabled={googleLoading || loading}
+                className="flex-row items-center justify-center gap-3 bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant"
+              >
+                <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
+                <Text className="text-on-surface font-headline text-sm">
+                  {googleLoading ? "Przekierowywanie…" : "Kontynuuj z Google"}
+                </Text>
+              </TouchableOpacity>
+              <Text className="text-on-surface-variant font-body text-xs text-center mt-2">
+                Pierwsze logowanie Google tworzy konto automatycznie.
+              </Text>
+            </View>
 
             <View className="flex-row items-center justify-center gap-1 mt-6">
               <Text className="text-on-surface-variant font-body text-sm">Masz już konto?</Text>

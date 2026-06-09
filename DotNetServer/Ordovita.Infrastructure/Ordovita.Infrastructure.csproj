@@ -12,8 +12,11 @@
     </ItemGroup>
 
     <ItemGroup>
+        <PackageReference Include="Google.Apis.Auth" />
+        <PackageReference Include="Google.Apis.Auth.AspNetCore3" />
         <PackageReference Include="LlmTornado"/>
         <PackageReference Include="MailKit"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.Google" />
         <PackageReference Include="Microsoft.AspNetCore.Http"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore"/>

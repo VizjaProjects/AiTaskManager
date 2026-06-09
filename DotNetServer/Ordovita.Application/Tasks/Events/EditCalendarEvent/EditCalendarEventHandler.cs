@@ -47,7 +47,7 @@ public sealed class EditCalendarEventHandler(
             if (task is null)
                 return Result.Failure<EditCalendarEventResult>(TaskExceptions.NotFound);
 
-            task.EditDueDateTime(command.StartDateTime);
+            task.EditDueDateTime(command.EndDateTime);
         }
 
         var editResult = calendarEvent.Edit(

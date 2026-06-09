@@ -6,10 +6,8 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/deploy.yml"
-      - "server/src/**"
-      - "server/build.gradle"
-      - "server/settings.gradle"
-      - "server/Dockerfile"
+      - "DotNetServer/**"
+      - "docker-compose-prod.yml"
       - "client/app/**"
       - "client/components/**"
       - "client/lib/**"
@@ -52,10 +50,8 @@ jobs:
               - 'client/tailwind.config.js'
               - 'client/tsconfig.json'
             backend:
-              - 'server/src/**'
-              - 'server/build.gradle'
-              - 'server/settings.gradle'
-              - 'server/Dockerfile'
+              - '.github/workflows/deploy.yml'
+              - 'DotNetServer/**'
             compose:
               - 'docker-compose-prod.yml'
 
@@ -185,7 +181,7 @@ jobs:
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
 
-  # ── 5. Build & push backend image ──
+  # ── 5. Build & push backend image (.NET) ──
   build-backend:
     needs: changes
     if: needs.changes.outputs.backend == 'true'
@@ -193,15 +189,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
         with:
-          distribution: temurin
-          java-version: "21"
+          dotnet-version: "10.0.x"
 
-      - name: Run tests
-        working-directory: ./server
-        run: ./gradlew test --no-daemon
+      - name: Restore and build
+        working-directory: ./DotNetServer
+        run: |
+          dotnet restore DotNetServer.sln
+          dotnet build DotNetServer.sln -c Release --no-restore
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -216,8 +213,8 @@ jobs:
       - name: Build and push backend
         uses: docker/build-push-action@v6
         with:
-          context: ./server
-          file: ./server/Dockerfile
+          context: ./DotNetServer
+          file: ./DotNetServer/Dockerfile
           push: true
           tags: |
             ${{ secrets.DOCKER_USERNAME }}/ordovita-backend:latest
@@ -274,8 +271,8 @@ jobs:
             export AI_PROVIDER="${{ secrets.AI_PROVIDER }}"
             export GOOGLE_CLIENT_ID="${{ secrets.GOOGLE_CLIENT_ID }}"
             export GOOGLE_CLIENT_SECRET="${{ secrets.GOOGLE_CLIENT_SECRET }}"
+            export CRYPTO_SECRET_KEY="${{ secrets.CRYPTO_SECRET_KEY }}"
             export OAUTH2_FRONTEND_URL="https://ordovita.pl"
-            export OAUTH2_DESKTOP_REDIRECT_URL="aitaskmanager://oauth-callback"
             export OAUTH2_DESKTOP_BROWSER_CALLBACK_URL="https://ordovita.pl/desktop-oauth-complete"
 
             docker pull ${{ secrets.DOCKER_USERNAME }}/ordovita-frontend:latest

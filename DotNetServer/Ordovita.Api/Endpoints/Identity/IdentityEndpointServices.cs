@@ -4,6 +4,9 @@ public static class IdentityEndpointServices
 {
     public static IServiceCollection AddIdentityEndpointServices(this IServiceCollection services)
     {
-        return services.AddScoped<IdentityTokenIssuer>();
+        services.AddScoped<IdentityTokenIssuer>();
+        services.AddScoped<GoogleOAuthCallbackHandler>();
+        services.AddSingleton<DesktopOAuthCodeService>();
+        return services;
     }
 }

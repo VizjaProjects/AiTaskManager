@@ -15,6 +15,11 @@ services:
       EmailSection__FromAddress: ${MAIL_FROM:-kontakt@ordovita.pl}
       EmailSection__FromName: ${MAIL_FROM_NAME:-Ordovita}
       EmailSection__UseStartTls: "true"
+      Authentication__Google__ClientId: ${GOOGLE_CLIENT_ID}
+      Authentication__Google__ClientSecret: ${GOOGLE_CLIENT_SECRET}
+      OAuth2__FrontendUrl: ${OAUTH2_FRONTEND_URL:-https://ordovita.pl}
+      OAuth2__DesktopBrowserCallbackUrl: ${OAUTH2_DESKTOP_BROWSER_CALLBACK_URL:-https://ordovita.pl/desktop-oauth-complete}
+      Crypto__SecretKey: ${CRYPTO_SECRET_KEY}
     deploy:
       resources:
         limits:

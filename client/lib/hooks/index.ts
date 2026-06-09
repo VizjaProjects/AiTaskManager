@@ -163,8 +163,10 @@ export function useEditTask() {
       if (ctx?.previous)
         qc.setQueryData(["tasks", workspaceId], ctx.previous);
     },
-    onSettled: () =>
-      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["events", workspaceId] });
+    },
   });
 }
 
@@ -320,11 +322,14 @@ export function useEditEvent() {
     }) => eventApi.edit(requireWorkspaceId(workspaceId), eventId, data),
     onMutate: async ({ eventId, data }) => {
       await qc.cancelQueries({ queryKey: ["events", workspaceId] });
-      const previous = qc.getQueryData<CalendarEvent[]>([
+      await qc.cancelQueries({ queryKey: ["tasks", workspaceId] });
+      const previousEvents = qc.getQueryData<CalendarEvent[]>([
         "events",
         workspaceId,
       ]);
-      if (previous) {
+      const previousTasks = qc.getQueryData<Task[]>(["tasks", workspaceId]);
+
+      if (previousEvents) {
         qc.setQueryData<CalendarEvent[]>(["events", workspaceId], (old) =>
           (old ?? []).map((e) =>
             e.eventId === eventId
@@ -333,14 +338,34 @@ export function useEditEvent() {
           ),
         );
       }
-      return { previous };
+
+      const linked = previousEvents?.find((e) => e.eventId === eventId);
+      if (linked?.taskId && data.endDateTime && previousTasks) {
+        qc.setQueryData<Task[]>(["tasks", workspaceId], (old) =>
+          (old ?? []).map((t) =>
+            t.taskId === linked.taskId
+              ? {
+                  ...t,
+                  dueDateTime: data.endDateTime!,
+                  updatedAt: new Date().toISOString(),
+                }
+              : t,
+          ),
+        );
+      }
+
+      return { previousEvents, previousTasks };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous)
-        qc.setQueryData(["events", workspaceId], ctx.previous);
+      if (ctx?.previousEvents)
+        qc.setQueryData(["events", workspaceId], ctx.previousEvents);
+      if (ctx?.previousTasks)
+        qc.setQueryData(["tasks", workspaceId], ctx.previousTasks);
     },
-    onSettled: () =>
-      qc.invalidateQueries({ queryKey: ["events", workspaceId] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["events", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
+    },
   });
 }
 
@@ -350,8 +375,10 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: (eventId: string) =>
       eventApi.delete(requireWorkspaceId(workspaceId), eventId),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["events", workspaceId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["events", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
+    },
   });
 }
 

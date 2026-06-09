@@ -1,13 +1,16 @@
 import { create } from "zustand";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import type { User, Role } from "../types";
+import type { User, Role, LoginResponse } from "../types";
 import {
   identityApi,
   setAccessToken,
   setRefreshToken,
   clearTokens,
+  getRefreshToken,
+  getAccessToken,
 } from "../api";
+import { ensureValidSession } from "../session";
 import { useWorkspaceStore } from "./workspace";
 
 function storeUser(user: User) {
@@ -53,7 +56,9 @@ interface AuthState {
     email: string,
     fullName: string,
     role: string,
+    refreshToken?: string,
   ) => Promise<void>;
+  completeOAuthLogin: (data: LoginResponse) => Promise<void>;
   register: (
     fullName: string,
     email: string,
@@ -86,13 +91,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     await useWorkspaceStore.getState().fetchWorkspaces();
   },
 
-  loginWithOAuth: async (token, userId, email, fullName, role) => {
+  loginWithOAuth: async (token, userId, email, fullName, role, refreshToken?) => {
     await setAccessToken(token);
+    if (refreshToken) await setRefreshToken(refreshToken);
     const user: User = {
       userId,
       email,
       fullName,
       role: role as Role,
+    };
+    storeUser(user);
+    set({ user, isAuthenticated: true, isLoading: false });
+    await useWorkspaceStore.getState().fetchWorkspaces();
+  },
+
+  completeOAuthLogin: async (data) => {
+    await setAccessToken(data.accessToken);
+    await setRefreshToken(data.refreshToken);
+    const user: User = {
+      userId: data.userId,
+      email: data.email,
+      fullName: data.fullName,
+      role: data.role as Role,
     };
     storeUser(user);
     set({ user, isAuthenticated: true, isLoading: false });
@@ -118,19 +138,34 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   hydrate: async () => {
     const stored = await loadUser();
-    if (stored) {
-      set({
-        user: stored.user,
-        isAuthenticated: true,
-        isLoading: false,
-      });
-      try {
-        await useWorkspaceStore.getState().fetchWorkspaces();
-      } catch {
-        // workspace fetch may fail if token expired — interceptor handles refresh
-      }
-    } else {
+    if (!stored) {
       set({ isLoading: false });
+      return;
+    }
+
+    const refreshToken = await getRefreshToken();
+    if (refreshToken) {
+      const refreshed = await ensureValidSession();
+      if (!refreshed) {
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          await clearTokens();
+          removeUser();
+          set({ user: null, isAuthenticated: false, isLoading: false });
+          return;
+        }
+      }
+    }
+
+    set({
+      user: stored.user,
+      isAuthenticated: true,
+      isLoading: false,
+    });
+    try {
+      await useWorkspaceStore.getState().fetchWorkspaces();
+    } catch {
+      // workspace fetch may fail if token expired — interceptor handles refresh
     }
   },
 }));

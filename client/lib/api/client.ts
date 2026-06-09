@@ -2,7 +2,18 @@ import axios from "axios";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
-const BASE_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8080";
+export function getApiBaseUrl(): string {
+  const configured = process.env.EXPO_PUBLIC_API_URL?.trim();
+  if (configured) return configured.replace(/\/+$/, "");
+
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    return window.location.origin;
+  }
+
+  return "http://localhost:8080";
+}
+
+const BASE_URL = getApiBaseUrl();
 const API_PREFIX = process.env.EXPO_PUBLIC_API_PREFIX ?? "/api/v1";
 
 export const api = axios.create({
@@ -125,7 +136,7 @@ api.interceptors.response.use(
       const { data } = await axios.post<{
         accessToken: string;
         refreshToken: string;
-      }>(`${BASE_URL}${API_PREFIX}/identity/refresh`, { refreshToken });
+      }>(`${getApiBaseUrl()}${API_PREFIX}/identity/refresh`, { refreshToken });
 
       await setAccessToken(data.accessToken);
       await setRefreshToken(data.refreshToken);
@@ -143,4 +154,4 @@ api.interceptors.response.use(
   },
 );
 
-export { getAccessToken, getRefreshToken };
+export { getAccessToken, getRefreshToken, getApiBaseUrl };

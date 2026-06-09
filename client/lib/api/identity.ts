@@ -40,6 +40,9 @@ export const identityApi = {
 
   resendConfirmationEmail: (email: string) =>
     api.post("/identity/resendConfirmationEmail", { email }),
+
+  exchangeDesktopOAuthCode: (code: string) =>
+    api.post<LoginResponse>("/identity/oauth2/desktop/exchange", { code }),
 };
 
 /** @deprecated Use identityApi — kept for gradual migration */
@@ -51,9 +54,8 @@ export const authApi = {
     // Server logout not implemented in .NET yet — client-only
     return Promise.resolve();
   },
-  exchangeDesktopOAuthCode: async (_code: string) => {
-    throw new Error("OAuth desktop exchange is not available yet");
-  },
+  exchangeDesktopOAuthCode: (code: string) =>
+    identityApi.exchangeDesktopOAuthCode(code),
   requestPasswordReset: identityApi.forgotPassword,
   resetPassword: identityApi.resetPassword,
   verifyEmail: async (_userId: string, _code: string) => {

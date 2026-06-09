@@ -17,6 +17,7 @@ import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore, useWorkspaceStore } from "@/lib/stores";
 import { useThemeStore } from "@/lib/stores";
 import { setOnRefreshFailed } from "@/lib/api";
+import { startSessionKeepAlive } from "@/lib/session";
 import { Role } from "@/lib/types";
 import { useSurveyGate } from "@/lib/hooks";
 
@@ -55,6 +56,11 @@ function AuthGate() {
       queryClient.clear();
     });
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    return startSessionKeepAlive();
+  }, [isAuthenticated]);
 
   const wasAuthenticatedRef = useRef(false);
   useEffect(() => {

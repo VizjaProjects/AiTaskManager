@@ -269,6 +269,7 @@ public static class AspIdentityEndpoint
             return TypedResults.Ok(await CreateInfoResponseAsync(user, userManager));
         });
 
+        routeGroup.MapGoogleOAuthIdentityEndpoints();
 
         return routeGroup;
 

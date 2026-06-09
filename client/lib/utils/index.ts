@@ -159,6 +159,30 @@ export function normalizeDueDateTime(
   return toLocalDateTimeString(parseApiDateTime(value));
 }
 
+/** Task due = linked event end when a calendar block exists (source of truth). */
+export function getEffectiveTaskDueDateTime(
+  task: { taskId: string; dueDateTime: string | null },
+  linkedEvents?: Array<{ taskId: string | null; endDateTime: string; status: string }>,
+): string | null {
+  const linked = (linkedEvents ?? []).find(
+    (e) =>
+      e.taskId === task.taskId &&
+      e.status !== "CANCELLED" &&
+      e.status !== "REJECTED",
+  );
+  if (linked?.endDateTime) return linked.endDateTime;
+  return task.dueDateTime;
+}
+
+export function resolveTaskDueDateTimeForSave(
+  task: { taskId: string; dueDateTime: string | null },
+  linkedEvents?: Array<{ taskId: string | null; endDateTime: string; status: string }>,
+): string | undefined {
+  return normalizeDueDateTime(
+    getEffectiveTaskDueDateTime(task, linkedEvents),
+  );
+}
+
 /** Send local wall-clock datetime to API (no UTC shift). */
 export function toLocalDateTimeString(date: Date): string {
   const y = date.getFullYear();

@@ -7,6 +7,7 @@ using Ordovita.Application.Tasks.Ai.GenerateAiPlan;
 using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
 using Ordovita.Application.Identity.ConfirmUserEmail;
+using Ordovita.Application.Identity.GoogleOAuth;
 using Ordovita.Application.Identity.RegisterUser;
 using Ordovita.Application.LlmSettings;
 using Ordovita.Application.LlmSettings.CreateLlmSettings;
@@ -77,6 +78,7 @@ public static class DependencyInjection
 
         services.AddScoped<ICommandHandler<RegisterUserCommand, Guid>, RegisterUserHandler>();
         services.AddScoped<ICommandHandler<ConfirmUserEmailCommand, Guid>, ConfirmUserEmailHandler>();
+        services.AddScoped<ICommandHandler<GoogleOAuthLoginCommand, GoogleOAuthLoginResult>, GoogleOAuthLoginHandler>();
 
         services.AddScoped<ICommandHandler<ChangeFullNameCommand, UserDto>, ChangeFullnameHandler>();
         services.AddScoped<ICommandHandler<DeleteAccountCommand, UserDto>, DeleteAccountHandler>();

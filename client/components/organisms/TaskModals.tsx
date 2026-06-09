@@ -26,6 +26,8 @@ import {
   parseApiDateTime,
   toLocalDateTimeString,
   normalizeDueDateTime,
+  getEffectiveTaskDueDateTime,
+  resolveTaskDueDateTimeForSave,
 } from "@/lib/utils";
 import {
   useEditTask,
@@ -136,12 +138,13 @@ export function TaskDetailModal({
     setEstimatedDuration(
       task.estimatedDuration > 0 ? String(task.estimatedDuration) : "",
     );
-    setDueDate(task.dueDateTime ?? "");
+    const effectiveDue = getEffectiveTaskDueDateTime(task, relatedEvents);
+    setDueDate(effectiveDue ?? "");
     setDueDateObj(
-      task.dueDateTime ? parseApiDateTime(task.dueDateTime) : new Date(),
+      effectiveDue ? parseApiDateTime(effectiveDue) : new Date(),
     );
-    if (task.dueDateTime) {
-      const d = parseApiDateTime(task.dueDateTime);
+    if (effectiveDue) {
+      const d = parseApiDateTime(effectiveDue);
       setDueHour(String(d.getHours()).padStart(2, "0"));
       setDueMin(String(d.getMinutes()).padStart(2, "0"));
     } else {
@@ -223,7 +226,7 @@ export function TaskDetailModal({
           statusId: doneStatus.statusId,
           categoryId: task.categoryId ?? undefined,
           estimatedDuration: task.estimatedDuration,
-          dueDateTime: normalizeDueDateTime(task.dueDateTime),
+          dueDateTime: resolveTaskDueDateTimeForSave(task, relatedEvents),
         },
       },
       { onSuccess: onClose },
@@ -486,7 +489,10 @@ export function TaskDetailModal({
                                 statusId: s.statusId,
                                 categoryId: task.categoryId ?? undefined,
                                 estimatedDuration: task.estimatedDuration,
-                                dueDateTime: normalizeDueDateTime(task.dueDateTime),
+                                dueDateTime: resolveTaskDueDateTimeForSave(
+                                  task,
+                                  relatedEvents,
+                                ),
                               },
                             });
                           }}

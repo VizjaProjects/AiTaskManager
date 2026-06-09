@@ -53,15 +53,6 @@ public static class DependencyInjection
         services.AddTransient<IEmailSender<AspIdentityUser>, SmtpIdentityEmailSender>();
         services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
 
-
-        // services.AddHttpClient<IAiClient, AiGroqClient>((serviceProvider, client) =>
-        // {
-        //     var config = serviceProvider.GetRequiredService<GroqConfiguration>();
-        //
-        //     client.BaseAddress = new Uri("https://api.groq.com/openai/v1/");
-        //     client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", config.ApiKey);
-        // });
-
         services.AddScoped<IAiClient, LlmTornadoProvider>();
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<AppDbContext>());
@@ -96,6 +87,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         services.AddScoped<IAspIdentityService, AspIdentityService>();
+        services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IUserRepository, UserRepository>();
 
 

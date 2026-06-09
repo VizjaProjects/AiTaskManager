@@ -34,6 +34,7 @@ import {
   useCategories,
   useTaskStatuses,
   useEditTask,
+  useEvents,
 } from "@/lib/hooks";
 import { TaskPriority, TaskSource } from "@/lib/types";
 import type { Task, Category, TaskStatus } from "@/lib/types";
@@ -43,7 +44,7 @@ import {
   formatDuration,
   getCategoryDisplayColor,
   resolveTaskCategoryId,
-  normalizeDueDateTime,
+  resolveTaskDueDateTimeForSave,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 
@@ -243,6 +244,7 @@ export default function TasksScreen() {
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const { data: tasks, isLoading, refetch } = useTasks();
+  const { data: events } = useEvents();
   const { data: categories } = useCategories();
   const { data: statuses } = useTaskStatuses();
   const editTask = useEditTask();
@@ -489,11 +491,11 @@ export default function TasksScreen() {
           statusId: newStatusId,
           categoryId: resolveTaskCategoryId(task.categoryId, categories),
           estimatedDuration: task.estimatedDuration,
-          dueDateTime: normalizeDueDateTime(task.dueDateTime),
+          dueDateTime: resolveTaskDueDateTimeForSave(task, events),
         },
       });
     },
-    [tasks, editTask, categories],
+    [tasks, events, editTask, categories],
   );
 
   const priorities = Object.values(TaskPriority);

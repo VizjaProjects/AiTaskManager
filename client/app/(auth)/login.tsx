@@ -16,12 +16,13 @@ import { Button, Input } from "@/components/atoms";
 import { AuthCard, AuthHeader } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
-import { InProgressBanner } from "@/components/molecules/InProgressBanner";
+import { startGoogleOAuth } from "@/lib/oauth";
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((s) => s.login);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -42,6 +43,20 @@ export default function LoginScreen() {
       setError(e.response?.data?.message ?? "Nieprawidłowy email lub hasło");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function onGoogleLogin() {
+    setGoogleLoading(true);
+    setError(null);
+    try {
+      await startGoogleOAuth();
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : "Nie udało się rozpocząć logowania Google.";
+      setError(message);
+    } finally {
+      setGoogleLoading(false);
     }
   }
 
@@ -124,13 +139,18 @@ export default function LoginScreen() {
               />
             </View>
 
-            <View className="mt-6 opacity-50" pointerEvents="none">
-              <View className="flex-row items-center justify-center gap-3 bg-surface-container-low rounded-xl px-4 py-3">
+            <View className="mt-6">
+              <TouchableOpacity
+                onPress={onGoogleLogin}
+                disabled={googleLoading || loading}
+                className="flex-row items-center justify-center gap-3 bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant"
+              >
                 <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
-                <Text className="text-on-surface font-headline text-sm">Kontynuuj z Google</Text>
-              </View>
+                <Text className="text-on-surface font-headline text-sm">
+                  {googleLoading ? "Przekierowywanie…" : "Kontynuuj z Google"}
+                </Text>
+              </TouchableOpacity>
             </View>
-            <InProgressBanner message="Logowanie Google będzie dostępne po implementacji OAuth w backendzie .NET." />
 
             <View className="flex-row items-center justify-center gap-1 mt-6">
               <Text className="text-on-surface-variant font-body text-sm">Nie masz konta?</Text>

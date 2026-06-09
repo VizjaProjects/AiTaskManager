@@ -2,6 +2,7 @@ export {
   api,
   getAccessToken,
   getRefreshToken,
+  getApiBaseUrl,
   setAccessToken,
   setRefreshToken,
   clearTokens,
