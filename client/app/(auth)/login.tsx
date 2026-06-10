@@ -40,7 +40,19 @@ export default function LoginScreen() {
     try {
       await login(data.email, data.password);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Nieprawidłowy email lub hasło");
+      if (e.response?.data?.title === "Identity.PasswordNotSet") {
+        router.push({
+          pathname: "/(auth)/setup-password",
+          params: { email: data.email },
+        } as never);
+        return;
+      }
+
+      setError(
+        e.response?.data?.detail ??
+          e.response?.data?.message ??
+          "Nieprawidłowy email lub hasło",
+      );
     } finally {
       setLoading(false);
     }

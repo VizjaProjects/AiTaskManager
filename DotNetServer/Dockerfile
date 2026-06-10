@@ -1,3 +1,5 @@
+# syntax=docker/dockerfile:1.7
+
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
@@ -7,10 +9,12 @@ COPY Ordovita.Application/Ordovita.Application.csproj Ordovita.Application/
 COPY Ordovita.Infrastructure/Ordovita.Infrastructure.csproj Ordovita.Infrastructure/
 COPY Ordovita.Api/Ordovita.Api.csproj Ordovita.Api/
 
-RUN dotnet restore Ordovita.Api/Ordovita.Api.csproj
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore Ordovita.Api/Ordovita.Api.csproj
 
 COPY . .
-RUN dotnet publish Ordovita.Api/Ordovita.Api.csproj -c Release -o /app/publish
+RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet publish Ordovita.Api/Ordovita.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app

@@ -84,7 +84,8 @@ function AuthGate() {
     const inAuthGroup =
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
-      pathname.startsWith("/forgot-password");
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/setup-password");
     const isPublicPage =
       pathname === "/" ||
       pathname.startsWith("/privacy-policy") ||
