@@ -1,6 +1,14 @@
 import { z } from "zod";
 import { TaskPriority, TaskSource, ProposedBy, EventStatus } from "../types";
 
+const passwordSchema = z
+  .string()
+  .min(8, "Hasło musi mieć min. 8 znaków")
+  .regex(/[a-z]/, "Hasło musi zawierać małą literę")
+  .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
+  .regex(/[0-9]/, "Hasło musi zawierać cyfrę")
+  .regex(/[^A-Za-z0-9]/, "Hasło musi zawierać znak specjalny");
+
 export const loginSchema = z.object({
   email: z.string().email("Podaj poprawny adres email"),
   password: z.string().min(1, "Hasło jest wymagane"),
@@ -10,11 +18,7 @@ export const registerSchema = z
   .object({
     fullName: z.string().min(2, "Imię i nazwisko musi mieć min. 2 znaki"),
     email: z.string().email("Podaj poprawny adres email"),
-    rawPassword: z
-      .string()
-      .min(8, "Hasło musi mieć min. 8 znaków")
-      .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
-      .regex(/[0-9]/, "Hasło musi zawierać cyfrę"),
+    rawPassword: passwordSchema,
     confirmPassword: z.string(),
     termsAccepted: z.boolean(),
   })
@@ -31,15 +35,21 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email("Podaj poprawny adres email"),
 });
 
+export const setupPasswordSchema = z
+  .object({
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Hasła nie są takie same",
+    path: ["confirmPassword"],
+  });
+
 export const resetPasswordSchema = z
   .object({
     email: z.string().email(),
     token: z.string().uuid(),
-    rawPassword: z
-      .string()
-      .min(8, "Hasło musi mieć min. 8 znaków")
-      .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
-      .regex(/[0-9]/, "Hasło musi zawierać cyfrę"),
+    rawPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.rawPassword === data.confirmPassword, {
@@ -50,11 +60,7 @@ export const resetPasswordSchema = z
 export const changePasswordSchema = z
   .object({
     oldPassword: z.string().min(1, "Stare hasło jest wymagane"),
-    newPassword: z
-      .string()
-      .min(8, "Hasło musi mieć min. 8 znaków")
-      .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
-      .regex(/[0-9]/, "Hasło musi zawierać cyfrę"),
+    newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
@@ -111,6 +117,7 @@ export const generateAiPlanSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
+export type SetupPasswordFormData = z.infer<typeof setupPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export type ChangeFullNameFormData = z.infer<typeof changeFullNameSchema>;

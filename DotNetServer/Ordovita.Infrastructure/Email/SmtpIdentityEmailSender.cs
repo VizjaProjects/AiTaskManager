@@ -44,7 +44,7 @@ public class SmtpIdentityEmailSender(
                 ["code"] = resetCode,
                 ["createdTime"] = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss")
             });
-        await SendAsync(email, "Reset hasła — Ordovita", html);
+        await SendAsync(email, "Ustaw lub zresetuj hasło — Ordovita", html);
     }
 
     private async Task SendAsync(string to, string subject, string html)

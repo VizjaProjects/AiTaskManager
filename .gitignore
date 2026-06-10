@@ -1,13 +1,12 @@
 bin/
 obj/
 *.user
+*.DotSettings.user
 
-../server/HELP.md
-../server/.gradle
-../server/build/
+server/HELP.md
 server/.gradle/
 server/build/
-!../server/gradle/wrapper/gradle-wrapper.jar
+!server/gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
 
@@ -24,7 +23,7 @@ bin/
 !**/src/test/**/bin/
 
 ### IntelliJ IDEA ###
-../server/.idea
+.idea/
 *.iws
 *.iml
 *.ipr

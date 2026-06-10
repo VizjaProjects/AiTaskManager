@@ -1,14 +1,23 @@
+# syntax=docker/dockerfile:1.7
+
 FROM node:22-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci --legacy-peer-deps
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --legacy-peer-deps
 
 FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=deps /app/package.json /app/package-lock.json ./
+COPY app ./app
+COPY assets ./assets
+COPY components ./components
+COPY lib ./lib
+COPY app.json App.tsx babel.config.js global.css index.ts ./
+COPY metro.config.js nativewind-env.d.ts tailwind.config.js tsconfig.json ./
 
 ARG EXPO_PUBLIC_API_URL
 ARG EXPO_PUBLIC_API_PREFIX=/api/v1
@@ -23,7 +32,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY --from=builder /app/downloads /usr/share/nginx/html/downloads
+COPY downloads /usr/share/nginx/html/downloads
 
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html

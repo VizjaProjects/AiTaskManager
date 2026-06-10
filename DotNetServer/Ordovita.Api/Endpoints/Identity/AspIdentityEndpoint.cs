@@ -85,6 +85,12 @@ public static class AspIdentityEndpoint
                 if (!aspUser.EmailConfirmed && !domainUser.IsEmailVerified && !domainUser.IsEnable)
                     return TypedResults.Problem("User is not active!", statusCode: StatusCodes.Status406NotAcceptable);
 
+                if (!await userManager.HasPasswordAsync(aspUser))
+                    return TypedResults.Problem(
+                        title: "Identity.PasswordNotSet",
+                        detail: "This account does not have a password yet.",
+                        statusCode: StatusCodes.Status409Conflict);
+
                 var result = await signInManager.CheckPasswordSignInAsync(aspUser, login.Password, true);
 
                 if (result.RequiresTwoFactor)
