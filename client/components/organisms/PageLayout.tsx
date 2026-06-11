@@ -47,7 +47,10 @@ export function PageLayout({
 
   const content =
     contentMaxWidth != null ? (
-      <View className="flex-1 w-full self-stretch" style={{ maxWidth: contentMaxWidth }}>
+      <View
+        className="flex-1 w-full self-stretch"
+        style={{ maxWidth: contentMaxWidth }}
+      >
         {inner}
       </View>
     ) : (
@@ -64,7 +67,10 @@ export function PageLayout({
             showSearch={showSearch}
             searchPlaceholder={searchPlaceholder}
           />
-          <View className="flex-1 px-margin-desktop py-4 overflow-hidden">
+          <View
+            className="flex-1 px-margin-desktop py-4 overflow-hidden"
+            style={Platform.OS === "web" ? { paddingBottom: 48 } : undefined}
+          >
             {content}
           </View>
         </View>
@@ -79,7 +85,10 @@ export function PageLayout({
         showSearch={showSearch}
         searchPlaceholder={searchPlaceholder}
       />
-      <View className="flex-1 px-5 py-3 overflow-hidden">
+      <View
+        className="flex-1 px-5 py-3 overflow-hidden"
+        style={Platform.OS === "web" ? { paddingBottom: 44 } : undefined}
+      >
         {content}
         {rightRail && <View className="mt-4">{rightRail}</View>}
       </View>

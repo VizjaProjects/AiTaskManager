@@ -34,6 +34,6 @@ public sealed class AssignUsersToWorkspaceHandler(
             return Result.Failure<WorkspaceDto>(addResult.Error);
 
         await uow.SaveChangesAsync(ct);
-        return Result.Success(WorkspaceMapper.ToDto(workspace));
+        return Result.Success(await WorkspaceMapper.ToDtoAsync(workspace, userRepository, ct));
     }
 }

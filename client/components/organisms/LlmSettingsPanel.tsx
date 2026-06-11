@@ -81,11 +81,8 @@ function ApiKeyField({
     <View className="gap-2.5">
       <SectionLabel>API key</SectionLabel>
       <View
-        className="flex-row items-center px-4 rounded-full"
+        className="flex-row items-center px-4 rounded-full bg-surface-container-lowest border border-outline-variant"
         style={{
-          borderWidth: 1,
-          borderColor: UI.border,
-          backgroundColor: "#FFFFFF",
           height: 44,
         }}
       >
@@ -241,7 +238,10 @@ function ConfigFormModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 items-center justify-center p-4" style={{ backgroundColor: "rgba(0,0,0,0.25)" }}>
+      <View
+        className="flex-1 items-center justify-center p-4"
+        style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
+      >
         <View
           className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[88%] overflow-hidden"
           style={{ borderWidth: 1, borderColor: UI.border, ...UI.shadow }}
@@ -254,7 +254,13 @@ function ConfigFormModal({
               <MaterialIcons name="close" size={22} color={UI.textMuted} />
             </TouchableOpacity>
           </View>
-          <View style={{ height: 1, backgroundColor: UI.divider, marginHorizontal: 20 }} />
+          <View
+            style={{
+              height: 1,
+              backgroundColor: UI.divider,
+              marginHorizontal: 20,
+            }}
+          />
 
           <ScrollView
             contentContainerStyle={{ gap: 20, padding: 20, paddingBottom: 24 }}
@@ -338,14 +344,7 @@ function ConfigRow({
   const visual = getProviderVisual(item.provider);
 
   return (
-    <View
-      className="flex-row items-center gap-2 px-4 py-3.5 rounded-xl"
-      style={{
-        borderWidth: 1,
-        borderColor: UI.border,
-        backgroundColor: "#FFFFFF",
-      }}
-    >
+    <View className="flex-row items-center gap-2 px-4 py-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant">
       <TouchableOpacity
         onPress={onEdit}
         activeOpacity={0.7}
@@ -353,7 +352,10 @@ function ConfigRow({
       >
         <ProviderBrandIcon provider={item.provider} size="md" />
         <View className="flex-1 min-w-0">
-          <Text className="text-on-surface font-headline text-sm" numberOfLines={1}>
+          <Text
+            className="text-on-surface font-headline text-sm"
+            numberOfLines={1}
+          >
             {visual.label}
           </Text>
           <Text
@@ -417,7 +419,10 @@ export function LlmSettingsPanel() {
         <Text className="text-on-surface font-headline text-title-lg">
           Your models
         </Text>
-        <Text className="font-body text-body-md mt-1" style={{ color: UI.textSecondary }}>
+        <Text
+          className="font-body text-body-md mt-1"
+          style={{ color: UI.textSecondary }}
+        >
           Add an API key for the provider you want to use in AI Task.
         </Text>
       </View>
@@ -432,22 +437,21 @@ export function LlmSettingsPanel() {
         ) : null}
 
         {isLoading ? (
-          <Text className="font-body text-sm py-6 text-center" style={{ color: UI.textMuted }}>
+          <Text
+            className="font-body text-sm py-6 text-center"
+            style={{ color: UI.textMuted }}
+          >
             Loading...
           </Text>
         ) : settings.length === 0 ? (
           <View className="py-8 items-center gap-3">
-            <View
-              className="w-12 h-12 rounded-xl items-center justify-center"
-              style={{
-                borderWidth: 1,
-                borderColor: UI.border,
-                backgroundColor: UI.surface,
-              }}
-            >
+            <View className="w-12 h-12 rounded-xl items-center justify-center bg-surface-container-low border border-outline-variant">
               <MaterialIcons name="psychology" size={22} color={UI.textMuted} />
             </View>
-            <Text className="font-body text-sm text-center" style={{ color: UI.textSecondary }}>
+            <Text
+              className="font-body text-sm text-center"
+              style={{ color: UI.textSecondary }}
+            >
               No models configured yet.
             </Text>
           </View>
@@ -467,16 +471,18 @@ export function LlmSettingsPanel() {
         <View className="mt-5">
           <TouchableOpacity
             onPress={openCreate}
-            className="flex-row items-center justify-center gap-2 py-3 rounded-full"
+            className="flex-row items-center justify-center gap-2 py-3 rounded-full bg-surface-container-low"
             style={{
               borderWidth: 1,
               borderColor: UI.border,
               borderStyle: "dashed",
-              backgroundColor: UI.surface,
             }}
           >
             <MaterialIcons name="add" size={18} color={UI.textSecondary} />
-            <Text className="font-body text-sm" style={{ color: UI.textSecondary }}>
+            <Text
+              className="font-body text-sm"
+              style={{ color: UI.textSecondary }}
+            >
               Add model
             </Text>
           </TouchableOpacity>

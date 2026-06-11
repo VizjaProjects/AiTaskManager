@@ -39,14 +39,14 @@ public sealed class DesktopOAuthCodeService
     {
         var now = DateTimeOffset.UtcNow;
         foreach (var entry in _codes)
-        {
             if (entry.Value.ExpiresAt <= now)
                 _codes.TryRemove(entry.Key, out _);
-        }
     }
 
-    private static string Base64UrlEncode(byte[] data) =>
-        Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    private static string Base64UrlEncode(byte[] data)
+    {
+        return Convert.ToBase64String(data).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    }
 
     public sealed record DesktopOAuthPayload(
         TokenPair TokenPair,

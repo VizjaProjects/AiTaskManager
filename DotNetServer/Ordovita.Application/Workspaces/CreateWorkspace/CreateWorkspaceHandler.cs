@@ -36,6 +36,6 @@ public sealed class CreateWorkspaceHandler(
         await workspaceTaskInitializer.InitializeAsync(workspace.Id, userResult.Value.Id, ct);
         await uow.SaveChangesAsync(ct);
 
-        return Result.Success(WorkspaceMapper.ToDto(workspace));
+        return Result.Success(await WorkspaceMapper.ToDtoAsync(workspace, userRepository, ct));
     }
 }

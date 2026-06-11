@@ -14,6 +14,7 @@ using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Domain.Identity;
 using Ordovita.Domain.LlmSettings.Port;
+using Ordovita.Domain.Note.Port;
 using Ordovita.Infrastructure.AspIdentity;
 using Ordovita.Infrastructure.Cqrs;
 using Ordovita.Infrastructure.Email;
@@ -29,6 +30,7 @@ using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Llm.LlmTornado;
 using Ordovita.Infrastructure.LlmSettings;
 using Ordovita.Infrastructure.LlmSettings.Persistance;
+using Ordovita.Infrastructure.Note.Persistence;
 using Ordovita.Infrastructure.Survey;
 using Ordovita.Infrastructure.Survey.Persistence.Repository;
 using Ordovita.Infrastructure.Tasks;
@@ -68,6 +70,10 @@ public static class DependencyInjection
         services.AddScoped<IQuestionRepository, QuestionRepository>();
         services.AddScoped<IQuestionOptionRepository, QuestionOptionRepository>();
         services.AddScoped<IUserResponseRepository, UserResponseRepository>();
+        services.AddScoped<INoteRepository, NoteRepository>();
+        services.AddScoped<INoteFolderRepository, NoteFolderRepository>();
+
+        
 
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 

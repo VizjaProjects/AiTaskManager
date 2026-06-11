@@ -54,8 +54,16 @@ function AiLoadingAnimation() {
       return Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
-          Animated.timing(val, { toValue: 1, duration: 600, useNativeDriver: true }),
-          Animated.timing(val, { toValue: 0.3, duration: 600, useNativeDriver: true }),
+          Animated.timing(val, {
+            toValue: 1,
+            duration: 600,
+            useNativeDriver: true,
+          }),
+          Animated.timing(val, {
+            toValue: 0.3,
+            duration: 600,
+            useNativeDriver: true,
+          }),
         ]),
       );
     }
@@ -65,7 +73,11 @@ function AiLoadingAnimation() {
     a1.start();
     a2.start();
     a3.start();
-    return () => { a1.stop(); a2.stop(); a3.stop(); };
+    return () => {
+      a1.stop();
+      a2.stop();
+      a3.stop();
+    };
   }, [pulse1, pulse2, pulse3]);
 
   return (
@@ -435,7 +447,8 @@ export default function AiTaskScreen() {
               AI Task Creation
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md">
-              Describe your day in natural language — AI will suggest tasks and events.
+              Describe your day in natural language — AI will suggest tasks and
+              events.
             </Text>
           </View>
 
@@ -454,50 +467,44 @@ export default function AiTaskScreen() {
                 What would you like to plan?
               </Text>
             </View>
-            <View className="relative">
-              <TextInput
-                className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-base border border-outline-variant"
-                style={[
-                  {
-                    minHeight: 140,
-                    paddingRight: 16,
-                    paddingBottom: 56,
-                    paddingLeft: 4,
-                    borderColor: isListening ? "#ef4444" : undefined,
-                    opacity: generatePlan.isPending ? 0.5 : 1,
-                  },
-                  NO_OUTLINE,
-                ]}
-                placeholder="e.g. Schedule a team sync tomorrow at 2 PM, prepare the Q3 report by Friday, and remind me to call Sarah."
-                placeholderTextColor="#9ca3af"
-                multiline
-                textAlignVertical="top"
-                value={text}
-                onChangeText={setText}
-                editable={!generatePlan.isPending}
-                onKeyPress={(e: any) => {
-                  if (
-                    e.nativeEvent.key === "Enter" &&
-                    !e.nativeEvent.shiftKey
-                  ) {
-                    e.preventDefault();
-                    handleGenerate();
-                  }
-                }}
-              />
-              <View className="absolute bottom-3 left-3 right-3 flex-row items-center justify-between">
-                <AiChatConfigButton disabled={generatePlan.isPending} />
-                <View className="flex-row items-center gap-2">
+            <TextInput
+              className="bg-surface-container-low rounded-xl text-on-surface font-body text-base border border-outline-variant"
+              style={[
+                {
+                  minHeight: 120,
+                  padding: 16,
+                  lineHeight: 22,
+                  borderColor: isListening ? "#ef4444" : undefined,
+                  opacity: generatePlan.isPending ? 0.5 : 1,
+                },
+                NO_OUTLINE,
+              ]}
+              placeholder="e.g. Schedule a team sync tomorrow at 2 PM, prepare the Q3 report by Friday, and remind me to call Sarah."
+              placeholderTextColor="#9ca3af"
+              multiline
+              textAlignVertical="top"
+              value={text}
+              onChangeText={setText}
+              editable={!generatePlan.isPending}
+              onKeyPress={(e: any) => {
+                if (e.nativeEvent.key === "Enter" && !e.nativeEvent.shiftKey) {
+                  e.preventDefault();
+                  handleGenerate();
+                }
+              }}
+            />
+            <View className="flex-row items-center justify-between gap-2 flex-wrap">
+              <AiChatConfigButton disabled={generatePlan.isPending} />
+              <View className="flex-row items-center gap-2">
                 {speechSupported && (
                   <TouchableOpacity
                     onPress={toggleSpeech}
                     disabled={generatePlan.isPending}
-                    className="w-9 h-9 items-center justify-center rounded-lg"
+                    className="w-10 h-10 items-center justify-center rounded-xl bg-surface-container-lowest"
                     style={{
                       opacity: generatePlan.isPending ? 0.4 : 1,
                       borderWidth: 1,
                       borderColor: isListening ? "#ef4444" : UI.borderHover,
-                      backgroundColor: "#FFFFFF",
                     }}
                   >
                     <MaterialIcons
@@ -510,7 +517,7 @@ export default function AiTaskScreen() {
                 <TouchableOpacity
                   onPress={handleGenerate}
                   disabled={!canGenerate}
-                  className="flex-row items-center gap-1.5 bg-action px-4 py-2.5 rounded-xl"
+                  className="flex-row items-center gap-1.5 bg-action px-5 py-2.5 rounded-xl"
                   style={{ opacity: canGenerate ? 1 : 0.45 }}
                 >
                   <MaterialIcons name="north" size={16} color="#f0f0f0" />
@@ -518,13 +525,14 @@ export default function AiTaskScreen() {
                     {generatePlan.isPending ? "..." : "Generate"}
                   </Text>
                 </TouchableOpacity>
-                </View>
               </View>
             </View>
             {isListening && (
               <View className="flex-row items-center gap-2">
                 <View className="w-2 h-2 rounded-full bg-error" />
-                <Text className="text-error font-label text-xs">Listening...</Text>
+                <Text className="text-error font-label text-xs">
+                  Listening...
+                </Text>
               </View>
             )}
           </View>
@@ -561,7 +569,10 @@ export default function AiTaskScreen() {
                     minute: "2-digit",
                   });
                   return (
-                    <View key={event.eventId} style={{ width: proposalCardWidth }}>
+                    <View
+                      key={event.eventId}
+                      style={{ width: proposalCardWidth }}
+                    >
                       <AiProposedCard
                         type="event"
                         title={event.title}
@@ -601,12 +612,15 @@ export default function AiTaskScreen() {
                       }
                       dueDate={
                         task.dueDateTime
-                          ? new Date(task.dueDateTime).toLocaleDateString("pl-PL", {
-                              day: "numeric",
-                              month: "short",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                          ? new Date(task.dueDateTime).toLocaleDateString(
+                              "pl-PL",
+                              {
+                                day: "numeric",
+                                month: "short",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              },
+                            )
                           : undefined
                       }
                       onDismiss={() => rejectTask.mutate(task.taskId)}

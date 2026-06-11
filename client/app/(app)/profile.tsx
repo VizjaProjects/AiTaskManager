@@ -23,24 +23,26 @@ import {
   type ChangeFullNameFormData,
 } from "@/lib/schemas";
 
-type SettingsTab = "account" | "appearance" | "ai";
+type SettingsTab = "account" | "ai";
 
-const TABS: { id: SettingsTab; label: string; icon: keyof typeof MaterialIcons.glyphMap }[] =
-  [
-    { id: "account", label: "Account", icon: "person" },
-    { id: "appearance", label: "Appearance", icon: "palette" },
-    { id: "ai", label: "AI Personal", icon: "psychology" },
-  ];
+const TABS: {
+  id: SettingsTab;
+  label: string;
+  icon: keyof typeof MaterialIcons.glyphMap;
+}[] = [
+  { id: "account", label: "Account", icon: "person" },
+  { id: "ai", label: "AI Personal", icon: "psychology" },
+];
 
 function isSettingsTab(value: string | undefined): value is SettingsTab {
-  return value === "account" || value === "appearance" || value === "ai";
+  return value === "account" || value === "ai";
 }
 
 export default function ProfileScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { user, setUser, logout } = useAuthStore();
-  const { mode, setMode } = useThemeStore();
+  const { mode } = useThemeStore();
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [nameLoading, setNameLoading] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
@@ -163,11 +165,17 @@ export default function ProfileScreen() {
                   <MaterialIcons
                     name={tab.icon}
                     size={16}
-                    color={active ? "#ffffff" : "#777587"}
+                    color={
+                      active
+                        ? mode === "dark"
+                          ? "#121212"
+                          : "#ffffff"
+                        : "#777587"
+                    }
                   />
                   <Text
                     className={`text-sm font-label ${
-                      active ? "text-white" : "text-on-surface-variant"
+                      active ? "text-on-primary" : "text-on-surface-variant"
                     }`}
                   >
                     {tab.label}
@@ -282,42 +290,16 @@ export default function ProfileScreen() {
                 disabled={deleteLoading}
                 className="flex-row items-center justify-center gap-2 rounded-xl py-3.5"
               >
-                <MaterialIcons name="delete-outline" size={16} color="#ba1a1a" />
+                <MaterialIcons
+                  name="delete-outline"
+                  size={16}
+                  color="#ba1a1a"
+                />
                 <Text className="text-error font-body text-sm">
                   {deleteLoading ? "Deleting account..." : "Delete account"}
                 </Text>
               </TouchableOpacity>
             </View>
-          )}
-
-          {activeTab === "appearance" && (
-            <Card variant="elevated">
-              <Text className="text-on-surface font-headline text-title-lg mb-4">
-                Appearance
-              </Text>
-              <View className="flex-row bg-surface-container-low rounded-full p-1 self-start">
-                <TouchableOpacity
-                  onPress={() => setMode("light")}
-                  className={`px-5 py-2 rounded-full ${mode === "light" ? "bg-primary" : ""}`}
-                >
-                  <Text
-                    className={`text-sm font-label ${mode === "light" ? "text-white" : "text-on-surface-variant"}`}
-                  >
-                    Light
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setMode("dark")}
-                  className={`px-5 py-2 rounded-full ${mode === "dark" ? "bg-primary" : ""}`}
-                >
-                  <Text
-                    className={`text-sm font-label ${mode === "dark" ? "text-white" : "text-on-surface-variant"}`}
-                  >
-                    Dark
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </Card>
           )}
 
           {activeTab === "ai" && <LlmSettingsPanel />}

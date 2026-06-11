@@ -17,6 +17,14 @@ using Ordovita.Application.LlmSettings.GetAllProviders;
 using Ordovita.Application.LlmSettings.GetLlmSettingById;
 using Ordovita.Application.LlmSettings.GetLlmSettings;
 using Ordovita.Application.LlmSettings.UpdateLlmSettings;
+using Ordovita.Application.Note;
+using Ordovita.Application.Note.CreateNote;
+using Ordovita.Application.Note.CreateNoteFolder;
+using Ordovita.Application.Note.DeleteNote;
+using Ordovita.Application.Note.GetWorkspaceNoteFolders;
+using Ordovita.Application.Note.GetWorkspaceNotes;
+using Ordovita.Application.Note.UpdateNoteContent;
+using Ordovita.Application.Note.UpdateNoteMetadata;
 using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.ChangeSurveyVisibility;
 using Ordovita.Application.Surveys.CreateSurvey;
@@ -65,6 +73,7 @@ using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.GetWorkspaceTasks;
+using Ordovita.Application.Workspaces.AssignUsersByEmail;
 
 namespace Ordovita.Application;
 
@@ -173,6 +182,9 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<RejectAiTaskCommand, Unit>, RejectAiTaskHandler>();
         services.AddScoped<ICommandHandler<AcceptAiEventCommand, AcceptAiEventResult>, AcceptAiEventHandler>();
         services.AddScoped<ICommandHandler<RejectAiEventCommand, Unit>, RejectAiEventHandler>();
+        services
+            .AddScoped<ICommandHandler<AssignUsersByEmailCommand, AssignUsersByEmailResult>,
+                AssignUsersByEmailHandler>();
 
 
         services.AddScoped<ICommandHandler<CreateLlmSettingsCommand, LlmSettingsDto>, CreateLlmSettingsHandler>();
@@ -183,6 +195,15 @@ public static class DependencyInjection
         services
             .AddScoped<IQueryHandler<GetAllLlmSettingsQuery, IReadOnlyList<LlmSettingsDto>>, GetLlmSettingsHandler>();
         services.AddScoped<ICommandHandler<UpdateLlmSettingsCommand, LlmSettingsDto>, UpdateLlmSettingsHandler>();
+        
+        services.AddScoped<ICommandHandler<CreateNoteFolderCommand, CreateNoteFolderResult>, CreateNoteFolderHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceNoteFoldersQuery, IReadOnlyList<NoteFolderDto>>, GetWorkspaceNoteFoldersHandler>();
+        
+        services.AddScoped<ICommandHandler<CreateNoteCommand, CreateNoteResult>, CreateNoteHandler>();
+        services.AddScoped<ICommandHandler<UpdateNoteContentCommand, Unit>, UpdateNoteContentHandler>();
+        services.AddScoped<ICommandHandler<UpdateNoteMetadataCommand, Unit>, UpdateNoteMetadataHandler>();
+        services.AddScoped<ICommandHandler<DeleteNoteCommand, Unit>, DeleteNoteHandler>();
+        services.AddScoped<IQueryHandler<GetWorkspaceNotesQuery, IReadOnlyList<NoteDto>>, GetWorkspaceNotesHandler>();
 
 
         return services;

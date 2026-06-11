@@ -158,7 +158,9 @@ function QuestionCard({
               />
               <TouchableOpacity
                 onPress={() => {
-                  const options = question.options.filter((_, i) => i !== optIdx);
+                  const options = question.options.filter(
+                    (_, i) => i !== optIdx,
+                  );
                   onUpdate({ ...question, options, saved: false });
                 }}
               >
@@ -195,7 +197,11 @@ function QuestionCard({
       <TouchableOpacity
         className="flex-row items-center gap-2.5 self-start"
         onPress={() =>
-          onUpdate({ ...question, isRequired: !question.isRequired, saved: false })
+          onUpdate({
+            ...question,
+            isRequired: !question.isRequired,
+            saved: false,
+          })
         }
       >
         <MaterialIcons
@@ -252,7 +258,9 @@ function AddQuestionPanel({
             activeOpacity={0.85}
           >
             <MaterialIcons name={t.icon} size={28} color="#9ca3af" />
-            <Text className="text-on-surface font-headline text-sm">{t.label}</Text>
+            <Text className="text-on-surface font-headline text-sm">
+              {t.label}
+            </Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -311,8 +319,7 @@ export default function AdminSurveyBuilderPage() {
           saved: true,
           serverQuestionId: q.questionId,
           hint: q.hint ?? "",
-          kind:
-            q.questionType === QuestionType.LIST ? "single" : "text",
+          kind: q.questionType === QuestionType.LIST ? "single" : "text",
           options: [],
         })),
       );
@@ -435,8 +442,12 @@ export default function AdminSurveyBuilderPage() {
         router.push("/(app)/admin-surveys" as never);
       } catch (e: unknown) {
         const msg =
-          (e as { response?: { data?: { message?: string } }; message?: string })
-            ?.response?.data?.message ||
+          (
+            e as {
+              response?: { data?: { message?: string } };
+              message?: string;
+            }
+          )?.response?.data?.message ||
           (e as Error)?.message ||
           "Failed to save survey.";
         if (Platform.OS === "web") window.alert(msg);
@@ -506,8 +517,8 @@ export default function AdminSurveyBuilderPage() {
             Question structure
           </Text>
           <Text className="text-on-surface-variant font-body text-sm mt-1">
-            {questions.length} question{questions.length === 1 ? "" : "s"} · build
-            your survey sequence
+            {questions.length} question{questions.length === 1 ? "" : "s"} ·
+            build your survey sequence
           </Text>
         </View>
 
@@ -533,7 +544,7 @@ export default function AdminSurveyBuilderPage() {
           <View className="flex-row items-center gap-3">
             <TouchableOpacity
               onPress={() => router.back()}
-              className="w-10 h-10 items-center justify-center rounded-full border border-outline-variant bg-white"
+              className="w-10 h-10 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest"
             >
               <MaterialIcons name="arrow-back" size={20} color="#6b7280" />
             </TouchableOpacity>
@@ -550,7 +561,11 @@ export default function AdminSurveyBuilderPage() {
                   loading={saving}
                   onPress={() => save(false)}
                 />
-                <Button label="Save" loading={saving} onPress={() => save(true)} />
+                <Button
+                  label="Save"
+                  loading={saving}
+                  onPress={() => save(true)}
+                />
               </>
             ) : (
               <>

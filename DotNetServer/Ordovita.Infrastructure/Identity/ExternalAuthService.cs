@@ -37,7 +37,7 @@ public sealed class ExternalAuthService(
             {
                 UserName = email,
                 Email = email,
-                EmailConfirmed = true,
+                EmailConfirmed = true
             };
 
             var createResult = await userManager.CreateAsync(aspUser);
@@ -47,7 +47,8 @@ public sealed class ExternalAuthService(
 
             await userManager.AddToRoleAsync(aspUser, Role.USER.ToString());
 
-            var domainUserResult = DomainUser.Create(fullName, Domain.Identity.Email.From(email), Role.USER, aspUser.Id);
+            var domainUserResult =
+                DomainUser.Create(fullName, Domain.Identity.Email.From(email), Role.USER, aspUser.Id);
             if (domainUserResult.IsFailure || domainUserResult.Value is null)
                 return Result.Failure<ExternalAuthUser>(domainUserResult.Error);
 
@@ -65,7 +66,8 @@ public sealed class ExternalAuthService(
             var domainUser = await userRepository.GetAsyncByAspId(aspUser.Id, ct);
             if (domainUser is null)
             {
-                var domainUserResult = DomainUser.Create(fullName, Domain.Identity.Email.From(email), Role.USER, aspUser.Id);
+                var domainUserResult =
+                    DomainUser.Create(fullName, Domain.Identity.Email.From(email), Role.USER, aspUser.Id);
                 if (domainUserResult.IsFailure || domainUserResult.Value is null)
                     return Result.Failure<ExternalAuthUser>(domainUserResult.Error);
 

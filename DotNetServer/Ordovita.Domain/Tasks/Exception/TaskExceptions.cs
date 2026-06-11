@@ -75,4 +75,7 @@ public static class TaskStatusExceptions
 
     public static readonly Error WrongWorkspace =
         Error.Validation("TaskStatus.WrongWorkspace", "Task status does not belong to this workspace.");
+
+    public static readonly Error CannotDeleteDefault =
+        Error.Validation("TaskStatus.CannotDeleteDefault", "Default statuses cannot be deleted.");
 }

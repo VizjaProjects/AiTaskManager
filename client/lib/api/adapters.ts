@@ -3,6 +3,9 @@ import {
   TaskPriority,
   type CalendarEvent,
   type Category,
+  type Note,
+  type NoteContentEnvelope,
+  type NoteFolder,
   type Question,
   type Survey,
   type Task,
@@ -79,6 +82,7 @@ export function mapStatusDto(raw: Record<string, unknown>): TaskStatus {
     workspaceId: raw.workspaceId as string,
     name: raw.name as string,
     color: raw.color as string,
+    isDefault: (raw.isDefault as boolean) ?? false,
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
   };
@@ -99,15 +103,15 @@ export function mapEventDto(raw: Record<string, unknown>): CalendarEvent {
     allDay: raw.allDay as boolean,
     proposedBy: raw.proposedBy as CalendarEvent["proposedBy"],
     status:
-      status === "REJECTED"
-        ? EventStatus.CANCELLED
-        : (status as EventStatus),
+      status === "REJECTED" ? EventStatus.CANCELLED : (status as EventStatus),
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
   };
 }
 
-export function mapPendingEventDto(raw: Record<string, unknown>): CalendarEvent {
+export function mapPendingEventDto(
+  raw: Record<string, unknown>,
+): CalendarEvent {
   return {
     eventId: raw.eventId as string,
     title: raw.title as string,
@@ -142,7 +146,8 @@ export function mapQuestionDto(raw: Record<string, unknown>): Question {
     questionId: raw.questionId as string,
     surveyId: raw.surveyId as string,
     questionText: raw.questionText as string,
-    questionType: ((raw.questionType as string) ?? "TEXT") as Question["questionType"],
+    questionType: ((raw.questionType as string) ??
+      "TEXT") as Question["questionType"],
     isRequired: raw.isRequired as boolean,
     hint: (raw.hint as string) ?? "",
     createdAt: new Date(raw.createdAt as string).toISOString(),
@@ -163,3 +168,101 @@ export function normalizeArray<T>(
 }
 
 export { mapPriorityToApi };
+
+/* ───────── Notes ───────── */
+
+const EMPTY_NOTE_HTML = "<p><br/></p>";
+
+export function emptyNoteContent(): NoteContentEnvelope {
+  return { version: 1, format: "html", html: EMPTY_NOTE_HTML, text: "" };
+}
+
+/** Strip HTML tags to a plain-text preview (used for list previews + search). */
+export function htmlToPreviewText(html: string): string {
+  if (!html) return "";
+  return html
+    .replace(/<\s*br\s*\/?\s*>/gi, " ")
+    .replace(/<\/(p|div|li|h[1-6]|blockquote|pre|tr)>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/** Build the JSON envelope string stored in Note.contentJson from raw HTML. */
+export function buildNoteContentJson(html: string): string {
+  const safeHtml = html && html.trim().length > 0 ? html : EMPTY_NOTE_HTML;
+  const envelope: NoteContentEnvelope = {
+    version: 1,
+    format: "html",
+    html: safeHtml,
+    text: htmlToPreviewText(safeHtml),
+  };
+  return JSON.stringify(envelope);
+}
+
+/** Parse a stored contentJson string into an envelope, tolerating legacy/raw values. */
+export function parseNoteContent(raw: unknown): NoteContentEnvelope {
+  if (typeof raw !== "string" || raw.trim().length === 0) {
+    return emptyNoteContent();
+  }
+  const trimmed = raw.trim();
+  if (trimmed.startsWith("{")) {
+    try {
+      const parsed = JSON.parse(trimmed) as Partial<NoteContentEnvelope>;
+      if (typeof parsed.html === "string") {
+        return {
+          version: typeof parsed.version === "number" ? parsed.version : 1,
+          format: "html",
+          html: parsed.html,
+          text:
+            typeof parsed.text === "string"
+              ? parsed.text
+              : htmlToPreviewText(parsed.html),
+        };
+      }
+    } catch {
+      // fall through — treat as raw HTML
+    }
+  }
+  // Legacy / plain HTML stored directly
+  return {
+    version: 1,
+    format: "html",
+    html: trimmed,
+    text: htmlToPreviewText(trimmed),
+  };
+}
+
+export function mapNoteFolderDto(raw: Record<string, unknown>): NoteFolder {
+  return {
+    id: raw.id as string,
+    workspaceId: raw.workspaceId as string,
+    title: (raw.noteTitle as string) ?? (raw.title as string) ?? "",
+    createdBy: raw.createdBy as string,
+    createdAt: new Date(raw.createdAt as string).toISOString(),
+    updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}
+
+export function mapNoteDto(raw: Record<string, unknown>): Note {
+  const contentJson = (raw.contentJson as string) ?? "";
+  return {
+    id: raw.id as string,
+    workspaceId: raw.workspaceId as string,
+    noteFolderId: (raw.noteFolderId as string) ?? null,
+    title: (raw.title as string) ?? "",
+    noteColor: (raw.noteColor as string) ?? "#FFFFFF",
+    contentJson,
+    content: parseNoteContent(contentJson),
+    noteDescription: (raw.noteDescription as string) ?? null,
+    createdBy: raw.createdBy as string,
+    createdAt: new Date(raw.createdAt as string).toISOString(),
+    updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}

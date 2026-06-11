@@ -44,6 +44,8 @@ export interface User {
 
 export interface WorkspaceUser {
   userId: UUID;
+  email?: string | null;
+  fullName?: string | null;
   assignedAt: string;
 }
 
@@ -86,6 +88,7 @@ export interface TaskStatus {
   workspaceId?: UUID;
   name: string;
   color: string;
+  isDefault?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -296,4 +299,62 @@ export interface AiStatistic {
   userId: UUID;
   createdAt: string;
   updatedAt: string;
+}
+
+/* ───────── Notes ───────── */
+
+export interface NoteFolder {
+  id: UUID;
+  workspaceId: UUID;
+  title: string;
+  createdBy: UUID;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Parsed shape of the JSON envelope stored in Note.contentJson */
+export interface NoteContentEnvelope {
+  version: number;
+  format: "html";
+  html: string;
+  text: string;
+}
+
+export interface Note {
+  id: UUID;
+  workspaceId: UUID;
+  noteFolderId: UUID | null;
+  title: string;
+  noteColor: string;
+  /** Raw JSON string as stored/returned by the backend */
+  contentJson: string;
+  /** Parsed convenience view of contentJson */
+  content: NoteContentEnvelope;
+  noteDescription: string | null;
+  createdBy: UUID;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteFolderRequest {
+  title: string;
+}
+
+export interface CreateNoteRequest {
+  noteFolderId?: UUID | null;
+  title: string;
+  noteColor: string;
+  noteDescription?: string;
+  contentJson: string;
+}
+
+export interface UpdateNoteContentRequest {
+  contentJson: string;
+}
+
+export interface UpdateNoteMetadataRequest {
+  title: string;
+  noteColor: string;
+  noteFolderId?: UUID | null;
+  noteDescription?: string;
 }

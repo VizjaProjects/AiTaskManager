@@ -65,10 +65,8 @@ public static class GoogleOAuthAuthenticationExtensions
     private static string? FirstNonEmpty(params string?[] values)
     {
         foreach (var value in values)
-        {
             if (!string.IsNullOrWhiteSpace(value))
                 return value;
-        }
 
         return null;
     }

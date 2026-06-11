@@ -26,3 +26,4 @@ export {
   userResponseApi,
 } from "./surveys";
 export { llmSettingsApi } from "./llmSettings";
+export { noteApi } from "./notes";

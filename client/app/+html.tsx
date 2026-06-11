@@ -22,28 +22,26 @@ export default function Root({ children }: RootProps) {
         <style>{`
           #ordovita-legal-links {
             position: fixed;
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
+            left: 0;
+            right: 0;
+            bottom: 0;
             z-index: 2147483647;
             display: flex;
             justify-content: center;
+            align-items: center;
             gap: 16px;
             flex-wrap: wrap;
-            padding: 12px 16px;
-            border-radius: 14px;
-            border: 1px solid rgba(77, 65, 223, 0.16);
-            background: rgba(255, 255, 255, 0.96);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 12px 40px rgba(15, 17, 23, 0.12);
+            padding: 8px 16px;
+            border-top: 1px solid rgba(77, 65, 223, 0.16);
+            background: #ffffff;
             font-family: Arial, sans-serif;
           }
 
           #ordovita-legal-links a,
           #ordovita-legal-links span {
             color: #2a2555;
-            font-size: 14px;
-            line-height: 20px;
+            font-size: 13px;
+            line-height: 18px;
             text-decoration: none;
           }
 
@@ -55,16 +53,25 @@ export default function Root({ children }: RootProps) {
             text-decoration: underline;
           }
 
+          .dark #ordovita-legal-links {
+            background: #1a1d2e;
+            border-top-color: rgba(255, 255, 255, 0.12);
+          }
+
+          .dark #ordovita-legal-links a,
+          .dark #ordovita-legal-links span {
+            color: #e8e8e8;
+          }
+
           @media (max-width: 640px) {
             #ordovita-legal-links {
-              bottom: 12px;
               gap: 10px;
-              padding: 10px 12px;
+              padding: 6px 12px;
             }
 
             #ordovita-legal-links a,
             #ordovita-legal-links span {
-              font-size: 13px;
+              font-size: 12px;
             }
           }
         `}</style>

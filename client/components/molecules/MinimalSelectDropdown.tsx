@@ -91,11 +91,8 @@ export function MinimalSelectDropdown({
       <TouchableOpacity
         disabled={disabled || options.length === 0}
         onPress={() => setOpen(true)}
-        className="flex-row items-center gap-3 px-4 rounded-xl"
+        className="flex-row items-center gap-3 px-4 rounded-xl bg-surface-container-lowest border border-outline-variant"
         style={{
-          borderWidth: 1,
-          borderColor: UI.border,
-          backgroundColor: "#FFFFFF",
           minHeight: 44,
           opacity: disabled || options.length === 0 ? 0.5 : 1,
         }}
@@ -128,11 +125,8 @@ export function MinimalSelectDropdown({
           <View className="flex-1 items-center justify-center p-4">
             <Pressable
               onPress={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl overflow-hidden"
+              className="w-full max-w-md rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant"
               style={{
-                borderWidth: 1,
-                borderColor: UI.border,
-                backgroundColor: "#FFFFFF",
                 maxHeight: "72%",
                 ...UI.shadow,
               }}
@@ -169,7 +163,11 @@ export function MinimalSelectDropdown({
                       height: 40,
                     }}
                   >
-                    <MaterialIcons name="search" size={16} color={UI.textMuted} />
+                    <MaterialIcons
+                      name="search"
+                      size={16}
+                      color={UI.textMuted}
+                    />
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
@@ -190,7 +188,10 @@ export function MinimalSelectDropdown({
               >
                 {filtered.length === 0 ? (
                   <View className="px-5 py-8 items-center">
-                    <Text className="font-body text-sm" style={{ color: UI.textMuted }}>
+                    <Text
+                      className="font-body text-sm"
+                      style={{ color: UI.textMuted }}
+                    >
                       No options found
                     </Text>
                   </View>
@@ -226,7 +227,9 @@ export function MinimalSelectDropdown({
                           className="flex-1 font-body text-sm"
                           style={{
                             color: active ? "#374151" : UI.textSecondary,
-                            fontFamily: active ? "Inter_600SemiBold" : undefined,
+                            fontFamily: active
+                              ? "Inter_600SemiBold"
+                              : undefined,
                           }}
                           numberOfLines={2}
                         >

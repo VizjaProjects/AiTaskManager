@@ -43,6 +43,7 @@ public sealed record WorkTaskStatusDto(
     Guid WorkspaceId,
     string Name,
     string Color,
+    bool IsDefault,
     Guid CreatedBy,
     DateTime CreatedAt,
     DateTime UpdatedAt);
@@ -141,6 +142,7 @@ public static class TaskMapper
             status.WorkspaceId.Value,
             status.Name,
             status.Color,
+            status.IsDefault,
             status.CreatedBy.Value,
             status.CreatedAt,
             status.UpdatedAt);

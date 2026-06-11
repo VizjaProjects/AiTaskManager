@@ -5,11 +5,8 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    volumes:
-      - type: bind
-        source: ${APPDATA}/Microsoft/UserSecrets/321afc62-412a-41e5-887a-ff1aae5b0060/secrets.json
-        target: /root/.microsoft/usersecrets/321afc62-412a-41e5-887a-ff1aae5b0060/secrets.json
-        read_only: true
+    env_file:
+      - ./DotNetServer/.env
     container_name: ordovita-backend
     networks:
       - ordovita-network

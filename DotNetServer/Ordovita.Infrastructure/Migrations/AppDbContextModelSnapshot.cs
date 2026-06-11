@@ -242,6 +242,82 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("LlmSettings.LlmSettings", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Note.Note", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("json");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("NoteColor")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<string>("NoteDescription")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<Guid?>("NoteFolderId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NoteFolderId");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("Note.Notes", (string)null);
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Note.NoteFolder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("NoteTitle")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.ToTable("Note.NoteFolders", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Surveys.Questions.Question", b =>
                 {
                     b.Property<Guid>("Id")
@@ -519,6 +595,11 @@ namespace Ordovita.Infrastructure.Migrations
 
                     b.Property<Guid>("CreatedBy")
                         .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(false);
 
                     b.Property<string>("Name")
                         .IsRequired()

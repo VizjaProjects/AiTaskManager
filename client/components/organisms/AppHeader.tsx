@@ -7,6 +7,7 @@ import {
   Platform,
   useWindowDimensions,
   Pressable,
+  ScrollView,
 } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { useState } from "react";
@@ -14,6 +15,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Avatar } from "../atoms/Avatar";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { NavItem } from "../molecules/NavItem";
+import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
 import { NotificationsDrawer } from "./NotificationsDrawer";
 import { SearchModal } from "./SearchModal";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
@@ -29,8 +31,14 @@ const DRAWER_NAV_ITEMS: Array<{
   { icon: "auto-awesome", label: "AI Task", path: "/(app)/ai-task" },
   { icon: "calendar-today", label: "Kalendarz", path: "/(app)/calendar" },
   { icon: "checklist", label: "Zadania", path: "/(app)/tasks" },
+  { icon: "sticky-note-2", label: "Notatki", path: "/(app)/notes" },
   { icon: "tune", label: "Kategorie i statusy", path: "/(app)/categories" },
-  { icon: "bar-chart", label: "Statystyki", path: "/(app)/statistics", badge: "In Progress" },
+  {
+    icon: "bar-chart",
+    label: "Statystyki",
+    path: "/(app)/statistics",
+    badge: "In Progress",
+  },
   { icon: "assignment", label: "Ankiety", path: "/(app)/surveys" },
   { icon: "poll", label: "Surveys", path: "/(app)/admin-surveys" },
   { icon: "settings", label: "Ustawienia", path: "/(app)/profile" },
@@ -119,7 +127,11 @@ export function AppHeader({
             className="p-2 rounded-full relative"
             onPress={() => setNotificationsOpen(true)}
           >
-            <MaterialIcons name="notifications-none" size={22} color="#9ca3af" />
+            <MaterialIcons
+              name="notifications-none"
+              size={22}
+              color="#9ca3af"
+            />
             <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary" />
           </TouchableOpacity>
 
@@ -161,7 +173,12 @@ export function AppHeader({
                 </TouchableOpacity>
               </View>
 
-              <View className="gap-0.5 flex-1">
+              <ScrollView
+                className="flex-1"
+                contentContainerStyle={{ gap: 2 }}
+                showsVerticalScrollIndicator={false}
+              >
+                <WorkspaceSwitcher onSelected={() => setDrawerOpen(false)} />
                 {drawerItems.map((item) => {
                   const active = pathname.startsWith(
                     item.path.replace("/(app)", ""),
@@ -180,7 +197,7 @@ export function AppHeader({
                     />
                   );
                 })}
-              </View>
+              </ScrollView>
 
               <View className="gap-0.5 pt-4 border-t border-outline-variant/15">
                 <TouchableOpacity
@@ -191,7 +208,9 @@ export function AppHeader({
                   className="flex-row items-center gap-3 px-4 py-2.5"
                 >
                   <MaterialIcons name="logout" size={20} color="#9ca3af" />
-                  <Text className="text-on-surface-variant font-body text-sm">Sign Out</Text>
+                  <Text className="text-on-surface-variant font-body text-sm">
+                    Sign Out
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={toggle}
@@ -202,7 +221,9 @@ export function AppHeader({
                     size={20}
                     color="#9ca3af"
                   />
-                  <Text className="text-on-surface-variant font-body text-sm">Theme</Text>
+                  <Text className="text-on-surface-variant font-body text-sm">
+                    Theme
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>

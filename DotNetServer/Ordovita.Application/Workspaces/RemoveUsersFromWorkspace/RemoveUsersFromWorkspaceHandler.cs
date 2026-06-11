@@ -34,6 +34,6 @@ public sealed class RemoveUsersFromWorkspaceHandler(
             return Result.Failure<WorkspaceDto>(removeResult.Error);
 
         await uow.SaveChangesAsync(ct);
-        return Result.Success(WorkspaceMapper.ToDto(workspace));
+        return Result.Success(await WorkspaceMapper.ToDtoAsync(workspace, userRepository, ct));
     }
 }

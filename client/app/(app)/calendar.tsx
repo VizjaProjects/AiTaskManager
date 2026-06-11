@@ -38,7 +38,6 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
 const GRID_HEIGHT = HOURS.length * HOUR_HEIGHT;
 const TIME_GUTTER_WIDTH = 56;
-const SCROLLBAR_GUTTER = Platform.OS === "web" ? 17 : 0;
 
 function hourToTop(hour: number) {
   return (hour - GRID_START_HOUR) * HOUR_HEIGHT;
@@ -556,8 +555,10 @@ export default function CalendarScreen() {
   const gridLineColor = isDark ? "#313448" : "#e0dff0";
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
+  const isMobile = width < 768;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [viewType, setViewType] = useState<ViewType>("week");
+  const [mobileView, setMobileView] = useState<"day" | "3day">("day");
   const [showCreate, setShowCreate] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   openEventEditRef.current = setEditingEvent;
@@ -620,10 +621,19 @@ export default function CalendarScreen() {
   );
   weekDaysRef.current = weekDays;
 
-  const displayDays = useMemo(
-    () => (viewType === "day" ? [selectedDate] : weekDays),
-    [viewType, selectedDate, weekDays],
-  );
+  const displayDays = useMemo(() => {
+    if (isMobile) {
+      if (mobileView === "3day") {
+        return [-1, 0, 1].map((off) => {
+          const d = new Date(selectedDate);
+          d.setDate(d.getDate() + off);
+          return d;
+        });
+      }
+      return [selectedDate];
+    }
+    return viewType === "day" ? [selectedDate] : weekDays;
+  }, [isMobile, mobileView, viewType, selectedDate, weekDays]);
   displayDaysRef.current = displayDays;
 
   const weekNumber = useMemo(() => {
@@ -807,9 +817,7 @@ export default function CalendarScreen() {
 
     function resolveGrid(): HTMLElement | null {
       return (
-        queryCalendarGridElement() ??
-        viewToHTMLElement(gridRef.current) ??
-        null
+        queryCalendarGridElement() ?? viewToHTMLElement(gridRef.current) ?? null
       );
     }
 
@@ -856,7 +864,9 @@ export default function CalendarScreen() {
         draggedEvtId = meta.id || null;
         draggedEvtTitle = meta.title;
         draggedEvtColor = meta.color;
-        draggedEvtDurationH = Number.isFinite(meta.duration) ? meta.duration : 1;
+        draggedEvtDurationH = Number.isFinite(meta.duration)
+          ? meta.duration
+          : 1;
         mode = "pending";
       } else {
         draggedEvtId = null;
@@ -919,11 +929,12 @@ export default function CalendarScreen() {
       if (mode === "event-resize" && draggedEvtId) {
         const pos = getPos(e);
         const snapEndHour = yToHour(pos.y);
-        const evt = eventsRef.current?.find((ev) => ev.eventId === draggedEvtId);
+        const evt = eventsRef.current?.find(
+          (ev) => ev.eventId === draggedEvtId,
+        );
         if (evt) {
           const evtStart = parseApiDateTime(evt.startDateTime);
-          const evtStartH =
-            evtStart.getHours() + evtStart.getMinutes() / 60;
+          const evtStartH = evtStart.getHours() + evtStart.getMinutes() / 60;
           const clampedEndH = Math.max(
             evtStartH + 0.25,
             Math.min(24, snapEndHour),
@@ -945,9 +956,8 @@ export default function CalendarScreen() {
     function onMouseUp(e: MouseEvent) {
       const prevMode = mode;
       const moved =
-        Math.sqrt(
-          (e.clientX - startX) ** 2 + (e.clientY - startY) ** 2,
-        ) >= THRESHOLD;
+        Math.sqrt((e.clientX - startX) ** 2 + (e.clientY - startY) ** 2) >=
+        THRESHOLD;
       mode = "idle";
       if (grid) grid.style.cursor = "";
 
@@ -1008,8 +1018,7 @@ export default function CalendarScreen() {
         const evt = eventsRef.current?.find((ev) => ev.eventId === evtId);
         if (evt) {
           const evtStart = parseApiDateTime(evt.startDateTime);
-          const evtStartH =
-            evtStart.getHours() + evtStart.getMinutes() / 60;
+          const evtStartH = evtStart.getHours() + evtStart.getMinutes() / 60;
           const clampedEndH = Math.max(
             evtStartH + 0.25,
             Math.min(24, snapEndHour),
@@ -1033,7 +1042,9 @@ export default function CalendarScreen() {
           });
         }
       } else if (prevMode === "pending" && draggedEvtId && !moved) {
-        const evt = eventsRef.current?.find((ev) => ev.eventId === draggedEvtId);
+        const evt = eventsRef.current?.find(
+          (ev) => ev.eventId === draggedEvtId,
+        );
         if (evt) openEventEditRef.current(evt);
         setDraggingEventId(null);
         setDragPreview(null);
@@ -1059,8 +1070,9 @@ export default function CalendarScreen() {
       }
 
       grid.style.userSelect = "none";
-      (grid.style as CSSStyleDeclaration & { touchAction?: string }).touchAction =
-        "none";
+      (
+        grid.style as CSSStyleDeclaration & { touchAction?: string }
+      ).touchAction = "none";
 
       grid.addEventListener("mousedown", onMouseDown, true);
       window.addEventListener("mousemove", onMouseMove);
@@ -1116,19 +1128,21 @@ export default function CalendarScreen() {
 
   const prevPeriod = useCallback(() => {
     const d = new Date(selectedDate);
-    if (viewType === "week") d.setDate(d.getDate() - 7);
+    if (isMobile) d.setDate(d.getDate() - 1);
+    else if (viewType === "week") d.setDate(d.getDate() - 7);
     else if (viewType === "month") d.setMonth(d.getMonth() - 1);
     else d.setDate(d.getDate() - 1);
     setSelectedDate(d);
-  }, [selectedDate, viewType]);
+  }, [selectedDate, viewType, isMobile]);
 
   const nextPeriod = useCallback(() => {
     const d = new Date(selectedDate);
-    if (viewType === "week") d.setDate(d.getDate() + 7);
+    if (isMobile) d.setDate(d.getDate() + 1);
+    else if (viewType === "week") d.setDate(d.getDate() + 7);
     else if (viewType === "month") d.setMonth(d.getMonth() + 1);
     else d.setDate(d.getDate() + 1);
     setSelectedDate(d);
-  }, [selectedDate, viewType]);
+  }, [selectedDate, viewType, isMobile]);
 
   const accentColor = isDark ? "#9b8cff" : "#4d41df";
   const cellBorder = isDark ? "#2a2a2a" : "#e5e7eb";
@@ -1143,7 +1157,10 @@ export default function CalendarScreen() {
           <View
             key={d}
             className="flex-1 items-center py-3"
-            style={{ borderLeftWidth: d === "MO" ? 0 : 1, borderLeftColor: cellBorder }}
+            style={{
+              borderLeftWidth: d === "MO" ? 0 : 1,
+              borderLeftColor: cellBorder,
+            }}
           >
             <Text className="text-on-surface-variant font-headline text-[11px] tracking-wide">
               {d}
@@ -1197,9 +1214,7 @@ export default function CalendarScreen() {
                   ) : (
                     <Text
                       className={`text-xs font-body pl-1 ${
-                        !d.currentMonth
-                          ? "text-outline"
-                          : "text-on-surface"
+                        !d.currentMonth ? "text-outline" : "text-on-surface"
                       }`}
                     >
                       {d.day}
@@ -1353,7 +1368,6 @@ export default function CalendarScreen() {
         style={{
           borderBottomWidth: 1,
           borderBottomColor: gridBorderColor,
-          paddingRight: SCROLLBAR_GUTTER,
         }}
       >
         <View style={{ width: TIME_GUTTER_WIDTH }} />
@@ -1396,7 +1410,6 @@ export default function CalendarScreen() {
         style={{
           borderBottomWidth: 1,
           borderBottomColor: gridBorderColor,
-          paddingRight: SCROLLBAR_GUTTER,
         }}
       >
         <View
@@ -1455,7 +1468,7 @@ export default function CalendarScreen() {
       <ScrollView
         ref={weekScrollRef}
         className="flex-1"
-        showsVerticalScrollIndicator
+        showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
         <View style={{ height: GRID_HEIGHT, position: "relative" }}>
@@ -1502,6 +1515,7 @@ export default function CalendarScreen() {
             ref={gridRef}
             onLayout={() => setGridReady((n) => n + 1)}
             dataSet={{ calendarGrid: "true" }}
+            pointerEvents={Platform.OS === "web" ? "auto" : "box-none"}
             className="absolute flex-row"
             style={{
               left: TIME_GUTTER_WIDTH,
@@ -1517,6 +1531,7 @@ export default function CalendarScreen() {
               return (
                 <View
                   key={colIdx}
+                  pointerEvents={Platform.OS === "web" ? "auto" : "box-none"}
                   style={{ flex: 1, position: "relative", height: GRID_HEIGHT }}
                 >
                   {laidOut.map(({ event: evt, colIdx: evtCol, totalCols }) => {
@@ -1804,80 +1819,172 @@ export default function CalendarScreen() {
     </View>
   );
 
-  const headerTitle = formatCalendarTitle(viewType, selectedDate, weekStart);
+  const headerTitle = isMobile
+    ? selectedDate.toLocaleDateString("en-US", {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+      })
+    : formatCalendarTitle(viewType, selectedDate, weekStart);
 
   return (
     <PageLayout>
       <View className="flex-1 gap-4">
-        <View className="flex-row items-center justify-between flex-wrap gap-3">
-          <View className="flex-row items-center gap-2 flex-wrap">
-            <TouchableOpacity
-              onPress={prevPeriod}
-              className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
-            >
-              <MaterialIcons name="chevron-left" size={22} color="#9ca3af" />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={nextPeriod}
-              className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
-            >
-              <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
-            </TouchableOpacity>
-            <Text className="text-on-surface font-headline text-title-lg ml-1">
-              {headerTitle}
-            </Text>
-            <TouchableOpacity
-              onPress={() => setSelectedDate(new Date())}
-              className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest"
-            >
-              <Text className="text-on-surface-variant font-label text-sm">
-                Today
-              </Text>
-            </TouchableOpacity>
-            <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
-              {(["day", "week", "month"] as ViewType[]).map((v) => (
+        {isMobile ? (
+          <View className="gap-3">
+            <View className="flex-row items-center justify-between gap-2">
+              <View className="flex-row items-center gap-1">
                 <TouchableOpacity
-                  key={v}
-                  onPress={() => handleViewTypeChange(v)}
-                  className="px-3 py-1.5 rounded-full"
-                  style={
-                    viewType === v ? { backgroundColor: accentColor } : undefined
-                  }
+                  onPress={prevPeriod}
+                  className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
                 >
-                  <Text
-                    className={`text-xs font-label capitalize ${
-                      viewType === v ? "text-white" : "text-on-surface-variant"
-                    }`}
-                  >
-                    {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
-                  </Text>
+                  <MaterialIcons
+                    name="chevron-left"
+                    size={22}
+                    color="#9ca3af"
+                  />
                 </TouchableOpacity>
-              ))}
+                <TouchableOpacity
+                  onPress={nextPeriod}
+                  className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
+                >
+                  <MaterialIcons
+                    name="chevron-right"
+                    size={22}
+                    color="#9ca3af"
+                  />
+                </TouchableOpacity>
+              </View>
+              <Text
+                className="text-on-surface font-headline text-title-md flex-1 text-center"
+                numberOfLines={1}
+              >
+                {headerTitle}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setCreateStartH("09");
+                  setCreateStartM("00");
+                  setCreateEndH("10");
+                  setCreateEndM("00");
+                  setShowCreate(true);
+                }}
+                className="w-9 h-9 items-center justify-center rounded-lg"
+                style={{ backgroundColor: accentColor }}
+              >
+                <MaterialIcons name="add" size={20} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            <View className="flex-row items-center justify-between gap-2">
+              <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
+                {(["day", "3day"] as const).map((v) => (
+                  <TouchableOpacity
+                    key={v}
+                    onPress={() => setMobileView(v)}
+                    className="px-4 py-1.5 rounded-full"
+                    style={
+                      mobileView === v
+                        ? { backgroundColor: accentColor }
+                        : undefined
+                    }
+                  >
+                    <Text
+                      className={`text-xs font-label ${
+                        mobileView === v
+                          ? "text-white"
+                          : "text-on-surface-variant"
+                      }`}
+                    >
+                      {v === "day" ? "1 dzień" : "3 dni"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <TouchableOpacity
+                onPress={() => setSelectedDate(new Date())}
+                className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest"
+              >
+                <Text className="text-on-surface-variant font-label text-sm">
+                  Dziś
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
-
-          <TouchableOpacity
-            onPress={() => {
-              setCreateStartH("09");
-              setCreateStartM("00");
-              setCreateEndH("10");
-              setCreateEndM("00");
-              setShowCreate(true);
-            }}
-            className="rounded-xl px-4 py-2.5 flex-row items-center gap-1.5"
-            style={{ backgroundColor: accentColor }}
-          >
-            <MaterialIcons name="add" size={18} color="#fff" />
-            {isDesktop && (
-              <Text className="text-white font-headline text-sm">
-                New Event
+        ) : (
+          <View className="flex-row items-center justify-between flex-wrap gap-3">
+            <View className="flex-row items-center gap-2 flex-wrap">
+              <TouchableOpacity
+                onPress={prevPeriod}
+                className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
+              >
+                <MaterialIcons name="chevron-left" size={22} color="#9ca3af" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={nextPeriod}
+                className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
+              >
+                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+              </TouchableOpacity>
+              <Text className="text-on-surface font-headline text-title-lg ml-1">
+                {headerTitle}
               </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity
+                onPress={() => setSelectedDate(new Date())}
+                className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest"
+              >
+                <Text className="text-on-surface-variant font-label text-sm">
+                  Today
+                </Text>
+              </TouchableOpacity>
+              <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
+                {(["day", "week", "month"] as ViewType[]).map((v) => (
+                  <TouchableOpacity
+                    key={v}
+                    onPress={() => handleViewTypeChange(v)}
+                    className="px-3 py-1.5 rounded-full"
+                    style={
+                      viewType === v
+                        ? { backgroundColor: accentColor }
+                        : undefined
+                    }
+                  >
+                    <Text
+                      className={`text-xs font-label capitalize ${
+                        viewType === v
+                          ? "text-white"
+                          : "text-on-surface-variant"
+                      }`}
+                    >
+                      {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => {
+                setCreateStartH("09");
+                setCreateStartM("00");
+                setCreateEndH("10");
+                setCreateEndM("00");
+                setShowCreate(true);
+              }}
+              className="rounded-xl px-4 py-2.5 flex-row items-center gap-1.5"
+              style={{ backgroundColor: accentColor }}
+            >
+              <MaterialIcons name="add" size={18} color="#fff" />
+              {isDesktop && (
+                <Text className="text-white font-headline text-sm">
+                  New Event
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        )}
 
         <View className="flex-1">
-          {viewType === "month" ? monthGrid : weekTimeGrid}
+          {!isMobile && viewType === "month" ? monthGrid : weekTimeGrid}
         </View>
       </View>
 

@@ -31,6 +31,16 @@ public sealed class WorkspaceRepository(AppDbContext context) : IWorkspaceReposi
             .ToListAsync(ct);
     }
 
+    public async Task<IReadOnlyList<WorkspaceAggregate>> GetAccessibleByAsync(UserId userId,
+        CancellationToken ct = default)
+    {
+        return await context.Workspaces
+            .AsNoTracking()
+            .Include(w => w.AssignedUsers)
+            .Where(w => w.CreatedBy == userId || w.AssignedUsers.Any(u => u.UserId == userId))
+            .ToListAsync(ct);
+    }
+
     public void Delete(WorkspaceAggregate workspace)
     {
         context.Workspaces.Remove(workspace);

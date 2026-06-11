@@ -25,6 +25,7 @@ public sealed class WorkTaskStatusConfiguration : IEntityTypeConfiguration<WorkT
 
         builder.Property(s => s.Name).HasMaxLength(100).IsRequired();
         builder.Property(s => s.Color).HasMaxLength(20).IsRequired();
+        builder.Property(s => s.IsDefault).HasDefaultValue(false).IsRequired();
         builder.Property(s => s.CreatedAt).IsRequired();
         builder.Property(s => s.UpdatedAt).IsRequired();
 

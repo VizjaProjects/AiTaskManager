@@ -4,7 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useWorkspaceStore } from "@/lib/stores";
 import { WorkspaceModal } from "../organisms/WorkspaceModal";
 
-export function WorkspaceSwitcher() {
+export function WorkspaceSwitcher({ onSelected }: { onSelected?: () => void }) {
   const [modalOpen, setModalOpen] = useState(false);
   const getActiveWorkspace = useWorkspaceStore((s) => s.getActiveWorkspace);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -24,14 +24,21 @@ export function WorkspaceSwitcher() {
           <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-wide">
             Workspace
           </Text>
-          <Text className="text-on-surface font-headline text-sm" numberOfLines={1}>
+          <Text
+            className="text-on-surface font-headline text-sm"
+            numberOfLines={1}
+          >
             {workspace?.workspaceName ??
               (activeWorkspaceId ? "Loading..." : "Select workspace")}
           </Text>
         </View>
         <MaterialIcons name="unfold-more" size={18} color="#888888" />
       </TouchableOpacity>
-      <WorkspaceModal visible={modalOpen} onClose={() => setModalOpen(false)} />
+      <WorkspaceModal
+        visible={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onSelected={onSelected}
+      />
     </>
   );
 }

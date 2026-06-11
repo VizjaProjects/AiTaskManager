@@ -1,5 +1,10 @@
 import { useMemo } from "react";
-import { useQuery, useMutation, useQueryClient, useQueries } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  useQueries,
+} from "@tanstack/react-query";
 import { useAuthStore } from "../stores/auth";
 import { Role } from "../types";
 import { normalizeSurveyId } from "../surveys/utils";
@@ -17,8 +22,9 @@ import {
   userResponseApi,
   workspaceApi,
 } from "../api";
-import { useWorkspaceStore } from "../stores/workspace";
-import type {
+import { noteApi } from "../api/notes";
+import { buildNoteContentJson } from "../api/adapters";
+import { useWorkspaceStore } from "../stores/workspace";import type {
   Task,
   CalendarEvent,
   CreateTaskRequest,
@@ -109,7 +115,44 @@ export function useAssignWorkspaceUsers() {
       workspaceId: string;
       userIds: string[];
     }) => workspaceApi.assignUsers(workspaceId, userIds),
-    onSuccess: () => useWorkspaceStore.getState().fetchWorkspaces(),
+    onSuccess: async () => {
+      await useWorkspaceStore.getState().fetchWorkspaces();
+      qc.invalidateQueries();
+    },
+  });
+}
+
+export function useAssignWorkspaceUsersByEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      emails,
+    }: {
+      workspaceId: string;
+      emails: string[];
+    }) => workspaceApi.assignUsersByEmail(workspaceId, emails),
+    onSuccess: async () => {
+      await useWorkspaceStore.getState().fetchWorkspaces();
+      qc.invalidateQueries();
+    },
+  });
+}
+
+export function useRemoveWorkspaceUsers() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      userIds,
+    }: {
+      workspaceId: string;
+      userIds: string[];
+    }) => workspaceApi.removeUsers(workspaceId, userIds),
+    onSuccess: async () => {
+      await useWorkspaceStore.getState().fetchWorkspaces();
+      qc.invalidateQueries();
+    },
   });
 }
 
@@ -134,8 +177,7 @@ export function useCreateTask() {
   return useMutation({
     mutationFn: (data: CreateTaskRequest) =>
       taskApi.create(requireWorkspaceId(workspaceId), data),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
   });
 }
 
@@ -160,8 +202,7 @@ export function useEditTask() {
       return { previous };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.previous)
-        qc.setQueryData(["tasks", workspaceId], ctx.previous);
+      if (ctx?.previous) qc.setQueryData(["tasks", workspaceId], ctx.previous);
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
@@ -176,8 +217,7 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: (taskId: string) =>
       taskApi.delete(requireWorkspaceId(workspaceId), taskId),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
   });
 }
 
@@ -215,8 +255,7 @@ export function useEditCategory() {
     }: {
       categoryId: string;
       data: EditCategoryRequest;
-    }) =>
-      categoryApi.edit(requireWorkspaceId(workspaceId), categoryId, data),
+    }) => categoryApi.edit(requireWorkspaceId(workspaceId), categoryId, data),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["categories", workspaceId] }),
   });
@@ -267,8 +306,7 @@ export function useEditTaskStatus() {
     }: {
       statusId: string;
       data: EditTaskStatusRequest;
-    }) =>
-      taskStatusApi.edit(requireWorkspaceId(workspaceId), statusId, data),
+    }) => taskStatusApi.edit(requireWorkspaceId(workspaceId), statusId, data),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["taskStatuses", workspaceId] }),
   });
@@ -412,8 +450,7 @@ export function useAcceptAiTask() {
     }: {
       taskId: string;
       data: AcceptAiTaskRequest;
-    }) =>
-      aiApi.acceptTask(requireWorkspaceId(workspaceId), taskId, data),
+    }) => aiApi.acceptTask(requireWorkspaceId(workspaceId), taskId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] });
       qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
@@ -442,8 +479,7 @@ export function useAcceptAiEvent() {
     }: {
       eventId: string;
       data: AcceptAiEventRequest;
-    }) =>
-      aiApi.acceptEvent(requireWorkspaceId(workspaceId), eventId, data),
+    }) => aiApi.acceptEvent(requireWorkspaceId(workspaceId), eventId, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] });
       qc.invalidateQueries({ queryKey: ["events", workspaceId] });
@@ -515,8 +551,7 @@ export function useUpdateLlmSettings() {
 export function useDeleteLlmSettings() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (llmSettingsId: string) =>
-      llmSettingsApi.delete(llmSettingsId),
+    mutationFn: (llmSettingsId: string) => llmSettingsApi.delete(llmSettingsId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["llmSettings"] }),
   });
 }
@@ -782,8 +817,7 @@ export function useHasPendingSurvey(enabled = true) {
 
   const questionsLoading = questionQueries.some((q) => q.isLoading);
   const questionsError = questionQueries.some((q) => q.isError);
-  const isLoading =
-    surveysLoading || responsesLoading || questionsLoading;
+  const isLoading = surveysLoading || responsesLoading || questionsLoading;
 
   if (isLoading) {
     return {
@@ -852,9 +886,7 @@ function appendMyResponse(
 ) {
   const list = prev ?? [];
   const key = normalizeSurveyId(entry.questionId);
-  const idx = list.findIndex(
-    (r) => normalizeSurveyId(r.questionId) === key,
-  );
+  const idx = list.findIndex((r) => normalizeSurveyId(r.questionId) === key);
   const row = {
     surveyId: entry.surveyId,
     surveyDescription: entry.surveyDescription ?? "",
@@ -960,5 +992,115 @@ export function useEditResponse() {
       }
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["my-responses"] }),
+  });
+}
+
+/* ───────── Notes ───────── */
+
+export function useNoteFolders() {
+  const workspaceId = useWorkspaceId();
+  return useQuery({
+    queryKey: ["noteFolders", workspaceId],
+    queryFn: async () => {
+      const id = requireWorkspaceId(workspaceId);
+      const { folders } = await noteApi.getFolders(id);
+      return folders;
+    },
+    enabled: !!workspaceId,
+  });
+}
+
+export function useCreateNoteFolder() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (title: string) =>
+      noteApi.createFolder(requireWorkspaceId(workspaceId), { title }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["noteFolders", workspaceId] }),
+  });
+}
+
+export function useNotes() {
+  const workspaceId = useWorkspaceId();
+  return useQuery({
+    queryKey: ["notes", workspaceId],
+    queryFn: async () => {
+      const id = requireWorkspaceId(workspaceId);
+      const { notes } = await noteApi.getAll(id);
+      return notes;
+    },
+    enabled: !!workspaceId,
+  });
+}
+
+export function useCreateNote() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      title: string;
+      noteColor: string;
+      noteFolderId?: string | null;
+      noteDescription?: string;
+      html?: string;
+    }) =>
+      noteApi.create(requireWorkspaceId(workspaceId), {
+        title: input.title,
+        noteColor: input.noteColor,
+        noteFolderId: input.noteFolderId ?? null,
+        noteDescription: input.noteDescription ?? "",
+        contentJson: buildNoteContentJson(input.html ?? ""),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+  });
+}
+
+export function useUpdateNoteContent() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ noteId, html }: { noteId: string; html: string }) =>
+      noteApi.updateContent(requireWorkspaceId(workspaceId), noteId, {
+        contentJson: buildNoteContentJson(html),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+  });
+}
+
+export function useUpdateNoteMetadata() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      noteId,
+      title,
+      noteColor,
+      noteFolderId,
+      noteDescription,
+    }: {
+      noteId: string;
+      title: string;
+      noteColor: string;
+      noteFolderId?: string | null;
+      noteDescription?: string;
+    }) =>
+      noteApi.updateMetadata(requireWorkspaceId(workspaceId), noteId, {
+        title,
+        noteColor,
+        noteFolderId: noteFolderId ?? null,
+        noteDescription: noteDescription ?? "",
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+  });
+}
+
+export function useDeleteNote() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (noteId: string) =>
+      noteApi.delete(requireWorkspaceId(workspaceId), noteId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
   });
 }

@@ -36,6 +36,7 @@ import {
   useCategories,
   useTaskStatuses,
   useEvents,
+  useTasks,
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
 
@@ -69,7 +70,7 @@ const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
 
 export function TaskDetailModal({
-  task,
+  task: taskProp,
   categories,
   statuses,
   visible,
@@ -89,8 +90,10 @@ export function TaskDetailModal({
   const isDark = themeMode === "dark";
   const pColors = isDark ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
   const { data: allEvents } = useEvents();
+  const { data: liveTasks } = useTasks();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
+  const isNarrow = width < 600;
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -103,6 +106,11 @@ export function TaskDetailModal({
   const [dueHour, setDueHour] = useState("12");
   const [dueMin, setDueMin] = useState("00");
   const [showDuePicker, setShowDuePicker] = useState(false);
+
+  const task = useMemo(() => {
+    if (!taskProp) return null;
+    return liveTasks?.find((t) => t.taskId === taskProp.taskId) ?? taskProp;
+  }, [taskProp, liveTasks]);
 
   useEffect(() => {
     if (visible && task) {
@@ -140,9 +148,7 @@ export function TaskDetailModal({
     );
     const effectiveDue = getEffectiveTaskDueDateTime(task, relatedEvents);
     setDueDate(effectiveDue ?? "");
-    setDueDateObj(
-      effectiveDue ? parseApiDateTime(effectiveDue) : new Date(),
-    );
+    setDueDateObj(effectiveDue ? parseApiDateTime(effectiveDue) : new Date());
     if (effectiveDue) {
       const d = parseApiDateTime(effectiveDue);
       setDueHour(String(d.getHours()).padStart(2, "0"));
@@ -238,7 +244,7 @@ export function TaskDetailModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View className="flex-1 bg-black/50 items-center justify-center p-4">
-        <View className="bg-surface-container-lowest rounded-3xl w-full max-w-3xl overflow-hidden border border-outline-variant">
+        <View className="bg-surface-container-lowest rounded-3xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant">
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 0 }}
@@ -253,7 +259,11 @@ export function TaskDetailModal({
                   />
                   {task.source === TaskSource.AI_PARSED && (
                     <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-outline-variant">
-                      <MaterialIcons name="auto-awesome" size={12} color="#9b8cff" />
+                      <MaterialIcons
+                        name="auto-awesome"
+                        size={12}
+                        color="#9b8cff"
+                      />
                       <Text className="text-accent text-xs font-label uppercase">
                         AI_PARSED
                       </Text>
@@ -290,7 +300,10 @@ export function TaskDetailModal({
                     <View
                       className="w-2 h-2 rounded-full"
                       style={{
-                        backgroundColor: getCategoryDisplayColor(cat.color, isDark),
+                        backgroundColor: getCategoryDisplayColor(
+                          cat.color,
+                          isDark,
+                        ),
                       }}
                     />
                     <Text className="text-on-surface-variant font-label text-xs">
@@ -303,7 +316,10 @@ export function TaskDetailModal({
                     className="px-2.5 py-1 rounded-lg border border-outline-variant"
                     style={{ backgroundColor: `${status.color}18` }}
                   >
-                    <Text className="font-label text-xs" style={{ color: status.color }}>
+                    <Text
+                      className="font-label text-xs"
+                      style={{ color: status.color }}
+                    >
                       {status.name}
                     </Text>
                   </View>
@@ -318,10 +334,16 @@ export function TaskDetailModal({
                 )}
                 {task.dueDateTime && (
                   <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
-                    <MaterialIcons name="calendar-today" size={12} color="#9ca3af" />
+                    <MaterialIcons
+                      name="calendar-today"
+                      size={12}
+                      color="#9ca3af"
+                    />
                     <Text
                       className={`font-label text-xs ${
-                        isOverdue(task.dueDateTime) ? "text-error" : "text-on-surface-variant"
+                        isOverdue(task.dueDateTime)
+                          ? "text-error"
+                          : "text-on-surface-variant"
                       }`}
                     >
                       {formatDateTime(task.dueDateTime)}
@@ -779,39 +801,64 @@ export function TaskDetailModal({
 
             {/* Action buttons */}
             <View
-              className="px-6 py-4 flex-row items-center border-t border-outline-variant"
+              className={`px-6 py-4 border-t border-outline-variant ${
+                isNarrow ? "flex-col" : "flex-row items-center"
+              }`}
               style={{ gap: 12 }}
             >
               {editing ? (
                 <>
-                  {showDelete && (
+                  {showDelete && !isNarrow && (
                     <TouchableOpacity
                       onPress={onDeleteCustom ?? handleDelete}
                       className="flex-row items-center gap-1.5 mr-auto"
                     >
-                      <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
-                      <Text className="text-error font-headline text-sm">Usuń</Text>
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={18}
+                        color="#ef4444"
+                      />
+                      <Text className="text-error font-headline text-sm">
+                        Usuń
+                      </Text>
                     </TouchableOpacity>
                   )}
-                  {!showDelete && <View className="flex-1" />}
+                  {!showDelete && !isNarrow && <View className="flex-1" />}
+                  <Button
+                    label={saveLabel}
+                    icon="check"
+                    fullWidth={isNarrow}
+                    loading={saveLoading ?? editTask.isPending}
+                    onPress={handleSave}
+                  />
                   <Button
                     variant="outline"
                     label="Anuluj"
+                    fullWidth={isNarrow}
                     onPress={() => {
                       if (onSaveCustom) onClose();
                       else setEditing(false);
                     }}
                   />
-                  <Button
-                    label={saveLabel}
-                    icon="check"
-                    loading={saveLoading ?? editTask.isPending}
-                    onPress={handleSave}
-                  />
+                  {showDelete && isNarrow && (
+                    <TouchableOpacity
+                      onPress={onDeleteCustom ?? handleDelete}
+                      className="flex-row items-center justify-center gap-1.5 py-2"
+                    >
+                      <MaterialIcons
+                        name="delete-outline"
+                        size={18}
+                        color="#ef4444"
+                      />
+                      <Text className="text-error font-headline text-sm">
+                        Usuń
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : acceptAction ? (
                 <>
-                  {rejectAction && (
+                  {rejectAction && !isNarrow && (
                     <TouchableOpacity
                       onPress={rejectAction.onPress}
                       className="flex-row items-center gap-1.5 mr-auto"
@@ -822,28 +869,61 @@ export function TaskDetailModal({
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {!rejectAction && <View className="flex-1" />}
-                  <Button variant="outline" label="Edytuj" onPress={startEdit} />
+                  {!rejectAction && !isNarrow && <View className="flex-1" />}
                   <Button
                     label={acceptAction.label}
                     icon="check"
+                    fullWidth={isNarrow}
                     loading={acceptAction.loading}
                     onPress={acceptAction.onPress}
                   />
+                  <Button
+                    variant="outline"
+                    label="Edytuj"
+                    fullWidth={isNarrow}
+                    onPress={startEdit}
+                  />
+                  {rejectAction && isNarrow && (
+                    <TouchableOpacity
+                      onPress={rejectAction.onPress}
+                      className="flex-row items-center justify-center gap-1.5 py-2"
+                    >
+                      <MaterialIcons name="close" size={18} color="#ef4444" />
+                      <Text className="text-error font-headline text-sm">
+                        {rejectAction.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </>
               ) : (
                 <>
-                  <TouchableOpacity onPress={handleDelete} className="flex-row items-center gap-1.5 mr-auto">
-                    <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
-                    <Text className="text-error font-headline text-sm">Usuń</Text>
-                  </TouchableOpacity>
+                  <Button
+                    label="Edytuj"
+                    fullWidth={isNarrow}
+                    onPress={startEdit}
+                  />
                   <Button
                     variant="outline"
                     label="Oznacz jako zakończone"
+                    fullWidth={isNarrow}
                     loading={editTask.isPending}
                     onPress={handleMarkComplete}
                   />
-                  <Button label="Edytuj" onPress={startEdit} />
+                  <TouchableOpacity
+                    onPress={handleDelete}
+                    className={`flex-row items-center gap-1.5 ${
+                      isNarrow ? "justify-center py-2" : "mr-auto"
+                    }`}
+                  >
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={18}
+                      color="#ef4444"
+                    />
+                    <Text className="text-error font-headline text-sm">
+                      Usuń
+                    </Text>
+                  </TouchableOpacity>
                 </>
               )}
             </View>
@@ -880,11 +960,27 @@ export function CreateTaskModal({
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [estimatedDuration, setEstimatedDuration] = useState("");
 
+  const resolveDefaultStatusId = () => {
+    if (defaultStatusId) return defaultStatusId;
+    const todo = statuses.find((s) => {
+      const name = s.name.trim().toLowerCase();
+      return name === "to do" || name === "todo" || name === "do zrobienia";
+    });
+    return todo?.statusId ?? statuses[0]?.statusId ?? "";
+  };
+
+  useEffect(() => {
+    if (visible) {
+      setStatusId(resolveDefaultStatusId());
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, defaultStatusId, statuses]);
+
   function reset() {
     setTitle("");
     setDescription("");
     setPriority(TaskPriority.MEDIUM);
-    setStatusId(defaultStatusId ?? "");
+    setStatusId(resolveDefaultStatusId());
     setCategoryId(null);
     setEstimatedDuration("");
   }

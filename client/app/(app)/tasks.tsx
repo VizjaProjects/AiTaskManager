@@ -5,6 +5,7 @@ import {
   RefreshControl,
   TouchableOpacity,
   Platform,
+  Dimensions,
   useWindowDimensions,
 } from "react-native";
 import { createPortal } from "react-dom";
@@ -84,6 +85,7 @@ function DraggableCard({
     const el = ref.current as unknown as HTMLElement;
     el.draggable = true;
     el.style.cursor = "grab";
+    el.dataset.taskCard = "true";
     const onStart = (e: DragEvent) => {
       e.stopPropagation();
       e.dataTransfer?.setData("application/task-id", taskId);
@@ -120,52 +122,56 @@ function KanbanTaskCard({
 }) {
   return (
     <DraggableCard taskId={task.taskId}>
-    <TouchableOpacity
-      activeOpacity={0.85}
-      onPress={onPress}
-      className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 gap-3"
-      style={isCompleted ? { opacity: 0.55 } : undefined}
-    >
-      <View className="flex-row items-center gap-2 flex-wrap">
-        <PriorityBadge priority={task.priority} />
-        {category && (
-          <ColorBadge label={category.name} color={category.color} />
-        )}
-        {task.source === TaskSource.AI_PARSED && (
-          <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed">
-            <MaterialIcons name="auto-awesome" size={10} color="#4d41df" />
-            <Text className="text-primary text-[9px] font-label">AI</Text>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onPress}
+        className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 gap-2.5 w-full"
+        style={isCompleted ? { opacity: 0.55 } : undefined}
+      >
+        <View className="flex-row items-center gap-2 flex-wrap">
+          <PriorityBadge priority={task.priority} />
+          {category && (
+            <ColorBadge label={category.name} color={category.color} />
+          )}
+          {task.source === TaskSource.AI_PARSED && (
+            <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed">
+              <MaterialIcons name="auto-awesome" size={10} color="#4d41df" />
+              <Text className="text-primary text-[9px] font-label">AI</Text>
+            </View>
+          )}
+        </View>
+
+        <Text
+          className="font-headline text-on-surface text-base leading-5"
+          numberOfLines={3}
+          style={
+            isCompleted ? { textDecorationLine: "line-through" } : undefined
+          }
+        >
+          {task.title}
+        </Text>
+
+        {task.description ? (
+          <Text
+            className="text-on-surface-variant font-body text-body-md leading-5"
+            numberOfLines={3}
+            style={
+              isCompleted ? { textDecorationLine: "line-through" } : undefined
+            }
+          >
+            {task.description}
+          </Text>
+        ) : null}
+
+        {task.dueDateTime && (
+          <View className="flex-row items-center gap-1.5 mt-0.5">
+            <MaterialIcons name="calendar-today" size={14} color="#777587" />
+            <Text className="text-on-surface-variant font-body text-xs">
+              {formatDate(task.dueDateTime)}
+            </Text>
           </View>
         )}
-      </View>
-
-      <Text
-        className="font-headline text-on-surface text-body-md"
-        numberOfLines={2}
-        style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
-      >
-        {task.title}
-      </Text>
-
-      {task.description ? (
-        <Text
-          className="text-on-surface-variant font-body text-body-md"
-          numberOfLines={2}
-          style={isCompleted ? { textDecorationLine: "line-through" } : undefined}
-        >
-          {task.description}
-        </Text>
-      ) : null}
-
-      {task.dueDateTime && (
-        <View className="flex-row items-center gap-1.5">
-          <MaterialIcons name="calendar-today" size={14} color="#777587" />
-          <Text className="text-on-surface-variant font-body text-xs">
-            {formatDate(task.dueDateTime)}
-          </Text>
-        </View>
-      )}
-    </TouchableOpacity>
+      </TouchableOpacity>
     </DraggableCard>
   );
 }
@@ -175,12 +181,14 @@ function DropColumn({
   onDrop,
   isDragOver,
   setDragOverId,
+  onCreateInColumn,
   children,
 }: {
   statusId: string;
   onDrop: (taskId: string, statusId: string) => void;
   isDragOver: boolean;
   setDragOverId: (id: string | null) => void;
+  onCreateInColumn?: (statusId: string) => void;
   children: React.ReactNode;
 }) {
   const ref = useRef<View>(null);
@@ -216,12 +224,19 @@ function DropColumn({
     el.addEventListener("dragover", handleOver);
     el.addEventListener("dragleave", handleLeave);
     el.addEventListener("drop", handleDrop);
+    const handleDblClick = (e: MouseEvent) => {
+      const targetEl = e.target as HTMLElement | null;
+      if (targetEl && targetEl.closest("[data-task-card]")) return;
+      onCreateInColumn?.(statusId);
+    };
+    el.addEventListener("dblclick", handleDblClick);
     return () => {
       el.removeEventListener("dragover", handleOver);
       el.removeEventListener("dragleave", handleLeave);
       el.removeEventListener("drop", handleDrop);
+      el.removeEventListener("dblclick", handleDblClick);
     };
-  }, [statusId, onDrop, setDragOverId]);
+  }, [statusId, onDrop, setDragOverId, onCreateInColumn]);
 
   return (
     <View
@@ -246,11 +261,15 @@ export default function TasksScreen() {
   const { data: tasks, isLoading, refetch } = useTasks();
   const { data: events } = useEvents();
   const { data: categories } = useCategories();
-  const { data: statuses } = useTaskStatuses();
+  const { data: statuses, isLoading: statusesLoading } = useTaskStatuses();
   const editTask = useEditTask();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
+  const [viewMode, setViewMode] = useState<ViewMode>(() =>
+    Platform.OS === "web" && Dimensions.get("window").width >= 1024
+      ? "kanban"
+      : "list",
+  );
   const [listGrouping, setListGrouping] = useState<ListGrouping>("status");
   const [selectedPriorities, setSelectedPriorities] = useState<
     Set<TaskPriority>
@@ -340,6 +359,15 @@ export default function TasksScreen() {
     for (const s of statusMap.values()) ordered.push(s);
     return ordered;
   }, [statuses, columnOrder]);
+
+  const defaultCreateStatusId = useMemo(() => {
+    const list = statuses ?? [];
+    const todo = list.find((s) => {
+      const name = s.name.trim().toLowerCase();
+      return name === "to do" || name === "todo" || name === "do zrobienia";
+    });
+    return todo?.statusId ?? orderedStatuses[0]?.statusId;
+  }, [statuses, orderedStatuses]);
 
   function moveColumn(statusId: string, direction: -1 | 1) {
     const ids = orderedStatuses.map((s) => s.statusId);
@@ -500,7 +528,7 @@ export default function TasksScreen() {
 
   const priorities = Object.values(TaskPriority);
 
-  if (isLoading) {
+  if (isLoading || statusesLoading) {
     return (
       <PageLayout>
         <View className="gap-3 mt-4">
@@ -534,7 +562,7 @@ export default function TasksScreen() {
                 className={`px-4 py-2 rounded-full ${viewMode === "list" ? "bg-primary" : ""}`}
               >
                 <Text
-                  className={`text-xs font-label ${viewMode === "list" ? "text-white" : "text-on-surface-variant"}`}
+                  className={`text-xs font-label ${viewMode === "list" ? "text-on-primary" : "text-on-surface-variant"}`}
                 >
                   List
                 </Text>
@@ -544,7 +572,7 @@ export default function TasksScreen() {
                 className={`px-4 py-2 rounded-full ${viewMode === "kanban" ? "bg-primary" : ""}`}
               >
                 <Text
-                  className={`text-xs font-label ${viewMode === "kanban" ? "text-white" : "text-on-surface-variant"}`}
+                  className={`text-xs font-label ${viewMode === "kanban" ? "text-on-primary" : "text-on-surface-variant"}`}
                 >
                   Kanban
                 </Text>
@@ -579,13 +607,19 @@ export default function TasksScreen() {
 
           <TouchableOpacity
             onPress={() => {
-              setCreateStatusId(orderedStatuses[0]?.statusId);
+              setCreateStatusId(defaultCreateStatusId);
               setShowCreate(true);
             }}
             className="bg-primary rounded-xl px-4 py-2.5 flex-row items-center gap-2"
           >
-            <MaterialIcons name="add" size={18} color="#fff" />
-            <Text className="text-white font-headline text-sm">New Task</Text>
+            <MaterialIcons
+              name="add"
+              size={18}
+              color={isDark ? "#121212" : "#fff"}
+            />
+            <Text className="text-on-primary font-headline text-sm">
+              New Task
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -1132,6 +1166,10 @@ export default function TasksScreen() {
                   onDrop={handleDropTask}
                   isDragOver={dragOverId === status.statusId}
                   setDragOverId={setDragOverId}
+                  onCreateInColumn={(sid) => {
+                    setCreateStatusId(sid);
+                    setShowCreate(true);
+                  }}
                 >
                   <View className="flex-row items-center justify-between mb-4 px-1">
                     <View className="flex-row items-center gap-2">
@@ -1230,7 +1268,6 @@ export default function TasksScreen() {
                       />
                     ))}
                   </ScrollView>
-
                 </DropColumn>
               );
             })}
@@ -1349,7 +1386,6 @@ export default function TasksScreen() {
         categories={categories ?? []}
         statuses={statuses ?? []}
       />
-
     </PageLayout>
   );
 }

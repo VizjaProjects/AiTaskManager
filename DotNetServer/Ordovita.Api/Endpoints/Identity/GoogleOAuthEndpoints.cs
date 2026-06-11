@@ -116,12 +116,16 @@ public sealed class GoogleOAuthCallbackHandler(
         }
     }
 
-    private static bool IsDesktopClient(HttpContext context) =>
-        context.Request.Cookies.TryGetValue(GoogleOAuthConstants.DesktopClientCookie, out var value)
-        && string.Equals(value, GoogleOAuthConstants.DesktopClientValue, StringComparison.OrdinalIgnoreCase);
+    private static bool IsDesktopClient(HttpContext context)
+    {
+        return context.Request.Cookies.TryGetValue(GoogleOAuthConstants.DesktopClientCookie, out var value)
+               && string.Equals(value, GoogleOAuthConstants.DesktopClientValue, StringComparison.OrdinalIgnoreCase);
+    }
 
-    private static void ClearDesktopClientCookie(HttpContext context) =>
+    private static void ClearDesktopClientCookie(HttpContext context)
+    {
         context.Response.Cookies.Delete(GoogleOAuthConstants.DesktopClientCookie);
+    }
 
     private async Task RedirectWithErrorAsync(HttpContext context, bool isDesktopClient, string error)
     {
@@ -159,7 +163,6 @@ public static class GoogleOAuthEndpointExtensions
         app.MapGet("/oauth2/authorization/google", (HttpContext context) =>
             {
                 if (string.Equals(context.Request.Query["client"], "desktop", StringComparison.OrdinalIgnoreCase))
-                {
                     context.Response.Cookies.Append(
                         GoogleOAuthConstants.DesktopClientCookie,
                         GoogleOAuthConstants.DesktopClientValue,
@@ -171,7 +174,6 @@ public static class GoogleOAuthEndpointExtensions
                             SameSite = SameSiteMode.Lax,
                             Secure = context.Request.IsHttps
                         });
-                }
 
                 var properties = new AuthenticationProperties { RedirectUri = GoogleOAuthConstants.CallbackPath };
                 return Results.Challenge(properties, [GoogleDefaults.AuthenticationScheme]);
@@ -192,13 +194,14 @@ public static class GoogleOAuthEndpointExtensions
                     try
                     {
                         var payload = desktopOAuthCodeService.Consume(request.Code);
-                        return Task.FromResult<Results<Ok<LoginResponse>, ProblemHttpResult>>(TypedResults.Ok(new LoginResponse(
-                            payload.TokenPair.AccessToken,
-                            payload.TokenPair.RefreshToken,
-                            payload.UserInfo.UserId,
-                            payload.UserInfo.Email,
-                            payload.UserInfo.FullName,
-                            payload.UserInfo.Role)));
+                        return Task.FromResult<Results<Ok<LoginResponse>, ProblemHttpResult>>(TypedResults.Ok(
+                            new LoginResponse(
+                                payload.TokenPair.AccessToken,
+                                payload.TokenPair.RefreshToken,
+                                payload.UserInfo.UserId,
+                                payload.UserInfo.Email,
+                                payload.UserInfo.FullName,
+                                payload.UserInfo.Role)));
                     }
                     catch (InvalidOperationException ex)
                     {

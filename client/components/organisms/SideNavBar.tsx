@@ -18,6 +18,7 @@ const NAV_ITEMS: Array<{
   { icon: "auto-awesome", label: "AI Task", path: "/(app)/ai-task", match: ["/ai-task"] },
   { icon: "calendar-today", label: "Calendar", path: "/(app)/calendar", match: ["/calendar"] },
   { icon: "checklist", label: "Tasks", path: "/(app)/tasks", match: ["/tasks"] },
+  { icon: "sticky-note-2", label: "Notes", path: "/(app)/notes", match: ["/notes"] },
   {
     icon: "tune",
     label: "Categories & Statuses",

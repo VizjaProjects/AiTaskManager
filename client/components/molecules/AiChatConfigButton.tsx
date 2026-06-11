@@ -105,10 +105,11 @@ function DropdownItem({
 const triggerStyle = {
   borderWidth: 1,
   borderColor: UI.borderHover,
-  backgroundColor: "#FFFFFF",
 };
 
-export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps) {
+export function AiChatConfigButton({
+  disabled = false,
+}: AiChatConfigButtonProps) {
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const triggerRef = useRef<View>(null);
@@ -118,7 +119,9 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
   const activeId = useLlmSettingsSelectionStore((s) => s.activeLlmSettingsId);
   const hydrated = useLlmSettingsSelectionStore((s) => s.hydrated);
   const hydrate = useLlmSettingsSelectionStore((s) => s.hydrate);
-  const setActiveId = useLlmSettingsSelectionStore((s) => s.setActiveLlmSettingsId);
+  const setActiveId = useLlmSettingsSelectionStore(
+    (s) => s.setActiveLlmSettingsId,
+  );
 
   useEffect(() => {
     if (!hydrated) void hydrate();
@@ -146,9 +149,14 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
     setOpen(false);
   }
 
+  const isCompact = windowWidth < 480;
+
   const panelWidth = Math.min(
     PANEL_MAX_WIDTH,
-    Math.max(PANEL_MIN_WIDTH, anchor?.width ?? PANEL_MIN_WIDTH),
+    Math.max(
+      PANEL_MIN_WIDTH,
+      isCompact ? PANEL_MIN_WIDTH : (anchor?.width ?? PANEL_MIN_WIDTH),
+    ),
   );
 
   const panelLeft = anchor
@@ -168,7 +176,7 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
   if (isLoading) {
     return (
       <View
-        className="h-9 px-3 rounded-lg items-center justify-center"
+        className="h-9 px-3 rounded-lg items-center justify-center bg-surface-container-lowest"
         style={triggerStyle}
       >
         <MaterialIcons name="memory" size={15} color={UI.textMuted} />
@@ -178,12 +186,9 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
 
   const dropdownPanel = (
     <View
-      className="rounded-xl py-2"
+      className="rounded-xl py-2 bg-surface-container-lowest border border-outline-variant"
       style={{
         width: panelWidth,
-        borderWidth: 1,
-        borderColor: UI.border,
-        backgroundColor: "#FFFFFF",
         ...UI.shadow,
       }}
     >
@@ -220,11 +225,13 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
               setOpen(false);
               router.push("/(app)/profile?tab=ai");
             }}
-            className="flex-row items-center gap-2 mx-3 mt-1 mb-2 px-3 py-2.5 rounded-lg"
-            style={{ backgroundColor: UI.surface }}
+            className="flex-row items-center gap-2 mx-3 mt-1 mb-2 px-3 py-2.5 rounded-lg bg-surface-container-low"
           >
             <MaterialIcons name="add" size={16} color={UI.textSecondary} />
-            <Text className="font-body text-xs" style={{ color: UI.textSecondary }}>
+            <Text
+              className="font-body text-xs"
+              style={{ color: UI.textSecondary }}
+            >
               Add your own model
             </Text>
           </TouchableOpacity>
@@ -239,28 +246,42 @@ export function AiChatConfigButton({ disabled = false }: AiChatConfigButtonProps
         <TouchableOpacity
           disabled={disabled}
           onPress={openDropdown}
-          className="h-9 px-2.5 rounded-lg flex-row items-center gap-2"
-          style={{ ...triggerStyle, opacity: disabled ? 0.45 : 1, maxWidth: 220 }}
+          className={`h-9 rounded-lg flex-row items-center bg-surface-container-lowest ${
+            isCompact ? "w-9 justify-center px-0" : "px-2.5 gap-2"
+          }`}
+          style={{
+            ...triggerStyle,
+            opacity: disabled ? 0.45 : 1,
+            maxWidth: isCompact ? 36 : 220,
+          }}
         >
           {isOrdovita ? (
-            <OrdovitaBrandIcon size={24} />
+            <OrdovitaBrandIcon size={isCompact ? 20 : 24} />
           ) : active ? (
             <ProviderBrandIcon provider={active.provider} size="sm" />
           ) : (
             <MaterialIcons name="memory" size={15} color={UI.textSecondary} />
           )}
-          <Text
-            className="font-body text-[13px] flex-shrink"
-            style={{ color: "#374151" }}
-            numberOfLines={1}
-          >
-            {isOrdovita
-              ? "OrdovitaAI"
-              : active
-                ? formatPickerLabel(active)
-                : "Select model"}
-          </Text>
-          <MaterialIcons name="expand-more" size={16} color={UI.textMuted} />
+          {!isCompact && (
+            <>
+              <Text
+                className="font-body text-[13px] flex-shrink"
+                style={{ color: "#374151" }}
+                numberOfLines={1}
+              >
+                {isOrdovita
+                  ? "OrdovitaAI"
+                  : active
+                    ? formatPickerLabel(active)
+                    : "Select model"}
+              </Text>
+              <MaterialIcons
+                name="expand-more"
+                size={16}
+                color={UI.textMuted}
+              />
+            </>
+          )}
         </TouchableOpacity>
       </View>
 

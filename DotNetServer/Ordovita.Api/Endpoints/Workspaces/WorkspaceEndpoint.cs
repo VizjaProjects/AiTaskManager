@@ -1,6 +1,7 @@
 using Ordovita.Api.Common;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Workspaces;
+using Ordovita.Application.Workspaces.AssignUsersByEmail;
 using Ordovita.Application.Workspaces.AssignUsersToWorkspace;
 using Ordovita.Application.Workspaces.CreateWorkspace;
 using Ordovita.Application.Workspaces.DeleteWorkspace;
@@ -36,6 +37,13 @@ public static class WorkspaceEndpoint
         g.MapPost("/{workspaceId:guid}/assignUsers", AssignUsers)
             .WithName("AssignUsersToWorkspace")
             .Produces<WorkspaceDto>(200)
+            .Produces(401)
+            .Produces(404);
+
+        g.MapPost("/{workspaceId:guid}/assignUsersByEmail", AssignUsersByEmail)
+            .WithName("AssignUsersToWorkspaceByEmail")
+            .Produces<AssignUsersByEmailResult>(200)
+            .Produces(400)
             .Produces(401)
             .Produces(404);
 
@@ -82,6 +90,13 @@ public static class WorkspaceEndpoint
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
+    private static async Task<IResult> AssignUsersByEmail(
+        Guid workspaceId, WorkspaceEmailsRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new AssignUsersByEmailCommand(workspaceId, request.Emails), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
     private static async Task<IResult> RemoveUsers(
         Guid workspaceId, WorkspaceUsersRequest request, ISender sender, CancellationToken ct)
     {
@@ -98,4 +113,6 @@ public static class WorkspaceEndpoint
     private sealed record CreateWorkspaceRequest(string WorkspaceName, IReadOnlyList<Guid>? AssignedUserIds);
 
     private sealed record WorkspaceUsersRequest(IReadOnlyList<Guid> UserIds);
+
+    private sealed record WorkspaceEmailsRequest(IReadOnlyList<string> Emails);
 }

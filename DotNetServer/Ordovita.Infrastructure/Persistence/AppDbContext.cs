@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Domain.Identity;
 using Ordovita.Domain.LlmSettings;
+using Ordovita.Domain.Note;
 using Ordovita.Domain.Surveys.Questions;
 using Ordovita.Domain.Surveys.UserResponse;
 using Ordovita.Domain.Tasks;
@@ -30,6 +31,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Domain.LlmSettings.LlmSettings> LlmSettings => Set<Domain.LlmSettings.LlmSettings>();
 
+    public DbSet<Domain.Note.Note> Notes => Set<Domain.Note.Note>();
+    public DbSet<NoteFolder> NoteFolders => Set<NoteFolder>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -26,6 +26,9 @@ public sealed class DeleteWorkTaskStatusHandler(
         if (status is null || !status.BelongsToWorkspace(WorkspaceId.From(command.WorkspaceId)))
             return Result.Failure<Unit>(TaskStatusExceptions.NotFound);
 
+        if (status.IsDefault)
+            return Result.Failure<Unit>(TaskStatusExceptions.CannotDeleteDefault);
+
         statusRepository.Delete(status);
         await uow.SaveChangesAsync(ct);
         return Result.Success(Unit.Value);

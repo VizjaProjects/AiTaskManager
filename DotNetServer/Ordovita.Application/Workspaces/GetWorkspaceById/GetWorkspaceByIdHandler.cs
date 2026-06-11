@@ -27,6 +27,6 @@ public sealed class GetWorkspaceByIdHandler(
         if (!workspace.CanBeAccessedBy(userResult.Value!.Id))
             return Result.Failure<WorkspaceDto>(WorkspaceException.UnauthorizedAccess);
 
-        return Result.Success(WorkspaceMapper.ToDto(workspace));
+        return Result.Success(await WorkspaceMapper.ToDtoAsync(workspace, userRepository, ct));
     }
 }

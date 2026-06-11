@@ -11,6 +11,7 @@ public sealed class WorkTaskStatus : Entity<TaskStatusId>
     public UserId CreatedBy { get; private set; }
     public string Name { get; private set; } = null!;
     public string Color { get; private set; } = null!;
+    public bool IsDefault { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -37,6 +38,7 @@ public sealed class WorkTaskStatus : Entity<TaskStatusId>
             CreatedBy = createdBy,
             Name = name,
             Color = color,
+            IsDefault = false,
             CreatedAt = now,
             UpdatedAt = now
         });
@@ -52,6 +54,7 @@ public sealed class WorkTaskStatus : Entity<TaskStatusId>
             CreatedBy = createdBy,
             Name = name,
             Color = color,
+            IsDefault = true,
             CreatedAt = now,
             UpdatedAt = now
         };

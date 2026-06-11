@@ -2,13 +2,16 @@ import { api } from "./client";
 import type { Workspace } from "../types";
 
 function mapWorkspace(raw: Record<string, unknown>): Workspace {
-  const assignedUsers = (raw.assignedUsers as Array<Record<string, unknown>>) ?? [];
+  const assignedUsers =
+    (raw.assignedUsers as Array<Record<string, unknown>>) ?? [];
   return {
     workspaceId: raw.workspaceId as string,
     workspaceName: raw.workspaceName as string,
     createdBy: raw.createdBy as string,
     assignedUsers: assignedUsers.map((u) => ({
       userId: u.userId as string,
+      email: (u.email as string) ?? null,
+      fullName: (u.fullName as string) ?? null,
       assignedAt: new Date(u.assignedAt as string).toISOString(),
     })),
     createdAt: new Date(raw.createdAt as string).toISOString(),
@@ -43,6 +46,19 @@ export const workspaceApi = {
       { userIds },
     );
     return mapWorkspace(data);
+  },
+
+  assignUsersByEmail: async (workspaceId: string, emails: string[]) => {
+    const { data } = await api.post<Record<string, unknown>>(
+      `/workspace/${encodeURIComponent(workspaceId)}/assignUsersByEmail`,
+      { emails },
+    );
+    return {
+      workspace: mapWorkspace(data.workspace as Record<string, unknown>),
+      addedEmails: (data.addedEmails as string[]) ?? [],
+      notFoundEmails: (data.notFoundEmails as string[]) ?? [],
+      alreadyAssignedEmails: (data.alreadyAssignedEmails as string[]) ?? [],
+    };
   },
 
   removeUsers: async (workspaceId: string, userIds: string[]) => {

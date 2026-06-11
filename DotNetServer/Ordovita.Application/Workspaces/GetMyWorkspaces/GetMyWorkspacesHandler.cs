@@ -19,8 +19,8 @@ public sealed class GetMyWorkspacesHandler(
         if (userResult.IsFailure)
             return Result.Failure<IReadOnlyList<WorkspaceDto>>(userResult.Error);
 
-        var workspaces = await workspaceRepository.GetByCreatedByAsync(userResult.Value!.Id, ct);
-        var result = workspaces.Select(WorkspaceMapper.ToDto).ToList();
+        var workspaces = await workspaceRepository.GetAccessibleByAsync(userResult.Value!.Id, ct);
+        var result = await WorkspaceMapper.ToDtoListAsync(workspaces, userRepository, ct);
         return Result.Success<IReadOnlyList<WorkspaceDto>>(result);
     }
 }
