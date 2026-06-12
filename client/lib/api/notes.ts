@@ -4,6 +4,7 @@ import type {
   CreateNoteFolderRequest,
   CreateNoteRequest,
   UpdateNoteContentRequest,
+  UpdateNoteFolderRequest,
   UpdateNoteMetadataRequest,
 } from "../types";
 
@@ -21,6 +22,21 @@ export const noteApi = {
     api.post<{ id: string; createdAt: string }>(
       noteBase(workspaceId) + "/folder/create",
       data,
+    ),
+
+  updateFolder: (
+    workspaceId: string,
+    folderId: string,
+    data: UpdateNoteFolderRequest,
+  ) =>
+    api.put(`${noteBase(workspaceId)}/folder/${encodeURIComponent(folderId)}`, {
+      title: data.title,
+      description: data.description ?? null,
+    }),
+
+  deleteFolder: (workspaceId: string, folderId: string) =>
+    api.delete(
+      `${noteBase(workspaceId)}/folder/${encodeURIComponent(folderId)}`,
     ),
 
   getAll: async (workspaceId: string) => {
@@ -55,15 +71,12 @@ export const noteApi = {
     noteId: string,
     data: UpdateNoteMetadataRequest,
   ) =>
-    api.put(
-      `${noteBase(workspaceId)}/${encodeURIComponent(noteId)}/metadata`,
-      {
-        title: data.title,
-        noteColor: data.noteColor,
-        noteFolderId: data.noteFolderId ?? null,
-        noteDescription: data.noteDescription ?? "",
-      },
-    ),
+    api.put(`${noteBase(workspaceId)}/${encodeURIComponent(noteId)}/metadata`, {
+      title: data.title,
+      noteColor: data.noteColor,
+      noteFolderId: data.noteFolderId ?? null,
+      noteDescription: data.noteDescription ?? "",
+    }),
 
   delete: (workspaceId: string, noteId: string) =>
     api.delete(`${noteBase(workspaceId)}/${encodeURIComponent(noteId)}`),

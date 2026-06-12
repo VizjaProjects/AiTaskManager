@@ -46,11 +46,19 @@ export function NoteCard({ note, active, onPress }: NoteCardProps) {
       className={`rounded-2xl p-4 gap-2 ${active ? "border-2 border-primary" : "border border-black/5"}`}
       style={{ backgroundColor: bg }}
     >
-      <Text className="font-headline text-base" style={{ color: titleColor }} numberOfLines={2}>
+      <Text
+        className="font-headline text-base"
+        style={{ color: titleColor }}
+        numberOfLines={2}
+      >
         {note.title || "Bez tytułu"}
       </Text>
       {preview ? (
-        <Text className="font-body text-sm" style={{ color: bodyColor }} numberOfLines={4}>
+        <Text
+          className="font-body text-sm"
+          style={{ color: bodyColor }}
+          numberOfLines={4}
+        >
           {preview}
         </Text>
       ) : (

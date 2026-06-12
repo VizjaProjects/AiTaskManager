@@ -23,6 +23,8 @@ public class NoteFolderConfiguration : IEntityTypeConfiguration<NoteFolder>
 
         builder.Property(p => p.NoteTitle).HasMaxLength(255).IsRequired();
 
+        builder.Property(p => p.Description).HasMaxLength(1000);
+
         builder.Property(p => p.CreatedBy)
             .HasConversion(p => p.Value, value => UserId.From(value))
             .IsRequired();

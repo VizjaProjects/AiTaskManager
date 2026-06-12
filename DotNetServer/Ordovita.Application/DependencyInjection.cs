@@ -21,9 +21,11 @@ using Ordovita.Application.Note;
 using Ordovita.Application.Note.CreateNote;
 using Ordovita.Application.Note.CreateNoteFolder;
 using Ordovita.Application.Note.DeleteNote;
+using Ordovita.Application.Note.DeleteNoteFolder;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
 using Ordovita.Application.Note.UpdateNoteContent;
+using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
 using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.ChangeSurveyVisibility;
@@ -197,6 +199,8 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<UpdateLlmSettingsCommand, LlmSettingsDto>, UpdateLlmSettingsHandler>();
         
         services.AddScoped<ICommandHandler<CreateNoteFolderCommand, CreateNoteFolderResult>, CreateNoteFolderHandler>();
+        services.AddScoped<ICommandHandler<UpdateNoteFolderCommand, Unit>, UpdateNoteFolderHandler>();
+        services.AddScoped<ICommandHandler<DeleteNoteFolderCommand, Unit>, DeleteNoteFolderHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceNoteFoldersQuery, IReadOnlyList<NoteFolderDto>>, GetWorkspaceNoteFoldersHandler>();
         
         services.AddScoped<ICommandHandler<CreateNoteCommand, CreateNoteResult>, CreateNoteHandler>();

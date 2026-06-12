@@ -24,7 +24,8 @@ import {
 } from "../api";
 import { noteApi } from "../api/notes";
 import { buildNoteContentJson } from "../api/adapters";
-import { useWorkspaceStore } from "../stores/workspace";import type {
+import { useWorkspaceStore } from "../stores/workspace";
+import type {
   Task,
   CalendarEvent,
   CreateTaskRequest,
@@ -1018,6 +1019,41 @@ export function useCreateNoteFolder() {
       noteApi.createFolder(requireWorkspaceId(workspaceId), { title }),
     onSuccess: () =>
       qc.invalidateQueries({ queryKey: ["noteFolders", workspaceId] }),
+  });
+}
+
+export function useUpdateNoteFolder() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      folderId,
+      title,
+      description,
+    }: {
+      folderId: string;
+      title: string;
+      description?: string | null;
+    }) =>
+      noteApi.updateFolder(requireWorkspaceId(workspaceId), folderId, {
+        title,
+        description: description ?? null,
+      }),
+    onSuccess: () =>
+      qc.invalidateQueries({ queryKey: ["noteFolders", workspaceId] }),
+  });
+}
+
+export function useDeleteNoteFolder() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (folderId: string) =>
+      noteApi.deleteFolder(requireWorkspaceId(workspaceId), folderId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["noteFolders", workspaceId] });
+      qc.invalidateQueries({ queryKey: ["notes", workspaceId] });
+    },
   });
 }
 

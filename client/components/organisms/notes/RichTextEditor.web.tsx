@@ -41,11 +41,9 @@ export const RichTextEditor = forwardRef<
     focus: () => post({ type: "focus" }),
   }));
 
-  // keep latest html when prop changes (e.g. switching notes)
-  useEffect(() => {
-    pendingHtmlRef.current = initialHtml;
-    if (readyRef.current) post({ type: "setContent", html: initialHtml });
-  }, [initialHtml]);
+  // Note switching is handled by remounting via `key`, so we intentionally do
+  // NOT re-push initialHtml on change — doing so resets the DOM and the caret
+  // jumps to the top while the user is typing (after a debounced save/refetch).
 
   useEffect(() => {
     function handle(e: MessageEvent) {
@@ -76,7 +74,12 @@ export const RichTextEditor = forwardRef<
         ref={iframeRef as never}
         srcDoc={srcDoc}
         title="note-editor"
-        style={{ border: "none", width: "100%", height: "100%", background: "transparent" }}
+        style={{
+          border: "none",
+          width: "100%",
+          height: "100%",
+          background: "transparent",
+        }}
       />
     </View>
   );

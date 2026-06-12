@@ -10,7 +10,7 @@ public static class NoteMapper
 
     public static NoteFolderDto ToDto(Domain.Note.NoteFolder folder)
     {
-        return new NoteFolderDto(folder.Id.Value, folder.WorkspaceId.Value, folder.NoteTitle, folder.CreatedBy.Value,
-            folder.CreatedAt, folder.UpdatedAt);
+        return new NoteFolderDto(folder.Id.Value, folder.WorkspaceId.Value, folder.NoteTitle, folder.Description,
+            folder.CreatedBy.Value, folder.CreatedAt, folder.UpdatedAt);
     }
 }

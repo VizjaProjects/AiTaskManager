@@ -4,9 +4,11 @@ using Ordovita.Application.Note;
 using Ordovita.Application.Note.CreateNote;
 using Ordovita.Application.Note.CreateNoteFolder;
 using Ordovita.Application.Note.DeleteNote;
+using Ordovita.Application.Note.DeleteNoteFolder;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
 using Ordovita.Application.Note.UpdateNoteContent;
+using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
 
 namespace Ordovita.Api.Note;
@@ -27,6 +29,19 @@ public static class NoteEndpoint
             .WithName("GetWorkspaceNoteFolders")
             .Produces<IReadOnlyList<NoteFolderDto>>(200)
             .Produces(401);
+
+        g.MapPut("/folder/{folderId:guid}", UpdateFolder)
+            .WithName("UpdateNoteFolder")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(404);
+
+        g.MapDelete("/folder/{folderId:guid}", DeleteFolder)
+            .WithName("DeleteNoteFolder")
+            .Produces(204)
+            .Produces(401)
+            .Produces(404);
             
         g.MapPost("/create", CreateNote)
             .WithName("CreateNote")
@@ -77,6 +92,20 @@ public static class NoteEndpoint
         var result = await sender.Send(new GetWorkspaceNoteFoldersQuery(workspaceId), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
+
+    private static async Task<IResult> UpdateFolder(
+        Guid workspaceId, Guid folderId, UpdateNoteFolderRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new UpdateNoteFolderCommand(workspaceId, folderId, request.Title, request.Description), ct);
+        return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> DeleteFolder(Guid workspaceId, Guid folderId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new DeleteNoteFolderCommand(workspaceId, folderId), ct);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
     
     private static async Task<IResult> CreateNote(
         Guid workspaceId, CreateNoteRequest request, ISender sender, CancellationToken ct)
@@ -117,6 +146,7 @@ public static class NoteEndpoint
 
     
     private sealed record CreateNoteFolderRequest(string Title);
+    private sealed record UpdateNoteFolderRequest(string Title, string? Description);
     private sealed record CreateNoteRequest(Guid? NoteFolderId, string Title, string NoteColor, string NoteDescription, string ContentJson);
     private sealed record UpdateNoteContentRequest(string ContentJson);
     private sealed record UpdateNoteMetadataRequest(string Title, string NoteColor, Guid? NoteFolderId, string NoteDescription);

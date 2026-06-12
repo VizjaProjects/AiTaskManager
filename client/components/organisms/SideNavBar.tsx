@@ -14,11 +14,36 @@ const NAV_ITEMS: Array<{
   match?: string[];
   badge?: string;
 }> = [
-  { icon: "dashboard", label: "Dashboard", path: "/(app)/dashboard", match: ["/dashboard"] },
-  { icon: "auto-awesome", label: "AI Task", path: "/(app)/ai-task", match: ["/ai-task"] },
-  { icon: "calendar-today", label: "Calendar", path: "/(app)/calendar", match: ["/calendar"] },
-  { icon: "checklist", label: "Tasks", path: "/(app)/tasks", match: ["/tasks"] },
-  { icon: "sticky-note-2", label: "Notes", path: "/(app)/notes", match: ["/notes"] },
+  {
+    icon: "dashboard",
+    label: "Dashboard",
+    path: "/(app)/dashboard",
+    match: ["/dashboard"],
+  },
+  {
+    icon: "auto-awesome",
+    label: "AI Task",
+    path: "/(app)/ai-task",
+    match: ["/ai-task"],
+  },
+  {
+    icon: "calendar-today",
+    label: "Calendar",
+    path: "/(app)/calendar",
+    match: ["/calendar"],
+  },
+  {
+    icon: "checklist",
+    label: "Tasks",
+    path: "/(app)/tasks",
+    match: ["/tasks"],
+  },
+  {
+    icon: "sticky-note-2",
+    label: "Notes",
+    path: "/(app)/notes",
+    match: ["/notes"],
+  },
   {
     icon: "tune",
     label: "Categories & Statuses",
@@ -32,7 +57,12 @@ const NAV_ITEMS: Array<{
     match: ["/statistics"],
     badge: "In Progress",
   },
-  { icon: "settings", label: "Settings", path: "/(app)/profile", match: ["/profile"] },
+  {
+    icon: "settings",
+    label: "Settings",
+    path: "/(app)/profile",
+    match: ["/profile"],
+  },
 ];
 
 export function SideNavBar() {
@@ -68,7 +98,9 @@ export function SideNavBar() {
                 icon={item.icon}
                 label={item.label}
                 badge={item.badge}
-                active={isActive(item.match ?? [item.path.replace("/(app)", "")])}
+                active={isActive(
+                  item.match ?? [item.path.replace("/(app)", "")],
+                )}
                 onPress={() => router.push(item.path as never)}
               />
             ))}

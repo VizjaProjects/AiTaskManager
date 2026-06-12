@@ -244,6 +244,7 @@ export function mapNoteFolderDto(raw: Record<string, unknown>): NoteFolder {
     id: raw.id as string,
     workspaceId: raw.workspaceId as string,
     title: (raw.noteTitle as string) ?? (raw.title as string) ?? "",
+    description: (raw.description as string) ?? null,
     createdBy: raw.createdBy as string,
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),

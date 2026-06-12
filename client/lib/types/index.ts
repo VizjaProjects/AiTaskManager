@@ -307,6 +307,7 @@ export interface NoteFolder {
   id: UUID;
   workspaceId: UUID;
   title: string;
+  description: string | null;
   createdBy: UUID;
   createdAt: string;
   updatedAt: string;
@@ -338,6 +339,11 @@ export interface Note {
 
 export interface CreateNoteFolderRequest {
   title: string;
+}
+
+export interface UpdateNoteFolderRequest {
+  title: string;
+  description?: string | null;
 }
 
 export interface CreateNoteRequest {
