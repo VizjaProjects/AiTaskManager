@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import {
   View,
   Text,
@@ -12,6 +13,7 @@ import {
   Pressable,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { PageLayout } from "../PageLayout";
 import { RichTextEditor } from "./RichTextEditor";
 import type { RichTextEditorHandle } from "./RichTextEditor.types";
@@ -27,22 +29,15 @@ import {
   useUpdateNoteFolder,
   useDeleteNoteFolder,
 } from "@/lib/hooks";
-import { useThemeStore } from "@/lib/stores";
+import {
+  useAiPlanningRequestStore,
+  useThemeStore,
+} from "@/lib/stores";
 import type { Note, NoteFolder } from "@/lib/types";
-
-const NOTE_COLORS = [
-  "#FFFFFF",
-  "#F7BFFF",
-  "#FFD9A0",
-  "#FFE08A",
-  "#A0D8FF",
-  "#B5F1CC",
-  "#E3D5FF",
-  "#FFC9C9",
-];
+import { getNoteThemeColors, NOTE_COLORS } from "@/lib/noteTheme";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
 
 const EMPTY_STATE = {
   bold: false,
@@ -54,6 +49,17 @@ const EMPTY_STATE = {
 };
 
 const NOTE_DRAG_TYPE = "application/note-id";
+const CONTEXT_MENU_WIDTH = 220;
+const CONTEXT_MENU_ITEM_HEIGHT = 44;
+const MAX_AI_PLAN_TEXT_LENGTH = 4000;
+
+type ContextMenuState =
+  | { kind: "folder"; folder: NoteFolder; x: number; y: number }
+  | { kind: "note"; note: Note; x: number; y: number };
+
+type RenameTarget =
+  | { kind: "folder"; folder: NoteFolder }
+  | { kind: "note"; note: Note };
 
 function confirmDelete(message: string, onConfirm: () => void) {
   if (Platform.OS === "web") {
@@ -68,19 +74,22 @@ function confirmDelete(message: string, onConfirm: () => void) {
   ]);
 }
 
-function isLightColor(hex: string): boolean {
-  const c = hex.replace("#", "");
-  if (c.length < 6) return true;
-  const r = parseInt(c.slice(0, 2), 16);
-  const g = parseInt(c.slice(2, 4), 16);
-  const b = parseInt(c.slice(4, 6), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 150;
+function showMessage(title: string, message: string) {
+  if (Platform.OS === "web") {
+    if (typeof window !== "undefined") window.alert(`${title}\n\n${message}`);
+    return;
+  }
+  Alert.alert(title, message);
 }
 
 export function NotesScreen() {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const enqueueAiPlanningRequest = useAiPlanningRequestStore(
+    (s) => s.enqueue,
+  );
+  const router = useRouter();
 
   const { data: notes = [], isLoading } = useNotes();
   const { data: folders = [] } = useNoteFolders();
@@ -98,6 +107,8 @@ export function NotesScreen() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
 
   // folder context menu / edit
   const [menuFolder, setMenuFolder] = useState<NoteFolder | null>(null);
@@ -108,13 +119,21 @@ export function NotesScreen() {
 
   // editor buffers
   const [title, setTitle] = useState("");
-  const [color, setColor] = useState(NOTE_COLORS[0]);
+  const [color, setColor] = useState<string>(NOTE_COLORS[0]);
   const [folderId, setFolderId] = useState<string | null>(null);
   const [toolbarState, setToolbarState] = useState(EMPTY_STATE);
   const editorRef = useRef<RichTextEditorHandle>(null);
+  const finderDragSurfaceRef = useRef<View>(null);
   const htmlRef = useRef("");
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const metaTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingMetaRef = useRef<{
+    noteId: string;
+    title: string;
+    noteColor: string;
+    noteFolderId: string | null;
+    noteDescription: string;
+  } | null>(null);
 
   const selectedNote = useMemo(
     () => notes.find((n) => n.id === selectedNoteId) ?? null,
@@ -124,6 +143,10 @@ export function NotesScreen() {
   const currentFolder = useMemo(
     () => folders.find((f) => f.id === currentFolderId) ?? null,
     [folders, currentFolderId],
+  );
+  const editorTheme = useMemo(
+    () => getNoteThemeColors(color, isDark),
+    [color, isDark],
   );
 
   const notesInView = useMemo(() => {
@@ -154,12 +177,57 @@ export function NotesScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    if (Platform.OS !== "web" || !contextMenu) return;
+
+    const close = () => setContextMenu(null);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("resize", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [contextMenu]);
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !finderDragSurfaceRef.current) return;
+    const element = finderDragSurfaceRef.current as unknown as HTMLElement;
+
+    const isNoteDrag = (event: DragEvent) =>
+      Array.from(event.dataTransfer?.types ?? []).includes(NOTE_DRAG_TYPE);
+
+    const handleDragOver = (event: DragEvent) => {
+      if (!isNoteDrag(event) || !event.dataTransfer) return;
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+    };
+
+    const handleDrop = (event: DragEvent) => {
+      if (!isNoteDrag(event)) return;
+      event.preventDefault();
+    };
+
+    element.addEventListener("dragover", handleDragOver);
+    element.addEventListener("drop", handleDrop);
+    return () => {
+      element.removeEventListener("dragover", handleDragOver);
+      element.removeEventListener("drop", handleDrop);
+    };
+  }, []);
+
   function scheduleContentSave(html: string) {
     htmlRef.current = html;
     if (!selectedNoteId) return;
     if (contentTimer.current) clearTimeout(contentTimer.current);
     const id = selectedNoteId;
     contentTimer.current = setTimeout(() => {
+      contentTimer.current = null;
       updateContent.mutate({ noteId: id, html });
     }, 800);
   }
@@ -172,14 +240,44 @@ export function NotesScreen() {
     if (!selectedNoteId) return;
     const id = selectedNoteId;
     const payload = {
+      noteId: id,
       title: next.title ?? title,
       noteColor: next.color ?? color,
       noteFolderId: next.folderId !== undefined ? next.folderId : folderId,
+      noteDescription: selectedNote?.noteDescription ?? "",
     };
+    pendingMetaRef.current = payload;
     if (metaTimer.current) clearTimeout(metaTimer.current);
     metaTimer.current = setTimeout(() => {
-      updateMetadata.mutate({ noteId: id, ...payload });
+      metaTimer.current = null;
+      pendingMetaRef.current = null;
+      updateMetadata.mutate(payload);
     }, 600);
+  }
+
+  async function flushPendingEditorSaves() {
+    const saves: Promise<unknown>[] = [];
+
+    if (contentTimer.current && selectedNoteId) {
+      clearTimeout(contentTimer.current);
+      contentTimer.current = null;
+      saves.push(
+        updateContent.mutateAsync({
+          noteId: selectedNoteId,
+          html: htmlRef.current,
+        }),
+      );
+    }
+
+    if (metaTimer.current && pendingMetaRef.current) {
+      clearTimeout(metaTimer.current);
+      metaTimer.current = null;
+      const payload = pendingMetaRef.current;
+      pendingMetaRef.current = null;
+      saves.push(updateMetadata.mutateAsync(payload));
+    }
+
+    await Promise.all(saves);
   }
 
   async function handleCreateNote() {
@@ -212,11 +310,16 @@ export function NotesScreen() {
 
   function handleDelete() {
     if (!selectedNoteId) return;
-    const id = selectedNoteId;
+    deleteNoteById(selectedNoteId);
+  }
+
+  function deleteNoteById(id: string) {
     confirmDelete("Usunąć tę notatkę?", () => {
       deleteNote.mutate(id);
-      setSelectedNoteId(null);
-      setEditorOpen(false);
+      if (selectedNoteId === id) {
+        setSelectedNoteId(null);
+        setEditorOpen(false);
+      }
     });
   }
 
@@ -238,6 +341,17 @@ export function NotesScreen() {
     setMenuDesc(folder.description ?? "");
   }
 
+  function deleteFolderById(id: string) {
+    confirmDelete(
+      "Usunąć ten folder? Notatki zostaną przeniesione do „Bez folderu”.",
+      () => {
+        deleteFolder.mutate(id);
+        if (menuFolder?.id === id) setMenuFolder(null);
+        if (currentFolderId === id) setCurrentFolderId(null);
+      },
+    );
+  }
+
   async function handleSaveFolder() {
     if (!menuFolder) return;
     const name = menuTitle.trim();
@@ -252,15 +366,82 @@ export function NotesScreen() {
 
   function handleDeleteFolder() {
     if (!menuFolder) return;
-    const id = menuFolder.id;
-    confirmDelete(
-      "Usunąć ten folder? Notatki zostaną przeniesione do „Bez folderu”.",
-      () => {
-        deleteFolder.mutate(id);
-        setMenuFolder(null);
-        if (currentFolderId === id) setCurrentFolderId(null);
-      },
-    );
+    deleteFolderById(menuFolder.id);
+  }
+
+  function openFolderContextMenu(
+    folder: NoteFolder,
+    point: { x: number; y: number },
+  ) {
+    setContextMenu({ kind: "folder", folder, ...point });
+  }
+
+  function openNoteContextMenu(
+    note: Note,
+    point: { x: number; y: number },
+  ) {
+    setContextMenu({ kind: "note", note, ...point });
+  }
+
+  function commitRename(value: string) {
+    const target = renameTarget;
+    setRenameTarget(null);
+    if (!target) return;
+
+    const nextTitle = value.trim();
+    if (!nextTitle) return;
+
+    if (target.kind === "folder") {
+      if (nextTitle === target.folder.title) return;
+      updateFolder.mutate({
+        folderId: target.folder.id,
+        title: nextTitle,
+        description: target.folder.description,
+      });
+      return;
+    }
+
+    if (nextTitle === target.note.title) return;
+    updateMetadata.mutate({
+      noteId: target.note.id,
+      title: nextTitle,
+      noteColor: target.note.noteColor,
+      noteFolderId: target.note.noteFolderId,
+      noteDescription: target.note.noteDescription ?? "",
+    });
+  }
+
+  function beginRename(target: RenameTarget) {
+    setContextMenu(null);
+    if (Platform.OS === "web" && typeof window !== "undefined") {
+      window.setTimeout(() => setRenameTarget(target), 0);
+      return;
+    }
+    setRenameTarget(target);
+  }
+
+  async function handleScheduleSelection(rawText: string) {
+    const selectedText = rawText.trim();
+    if (!selectedText) return;
+    if (selectedText.length > MAX_AI_PLAN_TEXT_LENGTH) {
+      showMessage(
+        "Zaznaczenie jest za długie",
+        `Do planowania można wysłać maksymalnie ${MAX_AI_PLAN_TEXT_LENGTH} znaków.`,
+      );
+      return;
+    }
+
+    try {
+      await flushPendingEditorSaves();
+      enqueueAiPlanningRequest(selectedText);
+      setEditorOpen(false);
+      router.push("/(app)/ai-task" as never);
+    } catch {
+      showMessage(
+        "Nie udało się zapisać notatki",
+        "Spróbuj ponownie przed wysłaniem tekstu do planowania.",
+      );
+    }
   }
 
   function command(cmd: EditorCommand) {
@@ -270,15 +451,22 @@ export function NotesScreen() {
   /* ---------- editor modal ---------- */
 
   const editorBody = selectedNote ? (
-    <View className="flex-1 overflow-hidden" style={{ backgroundColor: color }}>
+    <View
+      className="flex-1 overflow-hidden"
+      style={{ backgroundColor: editorTheme.background }}
+    >
       {/* header */}
       <View
         className="px-4 pt-3 pb-2"
-        style={{ borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.08)" }}
+        style={{ borderBottomWidth: 1, borderBottomColor: editorTheme.border }}
       >
         <View className="flex-row items-center gap-2">
           <TouchableOpacity onPress={closeEditor} className="p-1 -ml-1">
-            <MaterialIcons name="arrow-back" size={22} color="#3a3a3a" />
+            <MaterialIcons
+              name="arrow-back"
+              size={22}
+              color={editorTheme.text}
+            />
           </TouchableOpacity>
           <TextInput
             value={title}
@@ -287,9 +475,12 @@ export function NotesScreen() {
               scheduleMetaSave({ title: t });
             }}
             placeholder="Tytuł"
-            placeholderTextColor="rgba(26,26,26,0.4)"
+            placeholderTextColor={editorTheme.mutedText}
             className="flex-1 font-headline text-xl"
-            style={[NO_OUTLINE, { color: "#1a1a1a", textAlign: "center" }]}
+            style={[
+              NO_OUTLINE,
+              { color: editorTheme.text, textAlign: "center" },
+            ]}
           />
           <TouchableOpacity onPress={handleDelete} className="p-1.5">
             <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
@@ -303,27 +494,35 @@ export function NotesScreen() {
         ref={editorRef}
         initialHtml={selectedNote.content.html}
         isDark={isDark}
+        backgroundColor={editorTheme.background}
         onChange={scheduleContentSave}
+        onScheduleSelection={handleScheduleSelection}
         onStateChange={setToolbarState}
       />
 
       {/* colour picker — bottom right */}
       <View className="flex-row justify-end items-center gap-2 px-4 py-2">
-        {NOTE_COLORS.map((c) => (
-          <TouchableOpacity
-            key={c}
-            onPress={() => {
-              setColor(c);
-              scheduleMetaSave({ color: c });
-            }}
-            className="w-5 h-5 rounded-full"
-            style={{
-              backgroundColor: c,
-              borderWidth: color === c ? 2 : 1,
-              borderColor: color === c ? "#1a1a1a" : "rgba(0,0,0,0.15)",
-            }}
-          />
-        ))}
+        {NOTE_COLORS.map((c) => {
+          const swatchTheme = getNoteThemeColors(c, isDark);
+          return (
+            <TouchableOpacity
+              key={c}
+              onPress={() => {
+                setColor(c);
+                scheduleMetaSave({ color: c });
+              }}
+              className="w-5 h-5 rounded-full"
+              style={{
+                backgroundColor: swatchTheme.background,
+                borderWidth: color.toUpperCase() === c ? 2 : 1,
+                borderColor:
+                  color.toUpperCase() === c
+                    ? editorTheme.text
+                    : swatchTheme.border,
+              }}
+            />
+          );
+        })}
       </View>
 
       {/* bottom macOS toolbar */}
@@ -486,6 +685,94 @@ export function NotesScreen() {
     </Modal>
   );
 
+  /* ---------- finder context menu (web / desktop) ---------- */
+
+  const contextMenuItemCount =
+    contextMenu?.kind === "note" && contextMenu.note.noteFolderId ? 3 : 2;
+  const contextMenuHeight =
+    contextMenuItemCount * CONTEXT_MENU_ITEM_HEIGHT + 25;
+  const contextMenuLeft = contextMenu
+    ? Math.max(
+        8,
+        Math.min(
+          contextMenu.x,
+          Math.max(8, width - CONTEXT_MENU_WIDTH - 8),
+        ),
+      )
+    : 8;
+  const contextMenuTop = contextMenu
+    ? Math.max(
+        8,
+        Math.min(
+          contextMenu.y,
+          Math.max(8, height - contextMenuHeight - 8),
+        ),
+      )
+    : 8;
+
+  const finderContextMenu = (
+    <Modal
+      visible={Platform.OS === "web" && !!contextMenu}
+      transparent
+      animationType="none"
+      onRequestClose={() => setContextMenu(null)}
+    >
+      <Pressable
+        style={{ position: "absolute", inset: 0 } as never}
+        onPress={() => setContextMenu(null)}
+      />
+      {contextMenu ? (
+        <View
+          className="bg-surface-container-lowest border border-outline-variant rounded-xl py-2 shadow-lg overflow-hidden"
+          style={{
+            position: "absolute",
+            left: contextMenuLeft,
+            top: contextMenuTop,
+            width: CONTEXT_MENU_WIDTH,
+          }}
+        >
+          <ContextMenuItem
+            icon="drive-file-rename-outline"
+            label="Zmień nazwę"
+            onPress={() => {
+              beginRename(
+                contextMenu.kind === "folder"
+                  ? { kind: "folder", folder: contextMenu.folder }
+                  : { kind: "note", note: contextMenu.note },
+              );
+            }}
+          />
+          {contextMenu.kind === "note" &&
+          contextMenu.note.noteFolderId ? (
+            <ContextMenuItem
+              icon="drive-file-move-outline"
+              label="Przenieś poza folder"
+              onPress={() => {
+                moveNoteToFolder(contextMenu.note.id, null);
+                setContextMenu(null);
+              }}
+            />
+          ) : null}
+          <View className="h-px bg-outline-variant/60 mx-2 my-1" />
+          <ContextMenuItem
+            icon="delete-outline"
+            label="Usuń"
+            destructive
+            onPress={() => {
+              const target = contextMenu;
+              setContextMenu(null);
+              if (target.kind === "folder") {
+                deleteFolderById(target.folder.id);
+              } else {
+                deleteNoteById(target.note.id);
+              }
+            }}
+          />
+        </View>
+      ) : null}
+    </Modal>
+  );
+
   /* ---------- finder ---------- */
 
   const newFolderControl = creatingFolder ? (
@@ -590,6 +877,13 @@ export function NotesScreen() {
                   onOpen={() => setCurrentFolderId(f.id)}
                   onMoveNoteIn={(id) => moveNoteToFolder(id, f.id)}
                   onMenu={() => openFolderMenu(f)}
+                  onContextMenu={(point) => openFolderContextMenu(f, point)}
+                  renaming={
+                    renameTarget?.kind === "folder" &&
+                    renameTarget.folder.id === f.id
+                  }
+                  onRename={commitRename}
+                  onCancelRename={() => setRenameTarget(null)}
                 />
               ))}
 
@@ -597,8 +891,16 @@ export function NotesScreen() {
               <NoteFileTile
                 key={n.id}
                 note={n}
+                isDark={isDark}
                 onOpen={() => openNote(n.id)}
                 onMove={() => setMoveNoteId(n.id)}
+                onContextMenu={(point) => openNoteContextMenu(n, point)}
+                renaming={
+                  renameTarget?.kind === "note" &&
+                  renameTarget.note.id === n.id
+                }
+                onRename={commitRename}
+                onCancelRename={() => setRenameTarget(null)}
               />
             ))}
 
@@ -625,10 +927,13 @@ export function NotesScreen() {
 
   return (
     <PageLayout>
-      <View className="flex-1">{finder}</View>
+      <View ref={finderDragSurfaceRef} className="flex-1">
+        {finder}
+      </View>
       {editorModal}
       {folderEditModal}
       {moveSheet}
+      {finderContextMenu}
     </PageLayout>
   );
 }
@@ -669,14 +974,21 @@ function useNoteDrop(onDropNote: (noteId: string) => void) {
 function DraggableNote({
   noteId,
   children,
+  disabled = false,
 }: {
   noteId: string;
   children: React.ReactNode;
+  disabled?: boolean;
 }) {
   const ref = useRef<View>(null);
   useEffect(() => {
     if (Platform.OS !== "web" || !ref.current) return;
     const el = ref.current as unknown as HTMLElement;
+    if (disabled) {
+      el.draggable = false;
+      el.style.cursor = "";
+      return;
+    }
     el.draggable = true;
     el.style.cursor = "grab";
     const onStart = (e: DragEvent) => {
@@ -697,7 +1009,7 @@ function DraggableNote({
       el.draggable = false;
       el.style.cursor = "";
     };
-  }, [noteId]);
+  }, [disabled, noteId]);
   return <View ref={ref}>{children}</View>;
 }
 
@@ -736,6 +1048,10 @@ function FolderTile({
   onOpen,
   onMoveNoteIn,
   onMenu,
+  onContextMenu,
+  renaming,
+  onRename,
+  onCancelRename,
 }: {
   folder: NoteFolder;
   count: number;
@@ -743,103 +1059,276 @@ function FolderTile({
   onOpen: () => void;
   onMoveNoteIn: (noteId: string) => void;
   onMenu: () => void;
+  onContextMenu: (point: { x: number; y: number }) => void;
+  renaming: boolean;
+  onRename: (value: string) => void;
+  onCancelRename: () => void;
 }) {
   const { ref, over } = useNoteDrop(onMoveNoteIn);
-  useEffect(() => {
-    if (Platform.OS !== "web" || !ref.current) return;
-    const el = ref.current as unknown as HTMLElement;
-    const onDbl = () => onOpen();
-    const onCtx = (e: MouseEvent) => {
-      e.preventDefault();
-      onMenu();
-    };
-    el.addEventListener("dblclick", onDbl);
-    el.addEventListener("contextmenu", onCtx);
-    return () => {
-      el.removeEventListener("dblclick", onDbl);
-      el.removeEventListener("contextmenu", onCtx);
-    };
-  }, [ref, onOpen, onMenu]);
-
-  return (
-    <View ref={ref}>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={Platform.OS === "web" ? undefined : onOpen}
-        onLongPress={Platform.OS === "web" ? undefined : onMenu}
-        className="items-center gap-1 w-[112px] py-2 rounded-xl"
-        style={over ? { backgroundColor: "rgba(77,65,223,0.12)" } : undefined}
-      >
-        <MaterialIcons
-          name="folder"
-          size={64}
-          color={over ? "#4d41df" : isDark ? "#9b8cff" : "#4d41df"}
+  const tile = (
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={Platform.OS === "web" ? undefined : onOpen}
+      onLongPress={Platform.OS === "web" ? undefined : onMenu}
+      className="items-center gap-1 w-[112px] py-2 rounded-xl"
+      style={over ? { backgroundColor: "rgba(77,65,223,0.12)" } : undefined}
+    >
+      <MaterialIcons
+        name="folder"
+        size={64}
+        color={over ? "#4d41df" : isDark ? "#9b8cff" : "#4d41df"}
+      />
+      {renaming ? (
+        <InlineRename
+          initialValue={folder.title}
+          width={108}
+          onCommit={onRename}
+          onCancel={onCancelRename}
         />
+      ) : (
         <Text
           className="font-body text-sm text-on-surface text-center w-[108px]"
           numberOfLines={1}
         >
           {folder.title}
         </Text>
-        <Text className="font-label text-xs text-on-surface-variant">
-          {count}
-        </Text>
-      </TouchableOpacity>
-    </View>
+      )}
+      <Text className="font-label text-xs text-on-surface-variant">
+        {count}
+      </Text>
+    </TouchableOpacity>
   );
+
+  if (Platform.OS === "web") {
+    return (
+      <div
+        ref={ref as unknown as React.Ref<HTMLDivElement>}
+        onDoubleClick={renaming ? undefined : onOpen}
+        onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (!renaming) {
+            onContextMenu({ x: event.clientX, y: event.clientY });
+          }
+        }}
+      >
+        {tile}
+      </div>
+    );
+  }
+
+  return <View ref={ref}>{tile}</View>;
 }
 
 function NoteFileTile({
   note,
+  isDark,
   onOpen,
   onMove,
+  onContextMenu,
+  renaming,
+  onRename,
+  onCancelRename,
 }: {
   note: Note;
+  isDark: boolean;
   onOpen: () => void;
   onMove: () => void;
+  onContextMenu: (point: { x: number; y: number }) => void;
+  renaming: boolean;
+  onRename: (value: string) => void;
+  onCancelRename: () => void;
 }) {
-  const bg = note.noteColor || "#FFFFFF";
-  const previewColor = isLightColor(bg)
-    ? "rgba(26,26,26,0.75)"
-    : "rgba(255,255,255,0.85)";
+  const noteTheme = getNoteThemeColors(note.noteColor, isDark);
   const preview = note.content.text;
 
-  return (
-    <DraggableNote noteId={note.id}>
-      <TouchableOpacity
-        activeOpacity={0.85}
-        onPress={onOpen}
-        onLongPress={onMove}
-        className="items-center gap-1.5 w-[120px]"
+  const tile = (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      onPress={renaming ? undefined : onOpen}
+      onLongPress={Platform.OS === "web" ? undefined : onMove}
+      className="items-center gap-1.5 w-[120px]"
+    >
+      <View
+        className="w-[104px] h-[128px] rounded-lg p-2 overflow-hidden"
+        style={{
+          backgroundColor: noteTheme.background,
+          borderColor: noteTheme.border,
+          borderWidth: 1,
+        }}
       >
-        <View
-          className="w-[104px] h-[128px] rounded-lg border border-black/10 p-2 overflow-hidden"
-          style={{ backgroundColor: bg }}
+        <Text
+          className="font-headline"
+          style={{ color: noteTheme.text, fontSize: 9, lineHeight: 12 }}
+          numberOfLines={1}
         >
-          <Text
-            className="font-headline"
-            style={{ color: previewColor, fontSize: 9, lineHeight: 12 }}
-            numberOfLines={1}
-          >
-            {note.title || "Bez tytułu"}
-          </Text>
-          {preview ? (
+          {note.title || "Bez tytułu"}
+        </Text>
+        {preview ? (
             <Text
               className="font-body mt-1"
-              style={{ color: previewColor, fontSize: 9, lineHeight: 12 }}
-              numberOfLines={8}
-            >
-              {preview}
-            </Text>
-          ) : null}
-        </View>
+              style={{
+                color: noteTheme.mutedText,
+                fontSize: 9,
+                lineHeight: 12,
+              }}
+            numberOfLines={8}
+          >
+            {preview}
+          </Text>
+        ) : null}
+      </View>
+      {renaming ? (
+        <InlineRename
+          initialValue={note.title}
+          width={120}
+          onCommit={onRename}
+          onCancel={onCancelRename}
+        />
+      ) : (
         <Text
           className="font-body text-xs text-on-surface text-center w-[120px]"
           numberOfLines={2}
         >
           {note.title || "Bez tytułu"}
         </Text>
-      </TouchableOpacity>
+      )}
+    </TouchableOpacity>
+  );
+
+  return (
+    <DraggableNote noteId={note.id} disabled={renaming}>
+      {Platform.OS === "web" ? (
+        <div
+          onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!renaming) {
+              onContextMenu({ x: event.clientX, y: event.clientY });
+            }
+          }}
+        >
+          {tile}
+        </div>
+      ) : (
+        <View>{tile}</View>
+      )}
     </DraggableNote>
+  );
+}
+
+function InlineRename({
+  initialValue,
+  width,
+  onCommit,
+  onCancel,
+}: {
+  initialValue: string;
+  width: number;
+  onCommit: (value: string) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const settledRef = useRef(false);
+  const inputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => inputRef.current?.focus(), 50);
+    const element =
+      Platform.OS === "web"
+        ? (inputRef.current as unknown as HTMLElement | null)
+        : null;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      cancel();
+    };
+    element?.addEventListener("keydown", handleKeyDown);
+    return () => {
+      clearTimeout(timer);
+      element?.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  function commit() {
+    if (settledRef.current) return;
+    settledRef.current = true;
+    onCommit(value);
+  }
+
+  function cancel() {
+    if (settledRef.current) return;
+    settledRef.current = true;
+    onCancel();
+  }
+
+  return (
+    <TextInput
+      ref={inputRef}
+      value={value}
+      onChangeText={setValue}
+      selectTextOnFocus
+      onBlur={commit}
+      onSubmitEditing={commit}
+      onKeyPress={(event: any) => {
+        event.stopPropagation?.();
+      }}
+      className="bg-surface-container-lowest border border-primary rounded-md px-1.5 py-1 text-on-surface font-body text-xs text-center"
+      style={[NO_OUTLINE, { width }]}
+    />
+  );
+}
+
+function ContextMenuItem({
+  icon,
+  label,
+  destructive = false,
+  onPress,
+}: {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  destructive?: boolean;
+  onPress: () => void;
+}) {
+  const ref = useRef<View>(null);
+  const color = destructive ? "#ef4444" : "#4b5563";
+
+  useEffect(() => {
+    if (Platform.OS !== "web" || !ref.current) return;
+    const element = ref.current as unknown as HTMLElement;
+    element.tabIndex = 0;
+    element.setAttribute("role", "menuitem");
+    element.style.cursor = "pointer";
+
+    const handleClick = () => onPress();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onPress();
+    };
+
+    element.addEventListener("click", handleClick);
+    element.addEventListener("keydown", handleKeyDown);
+    return () => {
+      element.removeEventListener("click", handleClick);
+      element.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onPress]);
+
+  return (
+    <View
+      ref={ref}
+      className="h-11 flex-row items-center gap-3 px-3 hover:bg-surface-container-low"
+    >
+      <MaterialIcons name={icon} size={19} color={color} />
+      <Text
+        className={`font-body text-sm ${
+          destructive ? "text-error" : "text-on-surface"
+        }`}
+      >
+        {label}
+      </Text>
+    </View>
   );
 }

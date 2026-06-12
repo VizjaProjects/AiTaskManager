@@ -9,9 +9,11 @@
  *  Host -> editor:  { type: "setContent", html }
  *                   { type: "command", command, value? }
  *                   { type: "focus" }
+ *                   { type: "setTheme", isDark, backgroundColor }
  *  Editor -> host:  { type: "ready" }
  *                   { type: "change", html }
  *                   { type: "state", state: { bold, italic, ... } }
+ *                   { type: "scheduleSelection", text }
  */
 
 export interface EditorBridgeState {
@@ -23,46 +25,82 @@ export interface EditorBridgeState {
   insertOrderedList: boolean;
 }
 
+const EDITOR_THEMES = {
+  light: {
+    "--editor-fg": "#1A1A1A",
+    "--editor-muted": "#6B7280",
+    "--editor-accent": "#4D41DF",
+    "--editor-highlight": "#FDE68A",
+    "--editor-code-bg": "rgba(0,0,0,0.06)",
+    "--editor-line": "rgba(0,0,0,0.15)",
+    "--editor-table-border": "rgba(0,0,0,0.25)",
+    "--editor-selection": "rgba(77,65,223,0.24)",
+    "--schedule-bg": "#1A1A1A",
+    "--schedule-bg-hover": "#353535",
+    "--schedule-fg": "#FFFFFF",
+  },
+  dark: {
+    "--editor-fg": "#F4F4F5",
+    "--editor-muted": "#C1C1C7",
+    "--editor-accent": "#B8ADFF",
+    "--editor-highlight": "#6B5B21",
+    "--editor-code-bg": "rgba(255,255,255,0.08)",
+    "--editor-line": "rgba(255,255,255,0.18)",
+    "--editor-table-border": "rgba(255,255,255,0.28)",
+    "--editor-selection": "rgba(184,173,255,0.34)",
+    "--schedule-bg": "#F4F4F5",
+    "--schedule-bg-hover": "#FFFFFF",
+    "--schedule-fg": "#1A1A1A",
+  },
+} as const;
+
 export function buildEditorHtml(options: {
   isDark: boolean;
+  backgroundColor: string;
   placeholder?: string;
+  enableScheduleSelection?: boolean;
 }): string {
-  const { placeholder = "Zacznij pisać…" } = options;
-
-  // The editor sits on top of the note's colour (applied by the host view),
-  // and every note colour in the palette is a light pastel, so we always use
-  // a transparent background with dark, readable text regardless of app theme.
-  const bg = "transparent";
-  const fg = "#1a1a1a";
-  const muted = "#6b7280";
-  const accent = "#4d41df";
-  const highlight = "#fde68a";
+  const {
+    isDark,
+    backgroundColor,
+    placeholder = "Zacznij pisać…",
+    enableScheduleSelection = false,
+  } = options;
+  const initialTheme = isDark ? EDITOR_THEMES.dark : EDITOR_THEMES.light;
+  const initialThemeName = isDark ? "dark" : "light";
 
   return `<!DOCTYPE html>
-<html lang="pl">
+<html lang="pl" data-theme="${initialThemeName}">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 <style>
+  :root {
+    --note-background: ${backgroundColor};
+    ${Object.entries(initialTheme)
+      .map(([name, value]) => `${name}: ${value};`)
+      .join("\n    ")}
+  }
   * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
-  html, body { margin: 0; padding: 0; height: 100%; background: ${bg}; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--note-background); }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-    color: ${fg};
+    color: var(--editor-fg);
     font-size: 17.5px;
     line-height: 1.6;
   }
+  ::selection { background: var(--editor-selection); }
   #editor {
     outline: none;
     padding: 20px 44px 120px 44px;
     min-height: 100%;
-    caret-color: ${accent};
+    caret-color: var(--editor-accent);
     -webkit-user-select: text;
     user-select: text;
   }
   #editor:empty:before {
     content: attr(data-placeholder);
-    color: ${muted};
+    color: var(--editor-muted);
     pointer-events: none;
   }
   #editor h1 { font-size: 1.7em; font-weight: 700; margin: 0.4em 0 0.3em; }
@@ -72,31 +110,75 @@ export function buildEditorHtml(options: {
   #editor li { padding-left: 0.25em; }
   #editor blockquote {
     margin: 0.5em 0; padding: 0.2em 0 0.2em 0.9em;
-    border-left: 3px solid ${accent}; color: ${muted};
+    border-left: 3px solid var(--editor-accent); color: var(--editor-muted);
   }
   #editor pre {
-    background: rgba(0,0,0,0.06);
+    background: var(--editor-code-bg);
     border-radius: 8px; padding: 10px 12px; overflow-x: auto;
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.9em;
   }
-  #editor hr { border: none; border-top: 1px solid rgba(0,0,0,0.15); margin: 1em 0; }
-  #editor a { color: ${accent}; }
+  #editor hr { border: none; border-top: 1px solid var(--editor-line); margin: 1em 0; }
+  #editor a { color: var(--editor-accent); }
   #editor table { border-collapse: collapse; margin: 0.6em 0; width: max-content; max-width: 100%; }
-  #editor td { border: 1px solid rgba(0,0,0,0.25); padding: 6px 8px; min-width: 48px; }
-  #editor .highlight { background: ${highlight}; border-radius: 3px; padding: 0 2px; }
+  #editor td { border: 1px solid var(--editor-table-border); padding: 6px 8px; min-width: 48px; }
+  #editor .highlight { background: var(--editor-highlight); border-radius: 3px; padding: 0 2px; }
   #editor .checklist-item { display: flex; align-items: flex-start; gap: 8px; margin: 0.15em 0; }
-  #editor .checklist-item > input[type=checkbox] { margin-top: 0.35em; width: 16px; height: 16px; accent-color: ${accent}; cursor: pointer; flex: none; }
+  #editor .checklist-item > input[type=checkbox] { margin-top: 0.35em; width: 16px; height: 16px; accent-color: var(--editor-accent); cursor: pointer; flex: none; }
   #editor .checklist-item > span { flex: 1; min-height: 1.55em; }
-  #editor .checklist-item.done > span { text-decoration: line-through; color: ${muted}; }
+  #editor .checklist-item.done > span { text-decoration: line-through; color: var(--editor-muted); }
   #editor img { max-width: 100%; }
+  html[data-theme="dark"] #editor [style*="color: rgb(0, 0, 0)"],
+  html[data-theme="dark"] #editor [style*="color: rgb(26, 26, 26)"],
+  html[data-theme="dark"] #editor [style*="color: #000000"],
+  html[data-theme="dark"] #editor [style*="color: #000"],
+  html[data-theme="dark"] #editor [style*="color: #1a1a1a"],
+  html[data-theme="dark"] #editor [style*="color: black"],
+  html[data-theme="dark"] #editor font[color="#000000"],
+  html[data-theme="dark"] #editor font[color="#000"],
+  html[data-theme="dark"] #editor font[color="#1a1a1a"],
+  html[data-theme="dark"] #editor font[color="black"] {
+    color: var(--editor-fg) !important;
+  }
+  #schedule-selection {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 11px;
+    background: var(--schedule-bg);
+    color: var(--schedule-fg);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+    font: 600 12px/1.2 -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  #schedule-selection:hover { background: var(--schedule-bg-hover); }
 </style>
 </head>
 <body>
 <div id="editor" contenteditable="true" data-placeholder="${placeholder.replace(/"/g, "&quot;")}"></div>
+${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zaplanuj z AI</button>' : ""}
 <script>
   (function () {
     var editor = document.getElementById("editor");
+    var scheduleButton = document.getElementById("schedule-selection");
+    var selectedText = "";
     var isNative = !!(window.ReactNativeWebView);
+    var editorThemes = ${JSON.stringify(EDITOR_THEMES)};
+
+    function applyTheme(isDark, backgroundColor) {
+      var themeName = isDark ? "dark" : "light";
+      var theme = editorThemes[themeName];
+      var root = document.documentElement;
+      root.setAttribute("data-theme", themeName);
+      Object.keys(theme).forEach(function (name) {
+        root.style.setProperty(name, theme[name]);
+      });
+      if (backgroundColor) {
+        root.style.setProperty("--note-background", backgroundColor);
+      }
+    }
 
     function send(msg) {
       var s = JSON.stringify(msg);
@@ -125,6 +207,63 @@ export function buildEditorHtml(options: {
           }
         });
       } catch (e) {}
+    }
+
+    function hideScheduleButton() {
+      if (scheduleButton) scheduleButton.style.display = "none";
+      selectedText = "";
+    }
+
+    function updateScheduleButton() {
+      if (!scheduleButton) return;
+      var selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        hideScheduleButton();
+        return;
+      }
+
+      var range = selection.getRangeAt(0);
+      var ancestor = range.commonAncestorContainer;
+      var ancestorElement =
+        ancestor.nodeType === 1 ? ancestor : ancestor.parentElement;
+      if (!ancestorElement) {
+        hideScheduleButton();
+        return;
+      }
+
+      var selectionInsideEditor = editor.contains(ancestorElement);
+      if (
+        !selectionInsideEditor &&
+        (!range.intersectsNode || !range.intersectsNode(editor))
+      ) {
+        hideScheduleButton();
+        return;
+      }
+
+      var text = selectionInsideEditor
+        ? selection.toString().trim()
+        : editor.innerText.trim();
+      if (!text) {
+        hideScheduleButton();
+        return;
+      }
+
+      selectedText = text;
+      var rect = selectionInsideEditor
+        ? range.getBoundingClientRect()
+        : editor.getBoundingClientRect();
+      scheduleButton.style.display = "block";
+
+      requestAnimationFrame(function () {
+        var buttonRect = scheduleButton.getBoundingClientRect();
+        var left = rect.left + rect.width / 2 - buttonRect.width / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - buttonRect.width - 8));
+        var top = rect.top - buttonRect.height - 8;
+        if (top < 8) top = rect.bottom + 8;
+        top = Math.max(8, Math.min(top, window.innerHeight - buttonRect.height - 8));
+        scheduleButton.style.left = left + "px";
+        scheduleButton.style.top = top + "px";
+      });
     }
 
     function setCss(on) {
@@ -267,9 +406,31 @@ export function buildEditorHtml(options: {
     }
 
     editor.addEventListener("input", emitChange);
-    editor.addEventListener("keyup", emitState);
-    editor.addEventListener("mouseup", emitState);
-    document.addEventListener("selectionchange", emitState);
+    editor.addEventListener("keyup", function () {
+      emitState();
+      updateScheduleButton();
+    });
+    editor.addEventListener("mouseup", function () {
+      emitState();
+      updateScheduleButton();
+    });
+    document.addEventListener("selectionchange", function () {
+      emitState();
+      updateScheduleButton();
+    });
+    window.addEventListener("scroll", hideScheduleButton, true);
+    window.addEventListener("resize", hideScheduleButton);
+
+    if (scheduleButton) {
+      scheduleButton.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+      });
+      scheduleButton.addEventListener("click", function () {
+        if (!selectedText) return;
+        send({ type: "scheduleSelection", text: selectedText });
+        hideScheduleButton();
+      });
+    }
 
     // Enter inside a checklist item continues the list (empty item exits it).
     editor.addEventListener("keydown", function (e) {
@@ -323,6 +484,8 @@ export function buildEditorHtml(options: {
         exec(msg.command, msg.value);
       } else if (msg.type === "focus") {
         editor.focus();
+      } else if (msg.type === "setTheme") {
+        applyTheme(!!msg.isDark, msg.backgroundColor);
       }
     }
 

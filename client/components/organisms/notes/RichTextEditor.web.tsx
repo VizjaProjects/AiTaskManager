@@ -16,16 +16,32 @@ export const RichTextEditor = forwardRef<
   RichTextEditorHandle,
   RichTextEditorProps
 >(function RichTextEditor(
-  { initialHtml, isDark, placeholder, onChange, onStateChange },
+  {
+    initialHtml,
+    isDark,
+    backgroundColor,
+    placeholder,
+    onChange,
+    onScheduleSelection,
+    onStateChange,
+  },
   ref,
 ) {
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
   const readyRef = useRef(false);
   const pendingHtmlRef = useRef(initialHtml);
+  const initialThemeRef = useRef(isDark);
+  const initialBackgroundRef = useRef(backgroundColor);
 
   const srcDoc = useMemo(
-    () => buildEditorHtml({ isDark, placeholder }),
-    [isDark, placeholder],
+    () =>
+      buildEditorHtml({
+        isDark: initialThemeRef.current,
+        backgroundColor: initialBackgroundRef.current,
+        placeholder,
+        enableScheduleSelection: true,
+      }),
+    [placeholder],
   );
 
   function post(msg: Record<string, unknown>) {
@@ -46,10 +62,21 @@ export const RichTextEditor = forwardRef<
   // jumps to the top while the user is typing (after a debounced save/refetch).
 
   useEffect(() => {
+    if (readyRef.current) {
+      post({ type: "setTheme", isDark, backgroundColor });
+    }
+  }, [backgroundColor, isDark]);
+
+  useEffect(() => {
     function handle(e: MessageEvent) {
       if (e.source !== iframeRef.current?.contentWindow) return;
       if (typeof e.data !== "string") return;
-      let msg: { type?: string; html?: string; state?: never };
+      let msg: {
+        type?: string;
+        html?: string;
+        text?: string;
+        state?: never;
+      };
       try {
         msg = JSON.parse(e.data);
       } catch {
@@ -58,15 +85,27 @@ export const RichTextEditor = forwardRef<
       if (msg.type === "ready") {
         readyRef.current = true;
         post({ type: "setContent", html: pendingHtmlRef.current });
+        post({ type: "setTheme", isDark, backgroundColor });
       } else if (msg.type === "change" && typeof msg.html === "string") {
         onChange(msg.html);
+      } else if (
+        msg.type === "scheduleSelection" &&
+        typeof msg.text === "string"
+      ) {
+        onScheduleSelection?.(msg.text);
       } else if (msg.type === "state" && msg.state) {
         onStateChange(msg.state);
       }
     }
     window.addEventListener("message", handle);
     return () => window.removeEventListener("message", handle);
-  }, [onChange, onStateChange]);
+  }, [
+    backgroundColor,
+    isDark,
+    onChange,
+    onScheduleSelection,
+    onStateChange,
+  ]);
 
   return (
     <View className="flex-1">

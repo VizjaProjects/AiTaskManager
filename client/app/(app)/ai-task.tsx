@@ -31,7 +31,10 @@ import {
   useTaskStatuses,
 } from "@/lib/hooks";
 import { AiChatConfigButton } from "@/components/molecules/AiChatConfigButton";
-import { useLlmSettingsSelectionStore } from "@/lib/stores";
+import {
+  useAiPlanningRequestStore,
+  useLlmSettingsSelectionStore,
+} from "@/lib/stores";
 import {
   extractApiErrorMessage,
   isOrdovitaAiSelection,
@@ -42,7 +45,8 @@ import { formatDuration, normalizeDueDateTime } from "@/lib/utils";
 import { UI } from "@/lib/utils/uiTokens";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
+const MAX_AI_PLAN_TEXT_LENGTH = 4000;
 
 function AiLoadingAnimation() {
   const pulse1 = useRef(new Animated.Value(0.3)).current;
@@ -278,6 +282,14 @@ export default function AiTaskScreen() {
   const activeLlmSettingsId = useLlmSettingsSelectionStore(
     (s) => s.activeLlmSettingsId,
   );
+  const llmSelectionHydrated = useLlmSettingsSelectionStore(
+    (s) => s.hydrated,
+  );
+  const hydrateLlmSelection = useLlmSettingsSelectionStore((s) => s.hydrate);
+  const pendingPlanningRequest = useAiPlanningRequestStore(
+    (s) => s.pendingRequest,
+  );
+  const consumePlanningRequest = useAiPlanningRequestStore((s) => s.consume);
   const {
     data: proposals,
     isLoading: proposalsLoading,
@@ -296,13 +308,20 @@ export default function AiTaskScreen() {
 
   const categoryMap = new Map((categories ?? []).map((c) => [c.categoryId, c]));
 
-  async function handleGenerate() {
-    if (text.length < 10) return;
+  async function generateFromText(input: string) {
+    const normalized = input.trim();
+    if (!normalized) return;
+    if (normalized.length > MAX_AI_PLAN_TEXT_LENGTH) {
+      setConfigError(
+        `Plan może zawierać maksymalnie ${MAX_AI_PLAN_TEXT_LENGTH} znaków.`,
+      );
+      return;
+    }
     if (isListening) toggleSpeech();
     setConfigError(null);
     try {
       await generatePlan.mutateAsync({
-        text,
+        text: normalized,
         ...(isOrdovitaAiSelection(activeLlmSettingsId)
           ? {}
           : { llmSettingsId: activeLlmSettingsId! }),
@@ -313,7 +332,49 @@ export default function AiTaskScreen() {
     }
   }
 
-  const canGenerate = text.length >= 10 && !generatePlan.isPending;
+  function handleGenerate() {
+    if (text.trim().length < 10) return;
+    void generateFromText(text);
+  }
+
+  useEffect(() => {
+    if (pendingPlanningRequest && !llmSelectionHydrated) {
+      void hydrateLlmSelection();
+    }
+  }, [
+    hydrateLlmSelection,
+    llmSelectionHydrated,
+    pendingPlanningRequest,
+  ]);
+
+  useEffect(() => {
+    if (
+      !llmSelectionHydrated ||
+      !pendingPlanningRequest ||
+      generatePlan.isPending
+    ) {
+      return;
+    }
+
+    const request = consumePlanningRequest();
+    if (!request) return;
+    setText(request.text);
+    void generateFromText(request.text);
+    // The request is synchronously consumed before generation, which prevents
+    // duplicate calls when effects are replayed in development.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeLlmSettingsId,
+    consumePlanningRequest,
+    generatePlan.isPending,
+    llmSelectionHydrated,
+    pendingPlanningRequest,
+  ]);
+
+  const canGenerate =
+    text.trim().length >= 10 &&
+    text.length <= MAX_AI_PLAN_TEXT_LENGTH &&
+    !generatePlan.isPending;
 
   const speechSupported =
     Platform.OS === "web" &&
@@ -484,6 +545,7 @@ export default function AiTaskScreen() {
               multiline
               textAlignVertical="top"
               value={text}
+              maxLength={MAX_AI_PLAN_TEXT_LENGTH}
               onChangeText={setText}
               editable={!generatePlan.isPending}
               onKeyPress={(e: any) => {

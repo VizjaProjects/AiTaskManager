@@ -9,8 +9,10 @@ export interface RichTextEditorHandle {
 export interface RichTextEditorProps {
   initialHtml: string;
   isDark: boolean;
+  backgroundColor: string;
   placeholder?: string;
   onChange: (html: string) => void;
+  onScheduleSelection?: (text: string) => void;
   onStateChange: (state: {
     bold: boolean;
     italic: boolean;

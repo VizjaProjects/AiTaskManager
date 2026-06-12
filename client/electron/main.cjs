@@ -301,6 +301,68 @@ function configureWindowSecurity(window) {
 
     return { action: "deny" };
   });
+
+  window.webContents.on("context-menu", (event, params) => {
+    const suggestions = (params.dictionarySuggestions || []).slice(0, 5);
+    const hasSelection = Boolean(params.selectionText);
+    const shouldShowMenu =
+      params.isEditable ||
+      hasSelection ||
+      suggestions.length > 0 ||
+      Boolean(params.misspelledWord);
+
+    if (!shouldShowMenu) return;
+    event.preventDefault();
+
+    const template = [];
+
+    if (params.misspelledWord) {
+      if (suggestions.length > 0) {
+        for (const suggestion of suggestions) {
+          template.push({
+            label: suggestion,
+            click: () => window.webContents.replaceMisspelling(suggestion),
+          });
+        }
+      } else {
+        template.push({ label: "Brak sugestii", enabled: false });
+      }
+
+      template.push({
+        label: "Dodaj do słownika",
+        click: () =>
+          window.webContents.session.addWordToSpellCheckerDictionary(
+            params.misspelledWord,
+          ),
+      });
+      template.push({ type: "separator" });
+    }
+
+    if (params.isEditable) {
+      template.push(
+        { role: "undo", enabled: params.editFlags.canUndo },
+        { role: "redo", enabled: params.editFlags.canRedo },
+        { type: "separator" },
+        { role: "cut", enabled: params.editFlags.canCut },
+        { role: "copy", enabled: params.editFlags.canCopy },
+        { role: "paste", enabled: params.editFlags.canPaste },
+        { role: "delete", enabled: params.editFlags.canDelete },
+        { type: "separator" },
+        { role: "selectAll", enabled: params.editFlags.canSelectAll },
+      );
+    } else if (hasSelection) {
+      template.push(
+        { role: "copy", enabled: params.editFlags.canCopy },
+        { role: "selectAll", enabled: params.editFlags.canSelectAll },
+      );
+    }
+
+    if (template.length === 0) return;
+    Menu.buildFromTemplate(template).popup({
+      window,
+      frame: params.frame,
+    });
+  });
 }
 
 function configureSessionSecurity() {
