@@ -7,7 +7,13 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "text" | "error" | "ai";
+type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "outline"
+  | "text"
+  | "error"
+  | "ai";
 
 interface ButtonProps extends TouchableOpacityProps {
   variant?: ButtonVariant;
@@ -18,12 +24,12 @@ interface ButtonProps extends TouchableOpacityProps {
 }
 
 const VARIANT_STYLES: Record<ButtonVariant, string> = {
-  primary: "bg-action rounded-xl px-6 py-3.5",
-  secondary: "bg-surface-container-low rounded-xl px-6 py-3.5 border border-outline-variant",
-  outline: "bg-surface-container-lowest rounded-xl px-6 py-3.5 border border-outline-variant",
+  primary: "bg-action rounded-md px-5 py-3 border border-action",
+  secondary: "bg-surface rounded-md px-5 py-3 border border-outline-variant",
+  outline: "bg-surface rounded-md px-5 py-3 border border-outline-variant",
   text: "px-4 py-2",
-  error: "bg-error rounded-xl px-6 py-3.5",
-  ai: "bg-surface-container-low rounded-xl px-6 py-3.5 border border-outline-variant",
+  error: "bg-surface rounded-md px-5 py-3 border border-[rgba(192,57,43,0.4)]",
+  ai: "bg-surface rounded-md px-5 py-3 border border-outline-variant",
 };
 
 const TEXT_STYLES: Record<ButtonVariant, string> = {
@@ -31,7 +37,7 @@ const TEXT_STYLES: Record<ButtonVariant, string> = {
   secondary: "text-on-surface font-headline text-sm",
   outline: "text-on-surface font-headline text-sm",
   text: "text-on-surface font-headline text-sm",
-  error: "text-on-error font-headline text-sm",
+  error: "text-[#C0392B] font-headline text-sm",
   ai: "text-on-surface font-headline text-sm",
 };
 
@@ -56,19 +62,31 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === "primary" || variant === "error" ? "#f0f0f0" : "#111111"}
+          color={
+            variant === "primary"
+              ? "#f0f0f0"
+              : variant === "error"
+                ? "#C0392B"
+                : "#6b6965"
+          }
           size="small"
         />
       ) : (
         <>
           {variant === "ai" && (
-            <MaterialIcons name="auto-awesome" size={16} color="#6b7280" />
+            <MaterialIcons name="auto-awesome" size={16} color="#6b6965" />
           )}
           {icon && variant !== "ai" && (
             <MaterialIcons
               name={icon}
               size={18}
-              color={variant === "primary" || variant === "error" ? "#f0f0f0" : "#111111"}
+              color={
+                variant === "primary"
+                  ? "#f0f0f0"
+                  : variant === "error"
+                    ? "#C0392B"
+                    : "#1a1a18"
+              }
             />
           )}
           <Text className={TEXT_STYLES[variant]}>{label}</Text>

@@ -81,19 +81,19 @@ export function AppHeader({
 
   return (
     <>
-      <View className="flex-row items-center gap-3 px-margin-desktop py-3 bg-background border-b border-outline-variant">
+      <View className="flex-row items-center gap-3 px-margin-desktop py-2.5 bg-background border-b border-border-subtle">
         {!isDesktop && (
           <TouchableOpacity
-            className="p-2 -ml-1 rounded-full"
+            className="p-2 -ml-1 rounded-md"
             onPress={() => setDrawerOpen(true)}
           >
-            <MaterialIcons name="menu" size={24} color="#9ca3af" />
+            <MaterialIcons name="menu" size={24} color="#6b6965" />
           </TouchableOpacity>
         )}
 
         {!isDesktop && title && (
           <Text
-            className="text-on-surface font-headline text-lg flex-1"
+            className="text-on-surface font-display text-xl flex-1"
             numberOfLines={1}
           >
             {title}
@@ -102,12 +102,12 @@ export function AppHeader({
 
         {isDesktop && showSearch && (
           <TouchableOpacity
-            className="flex-1 flex-row items-center bg-surface-container-lowest rounded-full px-4 py-2.5 border border-outline-variant"
+            className="flex-1 flex-row items-center bg-surface rounded-md px-3.5 py-2 border border-outline-variant"
             onPress={() => setSearchOpen(true)}
             activeOpacity={0.9}
           >
-            <MaterialIcons name="search" size={20} color="#9ca3af" />
-            <Text className="flex-1 ml-2 text-on-surface-variant font-body text-body-md">
+            <MaterialIcons name="search" size={18} color="#9b9791" />
+            <Text className="flex-1 ml-2 text-text-tertiary font-body text-body-md">
               {searchPlaceholder}
             </Text>
           </TouchableOpacity>
@@ -116,23 +116,23 @@ export function AppHeader({
         <View className="flex-row items-center gap-2 ml-auto">
           {!isDesktop && showSearch && (
             <TouchableOpacity
-              className="p-2 rounded-full"
+              className="p-2 rounded-md"
               onPress={() => setSearchOpen(true)}
             >
-              <MaterialIcons name="search" size={22} color="#9ca3af" />
+              <MaterialIcons name="search" size={22} color="#6b6965" />
             </TouchableOpacity>
           )}
 
           <TouchableOpacity
-            className="p-2 rounded-full relative"
+            className="p-2 rounded-md relative"
             onPress={() => setNotificationsOpen(true)}
           >
             <MaterialIcons
               name="notifications-none"
               size={22}
-              color="#9ca3af"
+              color="#6b6965"
             />
-            <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-secondary" />
+            <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C0392B]" />
           </TouchableOpacity>
 
           {user && (
@@ -166,10 +166,10 @@ export function AppHeader({
               <View className="flex-row items-center justify-between mb-6 px-2">
                 <OrdovitaLogo size="sm" showTagline />
                 <TouchableOpacity
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-md"
                   onPress={() => setDrawerOpen(false)}
                 >
-                  <MaterialIcons name="close" size={22} color="#9ca3af" />
+                  <MaterialIcons name="close" size={22} color="#6b6965" />
                 </TouchableOpacity>
               </View>
 
@@ -199,7 +199,7 @@ export function AppHeader({
                 })}
               </ScrollView>
 
-              <View className="gap-0.5 pt-4 border-t border-outline-variant/15">
+              <View className="gap-0.5 pt-4 border-t border-border-subtle">
                 <TouchableOpacity
                   onPress={() => {
                     setDrawerOpen(false);
@@ -207,7 +207,7 @@ export function AppHeader({
                   }}
                   className="flex-row items-center gap-3 px-4 py-2.5"
                 >
-                  <MaterialIcons name="logout" size={20} color="#9ca3af" />
+                  <MaterialIcons name="logout" size={20} color="#6b6965" />
                   <Text className="text-on-surface-variant font-body text-sm">
                     Sign Out
                   </Text>
@@ -219,7 +219,7 @@ export function AppHeader({
                   <MaterialIcons
                     name={mode === "dark" ? "light-mode" : "dark-mode"}
                     size={20}
-                    color="#9ca3af"
+                    color="#6b6965"
                   />
                   <Text className="text-on-surface-variant font-body text-sm">
                     Theme

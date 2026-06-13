@@ -13,14 +13,14 @@ export function Card({
   style,
   ...props
 }: CardProps) {
-  const base = "rounded-2xl";
+  const base = "rounded-md";
 
   const variants = {
-    glass: `${base} bg-surface-container-lowest p-6`,
-    surface: `${base} bg-surface-container-lowest p-5`,
-    elevated: `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
-    bordered: `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
-    "ai-proposed": `${base} bg-surface-container-lowest p-5 border border-outline-variant`,
+    glass: `${base} bg-surface p-5 border border-outline-variant`,
+    surface: `${base} bg-surface p-4 border border-outline-variant`,
+    elevated: `${base} bg-surface p-4 border border-outline-variant`,
+    bordered: `${base} bg-surface p-4 border border-outline-variant`,
+    "ai-proposed": `${base} bg-surface p-4 border border-outline-variant`,
   };
 
   return (

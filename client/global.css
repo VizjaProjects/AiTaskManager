@@ -1,63 +1,83 @@
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Arena-inspired reskin tokens.
+ * Light mode is the priority (cream paper palette). Dark mode is a quiet near-black.
+ */
 :root {
   color-scheme: light;
-  --color-background: #f9fafb;
-  --color-surface: #ffffff;
-  --color-surface-dim: #f3f4f6;
+  --color-background: #f5f3ef; /* app bg — cream */
+  --color-surface: #ffffff; /* cards, modals, dropdown */
+  --color-surface-dim: #eeece8; /* sidebar */
   --color-surface-bright: #ffffff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #f3f4f6;
-  --color-surface-container: #e5e7eb;
-  --color-surface-container-high: #d1d5db;
-  --color-surface-container-highest: #9ca3af;
-  --color-surface-variant: #f3f4f6;
-  --color-on-surface: #111111;
-  --color-on-surface-variant: #6b7280;
-  --color-on-background: #111111;
-  --color-inverse-surface: #111111;
+  --color-surface-container-lowest: #ffffff; /* cards */
+  --color-surface-container-low: #eceae6; /* hover */
+  --color-surface-container: #e8e5e0; /* active */
+  --color-surface-container-high: #e2dfd9;
+  --color-surface-container-highest: #c8c4be;
+  --color-surface-variant: #eeece8;
+  --color-on-surface: #1a1a18; /* near-black text */
+  --color-on-surface-variant: #6b6965; /* secondary */
+  --color-on-background: #1a1a18;
+  --color-inverse-surface: #1a1a18;
   --color-inverse-on-surface: #ffffff;
-  --color-outline: #9ca3af;
-  --color-outline-variant: #e5e7eb;
-  --color-surface-tint: #111111;
-  --color-primary: #111111;
+  --color-outline: #c8c4be; /* border-strong */
+  --color-outline-variant: #e2dfd9; /* border-default */
+  --color-surface-tint: #1a1a18;
+  --color-primary: #1a1a18;
   --color-on-primary: #ffffff;
-  --color-primary-fixed: #f3f4f6;
-  --color-primary-fixed-dim: #e5e7eb;
-  --color-accent: #4d41df;
-  --color-action: #111111;
+  --color-primary-fixed: #eceae6;
+  --color-primary-fixed-dim: #e8e5e0;
+  --color-accent: #5b4ee0; /* AI accent */
+  --color-action: #1a1a18;
   --color-on-action: #ffffff;
+  /* Arena extras */
+  --color-sidebar: #eeece8;
+  --color-hover: #eceae6;
+  --color-active: #e8e5e0;
+  --color-text-tertiary: #9b9791;
+  --color-text-muted: #b8b4af;
+  --color-border-subtle: #eceae6;
 }
 
 .dark {
   color-scheme: dark;
-  --color-background: #0f0f0f;
-  --color-surface: #0f0f0f;
-  --color-surface-dim: #0f0f0f;
-  --color-surface-bright: #161616;
-  --color-surface-container-lowest: #1a1a1a;
-  --color-surface-container-low: #222222;
-  --color-surface-container: #2a2a2a;
-  --color-surface-container-high: #333333;
-  --color-surface-container-highest: #3d3d3d;
-  --color-surface-variant: #222222;
-  --color-on-surface: #ededed;
-  --color-on-surface-variant: #a0a0a5;
-  --color-on-background: #ededed;
-  --color-inverse-surface: #3a3a3c;
-  --color-inverse-on-surface: #f0f0f0;
-  --color-outline: #5c5c60;
-  --color-outline-variant: #2a2a2a;
-  --color-surface-tint: #e8e8e8;
-  --color-primary: #e8e8e8;
-  --color-on-primary: #121212;
-  --color-primary-fixed: #242426;
-  --color-primary-fixed-dim: #2c2c2e;
+  --color-background: #111111; /* app bg */
+  --color-surface: #1a1a1a; /* cards, modals */
+  --color-surface-dim: #141414; /* sidebar */
+  --color-surface-bright: #1c1c1c;
+  --color-surface-container-lowest: #1a1a1a; /* cards */
+  --color-surface-container-low: rgba(255, 255, 255, 0.04); /* hover */
+  --color-surface-container: rgba(255, 255, 255, 0.07); /* active */
+  --color-surface-container-high: rgba(255, 255, 255, 0.1);
+  --color-surface-container-highest: rgba(255, 255, 255, 0.15);
+  --color-surface-variant: #141414;
+  --color-on-surface: rgba(255, 255, 255, 0.88);
+  --color-on-surface-variant: rgba(255, 255, 255, 0.5);
+  --color-on-background: rgba(255, 255, 255, 0.88);
+  --color-inverse-surface: #f5f3ef;
+  --color-inverse-on-surface: #1a1a18;
+  --color-outline: rgba(255, 255, 255, 0.15); /* border-strong */
+  --color-outline-variant: rgba(255, 255, 255, 0.08); /* border-default */
+  --color-surface-tint: #ffffff;
+  --color-primary: rgba(255, 255, 255, 0.88);
+  --color-on-primary: #111111;
+  --color-primary-fixed: rgba(255, 255, 255, 0.07);
+  --color-primary-fixed-dim: rgba(255, 255, 255, 0.1);
   --color-accent: #9b8cff;
-  --color-action: #4a4a4e;
-  --color-on-action: #f0f0f0;
+  --color-action: rgba(255, 255, 255, 0.92);
+  --color-on-action: #111111;
+  /* Arena extras */
+  --color-sidebar: #141414;
+  --color-hover: rgba(255, 255, 255, 0.04);
+  --color-active: rgba(255, 255, 255, 0.07);
+  --color-text-tertiary: rgba(255, 255, 255, 0.28);
+  --color-text-muted: rgba(255, 255, 255, 0.22);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
 }
 
 /* Remove browser default focus rings on web */
@@ -78,4 +98,29 @@ select:focus-visible {
   outline: none !important;
   box-shadow: none !important;
   border-color: inherit !important;
+}
+
+/* Arena base typography — UI font is system/Inter, no heavy weights */
+html,
+body {
+  background-color: var(--color-background);
+  font-family:
+    -apple-system, BlinkMacSystemFont, "Inter", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Playfair Display — display/serif for hero titles, page titles, modal titles */
+.font-display,
+[class~="font-display"] {
+  font-family: "Playfair Display", Georgia, serif !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Uppercase section labels (Arena style) */
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-tertiary);
 }

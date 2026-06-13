@@ -77,7 +77,7 @@ export function SideNavBar() {
   }
 
   return (
-    <View className="w-sidebar h-full bg-background px-3 py-5 justify-between border-r border-outline-variant">
+    <View className="w-sidebar h-full bg-sidebar px-3 py-4 justify-between border-r border-border-subtle">
       <View className="flex-1">
         <TouchableOpacity
           className="px-2 mb-4"
@@ -86,12 +86,12 @@ export function SideNavBar() {
           <OrdovitaLogo size="md" showTagline />
         </TouchableOpacity>
 
-        <View className="px-2 mb-5">
+        <View className="px-2 mb-4">
           <WorkspaceSwitcher />
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
-          <View className="gap-0.5 px-1">
+          <View className="gap-px px-1">
             {NAV_ITEMS.map((item) => (
               <NavItem
                 key={item.path}
@@ -128,24 +128,28 @@ export function SideNavBar() {
         </ScrollView>
       </View>
 
-      <View className="gap-0.5 px-1 pt-4 border-t border-outline-variant/15">
+      <View className="gap-px px-1 pt-3 border-t border-border-subtle">
         <TouchableOpacity
           onPress={() => logout()}
-          className="flex-row items-center gap-3 px-4 py-2.5 rounded-xl"
+          className="flex-row items-center gap-2.5 px-3.5 py-2 rounded-md"
         >
-          <MaterialIcons name="logout" size={20} color="#9ca3af" />
+          <MaterialIcons
+            name="logout"
+            size={18}
+            color={mode === "dark" ? "rgba(255,255,255,0.5)" : "#6b6965"}
+          />
           <Text className="text-on-surface-variant font-body text-body-md">
             Sign Out
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={toggle}
-          className="flex-row items-center gap-3 px-4 py-2.5 rounded-xl"
+          className="flex-row items-center gap-2.5 px-3.5 py-2 rounded-md"
         >
           <MaterialIcons
             name={mode === "dark" ? "light-mode" : "dark-mode"}
-            size={20}
-            color="#9ca3af"
+            size={18}
+            color={mode === "dark" ? "rgba(255,255,255,0.5)" : "#6b6965"}
           />
           <Text className="text-on-surface-variant font-body text-body-md">
             Theme

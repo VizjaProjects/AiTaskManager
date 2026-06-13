@@ -23,7 +23,7 @@ export function EmptyState({
           <View className="w-4 h-4 rounded-full bg-inverse-surface" />
         </View>
       </View>
-      <Text className="text-on-surface font-headline text-xl text-center mb-2">
+      <Text className="text-on-surface font-display text-2xl text-center mb-2">
         {title}
       </Text>
       <Text className="text-on-surface-variant font-body text-sm text-center mb-8 max-w-xs">

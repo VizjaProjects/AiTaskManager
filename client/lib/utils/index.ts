@@ -1,17 +1,17 @@
 import { TaskPriority } from "../types";
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "#dc2626",
-  [TaskPriority.HIGH]: "#f43f5e",
-  [TaskPriority.MEDIUM]: "#f59e0b",
-  [TaskPriority.LOW]: "#3b82f6",
+  [TaskPriority.CRITICAL]: "#c0392b",
+  [TaskPriority.HIGH]: "#c0392b",
+  [TaskPriority.MEDIUM]: "#b7770d",
+  [TaskPriority.LOW]: "#9b9791",
 };
 
 export const PRIORITY_COLORS_DARK: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "#f87171",
-  [TaskPriority.HIGH]: "#fb7185",
-  [TaskPriority.MEDIUM]: "#fbbf24",
-  [TaskPriority.LOW]: "#60a5fa",
+  [TaskPriority.CRITICAL]: "#e07a6f",
+  [TaskPriority.HIGH]: "#e07a6f",
+  [TaskPriority.MEDIUM]: "#d6a23e",
+  [TaskPriority.LOW]: "rgba(255,255,255,0.4)",
 };
 
 export const PRIORITY_BG: Record<TaskPriority, string> = {
@@ -29,17 +29,17 @@ export const PRIORITY_BORDER: Record<TaskPriority, string> = {
 };
 
 export const PRIORITY_BADGE_BG: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "bg-red-50 dark:bg-red-950/40",
-  [TaskPriority.HIGH]: "bg-rose-50 dark:bg-rose-950/40",
-  [TaskPriority.MEDIUM]: "bg-amber-50 dark:bg-amber-950/40",
-  [TaskPriority.LOW]: "bg-blue-50 dark:bg-blue-950/40",
+  [TaskPriority.CRITICAL]: "bg-[rgba(192,57,43,0.08)]",
+  [TaskPriority.HIGH]: "bg-[rgba(192,57,43,0.08)]",
+  [TaskPriority.MEDIUM]: "bg-[rgba(183,119,13,0.08)]",
+  [TaskPriority.LOW]: "bg-surface-container-low",
 };
 
 export const PRIORITY_TEXT: Record<TaskPriority, string> = {
-  [TaskPriority.CRITICAL]: "text-red-700 dark:text-red-400",
-  [TaskPriority.HIGH]: "text-rose-600 dark:text-rose-400",
-  [TaskPriority.MEDIUM]: "text-amber-700 dark:text-amber-400",
-  [TaskPriority.LOW]: "text-blue-600 dark:text-blue-400",
+  [TaskPriority.CRITICAL]: "text-[#C0392B]",
+  [TaskPriority.HIGH]: "text-[#C0392B]",
+  [TaskPriority.MEDIUM]: "text-[#B7770D]",
+  [TaskPriority.LOW]: "text-on-surface-variant",
 };
 
 export const PRIORITY_LABEL_SOFT: Record<TaskPriority, string> = {
@@ -162,7 +162,11 @@ export function normalizeDueDateTime(
 /** Task due = linked event end when a calendar block exists (source of truth). */
 export function getEffectiveTaskDueDateTime(
   task: { taskId: string; dueDateTime: string | null },
-  linkedEvents?: Array<{ taskId: string | null; endDateTime: string; status: string }>,
+  linkedEvents?: Array<{
+    taskId: string | null;
+    endDateTime: string;
+    status: string;
+  }>,
 ): string | null {
   const linked = (linkedEvents ?? []).find(
     (e) =>
@@ -176,11 +180,13 @@ export function getEffectiveTaskDueDateTime(
 
 export function resolveTaskDueDateTimeForSave(
   task: { taskId: string; dueDateTime: string | null },
-  linkedEvents?: Array<{ taskId: string | null; endDateTime: string; status: string }>,
+  linkedEvents?: Array<{
+    taskId: string | null;
+    endDateTime: string;
+    status: string;
+  }>,
 ): string | undefined {
-  return normalizeDueDateTime(
-    getEffectiveTaskDueDateTime(task, linkedEvents),
-  );
+  return normalizeDueDateTime(getEffectiveTaskDueDateTime(task, linkedEvents));
 }
 
 /** Send local wall-clock datetime to API (no UTC shift). */

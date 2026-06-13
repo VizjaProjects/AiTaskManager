@@ -38,8 +38,8 @@ export function Input({
         </Text>
       )}
       <View
-        className={`flex-row items-center rounded-xl min-h-12 px-4 py-3 border border-outline-variant bg-surface-container-lowest ${
-          error ? "border-error/40" : ""
+        className={`flex-row items-center rounded-md min-h-12 px-3.5 py-3 border border-outline-variant bg-surface ${
+          error ? "border-[rgba(192,57,43,0.4)]" : ""
         }`}
       >
         {icon && (
@@ -58,7 +58,10 @@ export function Input({
           {...props}
         />
         {secureToggle && (
-          <TouchableOpacity onPress={() => setHidden((v) => !v)} className="p-1">
+          <TouchableOpacity
+            onPress={() => setHidden((v) => !v)}
+            className="p-1"
+          >
             <MaterialIcons
               name={hidden ? "visibility" : "visibility-off"}
               size={20}
@@ -84,7 +87,7 @@ export function PlainTextArea({
 }: TextInputProps & { minHeight?: number }) {
   return (
     <TextInput
-      className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-sm border border-outline-variant"
+      className="bg-surface rounded-md p-4 text-on-surface font-body text-sm border border-outline-variant"
       style={[{ minHeight }, NO_OUTLINE, style]}
       multiline
       textAlignVertical="top"

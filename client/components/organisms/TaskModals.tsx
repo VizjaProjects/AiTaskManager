@@ -243,8 +243,8 @@ export function TaskDetailModal({
 
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-4">
-        <View className="bg-surface-container-lowest rounded-3xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant">
+      <View className="flex-1 bg-black/40 items-center justify-center p-4">
+        <View className="bg-surface rounded-2xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant">
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 0 }}
@@ -258,14 +258,14 @@ export function TaskDetailModal({
                     variant="soft"
                   />
                   {task.source === TaskSource.AI_PARSED && (
-                    <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 border border-outline-variant">
+                    <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-sm">
                       <MaterialIcons
                         name="auto-awesome"
                         size={12}
-                        color="#9b8cff"
+                        color="#5B4EE0"
                       />
-                      <Text className="text-accent text-xs font-label uppercase">
-                        AI_PARSED
+                      <Text className="text-[#5B4EE0] text-[11px] font-label">
+                        AI
                       </Text>
                     </View>
                   )}
@@ -287,7 +287,7 @@ export function TaskDetailModal({
               {editing ? (
                 <Input value={title} onChangeText={setTitle} />
               ) : (
-                <Text className="font-headline text-on-surface text-2xl leading-8">
+                <Text className="font-display text-on-surface text-2xl leading-8">
                   {task.title}
                 </Text>
               )}

@@ -37,11 +37,11 @@ export function OrdovitaLogo({
 
   const textBlock = showText && (
     <View className={variant === "stacked" ? "items-center" : ""}>
-      <Text className={`text-on-surface font-headline ${s.letter}`}>
+      <Text className={`text-on-surface font-display ${s.letter}`}>
         Ordovita
       </Text>
       {showTagline && (
-        <Text className={`text-on-surface-variant font-body ${s.tagline} mt-0.5`}>
+        <Text className={`text-text-tertiary font-body ${s.tagline} mt-0.5`}>
           Premium AI Workspace
         </Text>
       )}

@@ -282,9 +282,7 @@ export default function AiTaskScreen() {
   const activeLlmSettingsId = useLlmSettingsSelectionStore(
     (s) => s.activeLlmSettingsId,
   );
-  const llmSelectionHydrated = useLlmSettingsSelectionStore(
-    (s) => s.hydrated,
-  );
+  const llmSelectionHydrated = useLlmSettingsSelectionStore((s) => s.hydrated);
   const hydrateLlmSelection = useLlmSettingsSelectionStore((s) => s.hydrate);
   const pendingPlanningRequest = useAiPlanningRequestStore(
     (s) => s.pendingRequest,
@@ -341,11 +339,7 @@ export default function AiTaskScreen() {
     if (pendingPlanningRequest && !llmSelectionHydrated) {
       void hydrateLlmSelection();
     }
-  }, [
-    hydrateLlmSelection,
-    llmSelectionHydrated,
-    pendingPlanningRequest,
-  ]);
+  }, [hydrateLlmSelection, llmSelectionHydrated, pendingPlanningRequest]);
 
   useEffect(() => {
     if (
@@ -498,13 +492,13 @@ export default function AiTaskScreen() {
           contentContainerStyle={{ gap: 24, paddingBottom: 32 }}
         >
           <View className="gap-3">
-            <View className="flex-row items-center gap-1.5 self-start px-3 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
-              <MaterialIcons name="auto-awesome" size={13} color="#9ca3af" />
-              <Text className="text-on-surface-variant font-label text-xs">
+            <View className="flex-row items-center gap-1.5 self-start px-2.5 py-1 rounded-sm border border-outline-variant bg-surface">
+              <MaterialIcons name="auto-awesome" size={13} color="#9b9791" />
+              <Text className="text-text-tertiary font-label text-xs">
                 AI Assistant
               </Text>
             </View>
-            <Text className="text-on-surface font-headline text-headline-md">
+            <Text className="text-on-surface font-display text-headline-md">
               AI Task Creation
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md">
@@ -521,15 +515,15 @@ export default function AiTaskScreen() {
             </View>
           ) : null}
 
-          <View className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-5 gap-4">
+          <View className="bg-surface rounded-input border border-outline-variant p-5 gap-4">
             <View className="flex-row items-center gap-2">
-              <MaterialIcons name="auto-awesome" size={16} color="#9ca3af" />
-              <Text className="text-on-surface font-headline text-title-lg">
+              <MaterialIcons name="auto-awesome" size={16} color="#9b9791" />
+              <Text className="text-on-surface font-display text-title-lg">
                 What would you like to plan?
               </Text>
             </View>
             <TextInput
-              className="bg-surface-container-low rounded-xl text-on-surface font-body text-base border border-outline-variant"
+              className="bg-surface-container-low rounded-md text-on-surface font-body text-base border border-outline-variant"
               style={[
                 {
                   minHeight: 120,
