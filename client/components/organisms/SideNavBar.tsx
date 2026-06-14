@@ -57,12 +57,6 @@ const NAV_ITEMS: Array<{
     match: ["/statistics"],
     badge: "In Progress",
   },
-  {
-    icon: "settings",
-    label: "Settings",
-    path: "/(app)/profile",
-    match: ["/profile"],
-  },
 ];
 
 export function SideNavBar() {
@@ -70,7 +64,7 @@ export function SideNavBar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { mode, toggle } = useThemeStore();
+  const mode = useThemeStore((s) => s.mode);
 
   function isActive(matches: string[]) {
     return matches.some((m) => pathname.startsWith(m) || pathname.includes(m));
@@ -140,19 +134,6 @@ export function SideNavBar() {
           />
           <Text className="text-on-surface-variant font-body text-body-md">
             Sign Out
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={toggle}
-          className="flex-row items-center gap-2.5 px-3.5 py-2 rounded-md"
-        >
-          <MaterialIcons
-            name={mode === "dark" ? "light-mode" : "dark-mode"}
-            size={18}
-            color={mode === "dark" ? "rgba(255,255,255,0.5)" : "#6b6965"}
-          />
-          <Text className="text-on-surface-variant font-body text-body-md">
-            Theme
           </Text>
         </TouchableOpacity>
       </View>

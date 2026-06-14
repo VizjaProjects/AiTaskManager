@@ -12,13 +12,13 @@ import {
 import { useRouter, usePathname } from "expo-router";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Avatar } from "../atoms/Avatar";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { NavItem } from "../molecules/NavItem";
+import { UserMenu } from "../molecules/UserMenu";
 import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
 import { NotificationsDrawer } from "./NotificationsDrawer";
 import { SearchModal } from "./SearchModal";
-import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
 
 const DRAWER_NAV_ITEMS: Array<{
@@ -41,7 +41,6 @@ const DRAWER_NAV_ITEMS: Array<{
   },
   { icon: "assignment", label: "Ankiety", path: "/(app)/surveys" },
   { icon: "poll", label: "Surveys", path: "/(app)/admin-surveys" },
-  { icon: "settings", label: "Ustawienia", path: "/(app)/profile" },
 ];
 
 interface AppHeaderProps {
@@ -59,7 +58,6 @@ export function AppHeader({
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const { mode, toggle } = useThemeStore();
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -135,13 +133,7 @@ export function AppHeader({
             <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C0392B]" />
           </TouchableOpacity>
 
-          {user && (
-            <TouchableOpacity
-              onPress={() => router.push("/(app)/profile" as never)}
-            >
-              <Avatar fullName={user.fullName} size="sm" />
-            </TouchableOpacity>
-          )}
+          <UserMenu />
         </View>
       </View>
 
@@ -210,19 +202,6 @@ export function AppHeader({
                   <MaterialIcons name="logout" size={20} color="#6b6965" />
                   <Text className="text-on-surface-variant font-body text-sm">
                     Sign Out
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={toggle}
-                  className="flex-row items-center gap-3 px-4 py-2.5"
-                >
-                  <MaterialIcons
-                    name={mode === "dark" ? "light-mode" : "dark-mode"}
-                    size={20}
-                    color="#6b6965"
-                  />
-                  <Text className="text-on-surface-variant font-body text-sm">
-                    Theme
                   </Text>
                 </TouchableOpacity>
               </View>
