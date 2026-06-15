@@ -14,6 +14,7 @@ RUN --mount=type=cache,target=/root/.nuget/packages \
 
 COPY . .
 RUN --mount=type=cache,target=/root/.nuget/packages \
+    dotnet restore Ordovita.Api/Ordovita.Api.csproj && \
     dotnet publish Ordovita.Api/Ordovita.Api.csproj -c Release -o /app/publish --no-restore
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
