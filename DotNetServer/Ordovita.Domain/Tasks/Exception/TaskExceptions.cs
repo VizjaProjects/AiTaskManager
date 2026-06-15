@@ -18,6 +18,14 @@ public static class TaskExceptions
 
     public static readonly Error NotPending =
         Error.Validation("Task.NotPending", "Task is not a pending AI proposal.");
+    
+    public static readonly Error AlreadyAssigned =
+        Error.Validation("Task.AlreadyAssigned", "You cannot add user who  is already assigned.");
+
+    public static readonly Error AssigneeNotWorkspaceMember =
+        Error.Validation("Task.AssigneeNotWorkspaceMember",
+            "You can only assign users who are members of the task's workspace.");
+
 }
 
 public static class EventExceptions

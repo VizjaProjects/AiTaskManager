@@ -7,6 +7,7 @@ using Ordovita.Application.Note.DeleteNote;
 using Ordovita.Application.Note.DeleteNoteFolder;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
+using Ordovita.Application.Note.SetNoteLinks;
 using Ordovita.Application.Note.UpdateNoteContent;
 using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
@@ -42,7 +43,7 @@ public static class NoteEndpoint
             .Produces(204)
             .Produces(401)
             .Produces(404);
-            
+
         g.MapPost("/create", CreateNote)
             .WithName("CreateNote")
             .Produces<CreateNoteResult>(201)
@@ -60,24 +61,31 @@ public static class NoteEndpoint
             .Produces(400)
             .Produces(401)
             .Produces(404);
-        
+
         g.MapPut("/{noteId:guid}/metadata", UpdateNoteMetadata)
             .WithName("UpdateNoteMetadata")
             .Produces(200)
             .Produces(400)
             .Produces(401)
             .Produces(404);
-        
+
+        g.MapPut("/{noteId:guid}/links", SetNoteLinks)
+            .WithName("SetNoteLinks")
+            .Produces(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(404);
+
         g.MapDelete("/{noteId:guid}", DeleteNote)
             .WithName("DeleteNote")
             .Produces(204)
             .Produces(401)
             .Produces(404);
-        
-        
+
+
         return g;
     }
-    
+
     private static async Task<IResult> CreateFolder(
         Guid workspaceId, CreateNoteFolderRequest request, ISender sender, CancellationToken ct)
     {
@@ -101,35 +109,37 @@ public static class NoteEndpoint
         return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
     }
 
-    private static async Task<IResult> DeleteFolder(Guid workspaceId, Guid folderId, ISender sender, CancellationToken ct)
+    private static async Task<IResult> DeleteFolder(Guid workspaceId, Guid folderId, ISender sender,
+        CancellationToken ct)
     {
         var result = await sender.Send(new DeleteNoteFolderCommand(workspaceId, folderId), ct);
         return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
     }
-    
+
     private static async Task<IResult> CreateNote(
         Guid workspaceId, CreateNoteRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new CreateNoteCommand(
-            workspaceId, request.NoteFolderId, request.Title, request.NoteColor, request.ContentJson, request.NoteDescription), ct);
+            workspaceId, request.NoteFolderId, request.Title, request.NoteColor, request.ContentJson,
+            request.NoteDescription), ct);
         return result.IsSuccess
             ? Results.Created($"/api/v1/workspace/{workspaceId}/note/{result.Value!.Id}", result.Value)
             : result.Error.ToProblem();
     }
-    
+
     private static async Task<IResult> GetWorkspaceNotes(Guid workspaceId, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new GetWorkspaceNotesQuery(workspaceId), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
-    
+
     private static async Task<IResult> UpdateNoteContent(
         Guid workspaceId, Guid noteId, UpdateNoteContentRequest request, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new UpdateNoteContentCommand(workspaceId, noteId, request.ContentJson), ct);
         return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
     }
-    
+
     private static async Task<IResult> UpdateNoteMetadata(
         Guid workspaceId, Guid noteId, UpdateNoteMetadataRequest request, ISender sender, CancellationToken ct)
     {
@@ -137,18 +147,42 @@ public static class NoteEndpoint
             workspaceId, noteId, request.Title, request.NoteColor, request.NoteDescription, request.NoteFolderId), ct);
         return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
     }
-    
+
     private static async Task<IResult> DeleteNote(Guid workspaceId, Guid noteId, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new DeleteNoteCommand(workspaceId, noteId), ct);
         return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
     }
 
-    
+    private static async Task<IResult> SetNoteLinks(
+        Guid workspaceId, Guid noteId, SetNoteLinksRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new SetNoteLinksCommand(
+            workspaceId, noteId, request.TaskIds ?? [], request.EventIds ?? []), ct);
+        return result.IsSuccess ? Results.Ok() : result.Error.ToProblem();
+    }
+
+
     private sealed record CreateNoteFolderRequest(string Title);
+
     private sealed record UpdateNoteFolderRequest(string Title, string? Description);
-    private sealed record CreateNoteRequest(Guid? NoteFolderId, string Title, string NoteColor, string NoteDescription, string ContentJson);
+
+    private sealed record CreateNoteRequest(
+        Guid? NoteFolderId,
+        string Title,
+        string NoteColor,
+        string NoteDescription,
+        string ContentJson);
+
     private sealed record UpdateNoteContentRequest(string ContentJson);
-    private sealed record UpdateNoteMetadataRequest(string Title, string NoteColor, Guid? NoteFolderId, string NoteDescription);
-    
+
+    private sealed record UpdateNoteMetadataRequest(
+        string Title,
+        string NoteColor,
+        Guid? NoteFolderId,
+        string NoteDescription);
+
+    private sealed record SetNoteLinksRequest(
+        IReadOnlyList<Guid>? TaskIds,
+        IReadOnlyList<Guid>? EventIds);
 }

@@ -9,6 +9,7 @@ import {
   useDeleteWorkspace,
   useAssignWorkspaceUsersByEmail,
   useRemoveWorkspaceUsers,
+  useSetWorkspaceVisibility,
 } from "@/lib/hooks";
 import { useWorkspaceStore, useAuthStore } from "@/lib/stores";
 
@@ -43,7 +44,13 @@ export default function WorkspaceSettingsScreen() {
   const deleteWorkspace = useDeleteWorkspace();
   const assignByEmail = useAssignWorkspaceUsersByEmail();
   const removeUsers = useRemoveWorkspaceUsers();
+  const setVisibility = useSetWorkspaceVisibility();
+  const defaultWorkspaceId = useWorkspaceStore((s) => s.defaultWorkspaceId);
+  const setDefaultWorkspace = useWorkspaceStore((s) => s.setDefaultWorkspace);
   const workspace = workspaces.find((w) => w.workspaceId === workspaceId);
+
+  const isPublic = workspace?.visibility === "Public";
+  const isDefault = !!workspace && workspace.workspaceId === defaultWorkspaceId;
 
   const [pendingEmails, setPendingEmails] = useState<string[]>([]);
   const [emailInput, setEmailInput] = useState("");
@@ -191,6 +198,71 @@ export default function WorkspaceSettingsScreen() {
 
         <Card className="p-4 gap-3">
           <Text className="text-on-surface font-headline text-sm">
+            Widoczność i domyślny workspace
+          </Text>
+
+          <View className="flex-row items-center gap-3">
+            <View className="w-9 h-9 rounded-lg bg-surface-container-low items-center justify-center">
+              <MaterialIcons
+                name={isPublic ? "group" : "lock"}
+                size={18}
+                color="#777587"
+              />
+            </View>
+            <View className="flex-1 min-w-0">
+              <Text className="text-on-surface font-body text-sm">
+                {isPublic ? "Publiczny" : "Prywatny"}
+              </Text>
+              <Text className="text-on-surface-variant font-body text-xs">
+                {isPublic
+                  ? "Możesz zapraszać i przypisywać członków."
+                  : "Tylko Ty. Aby dodać osoby, ustaw jako publiczny."}
+              </Text>
+            </View>
+            {isOwner ? (
+              <TouchableOpacity
+                disabled={setVisibility.isPending}
+                onPress={() =>
+                  setVisibility.mutate({
+                    workspaceId: workspace.workspaceId,
+                    visibility: isPublic ? "Private" : "Public",
+                  })
+                }
+                className="px-3 py-2 rounded-md border border-outline-variant"
+                style={{ opacity: setVisibility.isPending ? 0.6 : 1 }}
+              >
+                <Text className="text-on-surface font-label text-xs">
+                  {isPublic ? "Ustaw prywatny" : "Ustaw publiczny"}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+
+          <TouchableOpacity
+            disabled={isDefault}
+            onPress={() => setDefaultWorkspace(workspace.workspaceId)}
+            className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
+              isDefault ? "border-primary bg-surface-container-low" : "border-outline-variant"
+            }`}
+          >
+            <MaterialIcons
+              name={isDefault ? "star" : "star-outline"}
+              size={20}
+              color={isDefault ? "#4d41df" : "#777587"}
+            />
+            <View className="flex-1">
+              <Text className="text-on-surface font-body text-sm">
+                {isDefault ? "Domyślny workspace" : "Ustaw jako domyślny"}
+              </Text>
+              <Text className="text-on-surface-variant font-body text-xs">
+                Otwierany po starcie aplikacji.
+              </Text>
+            </View>
+          </TouchableOpacity>
+        </Card>
+
+        <Card className="p-4 gap-3">
+          <Text className="text-on-surface font-headline text-sm">
             Członkowie ({workspace.assignedUsers.length})
           </Text>
 
@@ -247,7 +319,7 @@ export default function WorkspaceSettingsScreen() {
           </View>
         </Card>
 
-        {isOwner ? (
+        {isOwner && isPublic ? (
           <Card className="p-4 gap-3">
             <Text className="text-on-surface font-headline text-sm">
               Dodaj użytkowników po adresie email

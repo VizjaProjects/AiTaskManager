@@ -21,6 +21,7 @@ export const RichTextEditor = forwardRef<
     isDark,
     backgroundColor,
     placeholder,
+    fontSize,
     onChange,
     onScheduleSelection,
     onStateChange,
@@ -32,6 +33,7 @@ export const RichTextEditor = forwardRef<
   const pendingHtmlRef = useRef(initialHtml);
   const initialThemeRef = useRef(isDark);
   const initialBackgroundRef = useRef(backgroundColor);
+  const initialFontSizeRef = useRef(fontSize);
 
   const srcDoc = useMemo(
     () =>
@@ -40,6 +42,7 @@ export const RichTextEditor = forwardRef<
         backgroundColor: initialBackgroundRef.current,
         placeholder,
         enableScheduleSelection: true,
+        fontSize: initialFontSizeRef.current,
       }),
     [placeholder],
   );
@@ -99,13 +102,7 @@ export const RichTextEditor = forwardRef<
     }
     window.addEventListener("message", handle);
     return () => window.removeEventListener("message", handle);
-  }, [
-    backgroundColor,
-    isDark,
-    onChange,
-    onScheduleSelection,
-    onStateChange,
-  ]);
+  }, [backgroundColor, isDark, onChange, onScheduleSelection, onStateChange]);
 
   return (
     <View className="flex-1">

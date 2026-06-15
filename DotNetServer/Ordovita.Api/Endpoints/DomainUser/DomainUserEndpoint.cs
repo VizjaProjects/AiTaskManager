@@ -4,6 +4,7 @@ using Ordovita.Application.Abstraction.Identity;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
+using Ordovita.Application.DomainUser.SetupDefaultWorkspace;
 using Ordovita.Application.User;
 using Ordovita.Application.Workspaces;
 using Ordovita.Domain.Identity;
@@ -30,6 +31,12 @@ public static class DomainUserEndpoint
             .Produces(401)
             .Produces(404);
 
+        g.MapPut("/defaultWorkspace/{workspaceId:guid}", SetUpDefaultWorkspace)
+            .WithName("SetUpDefaultWorkspace")
+            .WithSummary("Set up default workspace for user")
+            .Produces<UserDto>(200)
+            .Produces(401)
+            .Produces(404);
 
         g.MapGet("/delete", DeleteAccount)
             .WithName("DeleteAccount")
@@ -56,7 +63,8 @@ public static class DomainUserEndpoint
             user.Id.Value,
             user.Email.Value,
             user.FullName,
-            user.Role.ToString()));
+            user.Role.ToString(),
+            user.DefaultWorkspaceId?.Value));
     }
 
     public static async Task<IResult> ChangeFullname(string newFullName, ISender sender, CancellationToken ct)
@@ -71,6 +79,15 @@ public static class DomainUserEndpoint
     public static async Task<IResult> DeleteAccount(ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new DeleteAccountCommand(), ct);
+
+        return result.IsSuccess
+            ? Results.Ok(result.Value)
+            : result.Error.ToProblem();
+    }
+
+    public static async Task<IResult> SetUpDefaultWorkspace(Guid workspaceId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new SetUpDefaultWorkspaceCommand(workspaceId), ct);
 
         return result.IsSuccess
             ? Results.Ok(result.Value)

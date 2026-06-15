@@ -5,6 +5,7 @@ import {
   ScrollView,
   Modal,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { PageLayout } from "./PageLayout";
@@ -130,6 +131,8 @@ function DefinitionFormModal({
 
 export function SystemDefinitionsScreen() {
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const { width } = useWindowDimensions();
+  const stacked = width < 768;
   const { data: categories = [] } = useCategories();
   const { data: statuses = [] } = useTaskStatuses();
   const createCategory = useCreateCategory();
@@ -196,8 +199,15 @@ export function SystemDefinitionsScreen() {
           </Text>
         </View>
 
-        <View className="flex-col md:flex-row gap-5">
-          <View className="flex-1 bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant">
+        <View
+          className="gap-5"
+          style={{ flexDirection: stacked ? "column" : "row" }}
+        >
+          <View
+            className={`bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant ${
+              stacked ? "w-full" : "flex-1"
+            }`}
+          >
             <View className="flex-row items-center justify-between mb-5 gap-2">
               <View className="flex-row items-center gap-3 flex-1 min-w-0">
                 <View className="w-9 h-9 rounded-full bg-primary-fixed items-center justify-center">
@@ -267,7 +277,11 @@ export function SystemDefinitionsScreen() {
             )}
           </View>
 
-          <View className="flex-1 bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant">
+          <View
+            className={`bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant ${
+              stacked ? "w-full" : "flex-1"
+            }`}
+          >
             <View className="flex-row items-center justify-between mb-5 gap-2">
               <View className="flex-row items-center gap-3 flex-1 min-w-0">
                 <View className="w-9 h-9 rounded-full bg-secondary-fixed items-center justify-center">

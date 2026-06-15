@@ -2,11 +2,13 @@ using Ordovita.Domain.Common;
 using Ordovita.Domain.Identity;
 using Ordovita.Domain.Tasks.Exception;
 using Ordovita.Domain.Workspace;
+using Ordovita.Domain.Workspace.Exception;
 
 namespace Ordovita.Domain.Tasks;
 
 public sealed class WorkTask : AggregateRoot<TaskId>
 {
+    private readonly HashSet<WorkTaskAssignee> _assignedUsers = [];
     public WorkspaceId WorkspaceId { get; private set; }
     public UserId CreatedBy { get; private set; }
     public string Title { get; private set; } = null!;
@@ -20,6 +22,9 @@ public sealed class WorkTask : AggregateRoot<TaskId>
     public bool Accepted { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
+
+    public IReadOnlyCollection<WorkTaskAssignee> AssignedUsers => _assignedUsers;
+    public IReadOnlyCollection<UserId> AssignedUserIds => _assignedUsers.Select(a => a.UserId).ToList();
 
     private WorkTask()
     {
@@ -111,5 +116,36 @@ public sealed class WorkTask : AggregateRoot<TaskId>
     public bool BelongsToWorkspace(WorkspaceId workspaceId)
     {
         return WorkspaceId == workspaceId;
+    }
+
+    public Result AddUsersToTask(IEnumerable<UserId> userIds)
+    {
+        var newUsers = userIds.ToHashSet();
+        if (newUsers.Count == 0)
+            return Result.Success();
+
+        if (newUsers.Any(u => _assignedUsers.Any(a => a.UserId == u)))
+            return Result.Failure(TaskExceptions.AlreadyAssigned);
+
+        foreach (var userId in newUsers)
+            _assignedUsers.Add(WorkTaskAssignee.Create(Id, userId));
+
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
+    
+    public Result SetAssignees(IEnumerable<UserId> userIds)
+    {
+        var desired = userIds.ToHashSet();
+
+        _assignedUsers.RemoveWhere(a => !desired.Contains(a.UserId));
+
+        var existing = _assignedUsers.Select(a => a.UserId).ToHashSet();
+        foreach (var userId in desired)
+            if (!existing.Contains(userId))
+                _assignedUsers.Add(WorkTaskAssignee.Create(Id, userId));
+
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
     }
 }

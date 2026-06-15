@@ -13,8 +13,9 @@ import {
   Pressable,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { PageLayout } from "../PageLayout";
+import { LinkCheckboxModal } from "@/components/molecules";
 import { RichTextEditor } from "./RichTextEditor";
 import type { RichTextEditorHandle } from "./RichTextEditor.types";
 import { NoteEditorToolbar, type EditorCommand } from "./NoteEditorToolbar";
@@ -28,13 +29,15 @@ import {
   useDeleteNote,
   useUpdateNoteFolder,
   useDeleteNoteFolder,
+  useSetNoteLinks,
+  useTasks,
+  useEvents,
 } from "@/lib/hooks";
-import {
-  useAiPlanningRequestStore,
-  useThemeStore,
-} from "@/lib/stores";
+import { useAiPlanningRequestStore, useThemeStore } from "@/lib/stores";
+import { useWorkspaceStore } from "@/lib/stores/workspace";
 import type { Note, NoteFolder } from "@/lib/types";
 import { getNoteThemeColors, NOTE_COLORS } from "@/lib/noteTheme";
+import { formatDateTime } from "@/lib/utils";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
@@ -61,19 +64,6 @@ type RenameTarget =
   | { kind: "folder"; folder: NoteFolder }
   | { kind: "note"; note: Note };
 
-function confirmDelete(message: string, onConfirm: () => void) {
-  if (Platform.OS === "web") {
-    if (typeof window !== "undefined" && window.confirm(message)) {
-      onConfirm();
-    }
-    return;
-  }
-  Alert.alert("Potwierdź", message, [
-    { text: "Anuluj", style: "cancel" },
-    { text: "Usuń", style: "destructive", onPress: onConfirm },
-  ]);
-}
-
 function showMessage(title: string, message: string) {
   if (Platform.OS === "web") {
     if (typeof window !== "undefined") window.alert(`${title}\n\n${message}`);
@@ -86,13 +76,18 @@ export function NotesScreen() {
   const { width, height } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const isDark = useThemeStore((s) => s.mode) === "dark";
-  const enqueueAiPlanningRequest = useAiPlanningRequestStore(
-    (s) => s.enqueue,
-  );
+  const enqueueAiPlanningRequest = useAiPlanningRequestStore((s) => s.enqueue);
+  const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const router = useRouter();
+  const params = useLocalSearchParams<{ noteId?: string }>();
+
+  // Larger, device-aware base font so notes read comfortably on phones.
+  const editorFontSize = Platform.OS !== "web" ? 19 : width < 768 ? 18.5 : 17.5;
 
   const { data: notes = [], isLoading } = useNotes();
   const { data: folders = [] } = useNoteFolders();
+  const { data: tasks = [] } = useTasks();
+  const { data: events = [] } = useEvents();
   const createNote = useCreateNote();
   const createFolder = useCreateNoteFolder();
   const updateContent = useUpdateNoteContent();
@@ -100,6 +95,12 @@ export function NotesScreen() {
   const deleteNote = useDeleteNote();
   const updateFolder = useUpdateNoteFolder();
   const deleteFolder = useDeleteNoteFolder();
+  const setNoteLinks = useSetNoteLinks();
+
+  // note → tasks/events linking modal
+  const [linkNote, setLinkNote] = useState<Note | null>(null);
+  const [linkTaskIds, setLinkTaskIds] = useState<string[]>([]);
+  const [linkEventIds, setLinkEventIds] = useState<string[]>([]);
 
   // navigation: null = root overview, otherwise inside a folder
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -109,6 +110,27 @@ export function NotesScreen() {
   const [folderName, setFolderName] = useState("");
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [renameTarget, setRenameTarget] = useState<RenameTarget | null>(null);
+
+  // In-app confirmation modal (replaces window.confirm / native Alert).
+  const [confirmState, setConfirmState] = useState<{
+    message: string;
+    confirmLabel: string;
+    tone: "danger" | "default";
+    onConfirm: () => void;
+  } | null>(null);
+
+  function requestConfirm(
+    message: string,
+    onConfirm: () => void,
+    opts?: { confirmLabel?: string; tone?: "danger" | "default" },
+  ) {
+    setConfirmState({
+      message,
+      confirmLabel: opts?.confirmLabel ?? "Usuń",
+      tone: opts?.tone ?? "danger",
+      onConfirm,
+    });
+  }
 
   // folder context menu / edit
   const [menuFolder, setMenuFolder] = useState<NoteFolder | null>(null);
@@ -123,6 +145,8 @@ export function NotesScreen() {
   const [folderId, setFolderId] = useState<string | null>(null);
   const [toolbarState, setToolbarState] = useState(EMPTY_STATE);
   const editorRef = useRef<RichTextEditorHandle>(null);
+  const titleInputRef = useRef<TextInput>(null);
+  const focusTitleRef = useRef(false);
   const finderDragSurfaceRef = useRef<View>(null);
   const htmlRef = useRef("");
   const contentTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -159,6 +183,45 @@ export function NotesScreen() {
     );
   }, [notes, currentFolderId]);
 
+  const linkSections = useMemo(() => {
+    if (!linkNote) return [];
+
+    return [
+      {
+        label: "Zadania",
+        emptyMessage: "Brak zadań w tym workspace.",
+        items: tasks.map((t) => ({
+          id: t.taskId,
+          label: t.title,
+          subtitle: t.description?.trim() || undefined,
+          searchText: t.description ?? "",
+        })),
+        selectedIds: linkTaskIds,
+        onToggle: (id: string) =>
+          setLinkTaskIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          ),
+      },
+      {
+        label: "Wydarzenia",
+        emptyMessage: "Brak wydarzeń w tym workspace.",
+        items: events.map((e) => ({
+          id: e.eventId,
+          label: e.title,
+          subtitle:
+            typeof e.startDateTime === "string" && e.startDateTime
+              ? formatDateTime(e.startDateTime)
+              : undefined,
+        })),
+        selectedIds: linkEventIds,
+        onToggle: (id: string) =>
+          setLinkEventIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          ),
+      },
+    ];
+  }, [linkNote, tasks, events, linkTaskIds, linkEventIds]);
+
   // load selected note into buffers
   useEffect(() => {
     if (selectedNote) {
@@ -170,12 +233,50 @@ export function NotesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNoteId]);
 
+  // Autofocus the title field when a brand-new note is opened.
+  useEffect(() => {
+    if (!editorOpen || !selectedNote || !focusTitleRef.current) return;
+    focusTitleRef.current = false;
+    const t = setTimeout(() => {
+      titleInputRef.current?.focus();
+    }, 250);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorOpen, selectedNoteId]);
+
+  // Deep-link: open a specific note when navigated with ?noteId=… (e.g. from a
+  // task). Navigate into the note's folder first so it's found in any view.
+  const handledNoteParamRef = useRef<string | null>(null);
+  useEffect(() => {
+    const noteId = params.noteId;
+    if (!noteId || notes.length === 0) return;
+    if (handledNoteParamRef.current === noteId) return;
+    const target = notes.find((n) => n.id === noteId);
+    if (!target) return;
+    handledNoteParamRef.current = noteId;
+    setCurrentFolderId(target.noteFolderId ?? null);
+    openNote(noteId);
+    // Clear the param so re-opening the same note later works.
+    router.setParams({ noteId: undefined } as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.noteId, notes]);
+
   useEffect(() => {
     return () => {
       if (contentTimer.current) clearTimeout(contentTimer.current);
       if (metaTimer.current) clearTimeout(metaTimer.current);
     };
   }, []);
+
+  useEffect(() => {
+    setLinkNote(null);
+    setLinkTaskIds([]);
+    setLinkEventIds([]);
+    setSelectedNoteId(null);
+    setEditorOpen(false);
+    setCurrentFolderId(null);
+    handledNoteParamRef.current = null;
+  }, [activeWorkspaceId]);
 
   useEffect(() => {
     if (Platform.OS !== "web" || !contextMenu) return;
@@ -288,6 +389,8 @@ export function NotesScreen() {
       html: "",
     });
     const newId = (res.data as { id: string }).id;
+    // New note → land with the cursor in the title field, text pre-selected.
+    focusTitleRef.current = true;
     openNote(newId);
   }
 
@@ -314,7 +417,7 @@ export function NotesScreen() {
   }
 
   function deleteNoteById(id: string) {
-    confirmDelete("Usunąć tę notatkę?", () => {
+    requestConfirm("Usunąć tę notatkę?", () => {
       deleteNote.mutate(id);
       if (selectedNoteId === id) {
         setSelectedNoteId(null);
@@ -335,6 +438,22 @@ export function NotesScreen() {
     });
   }
 
+  function openLinkModal(note: Note) {
+    setLinkNote(note);
+    setLinkTaskIds(note.linkedTaskIds ?? []);
+    setLinkEventIds(note.linkedEventIds ?? []);
+  }
+
+  function saveLinks() {
+    if (!linkNote) return;
+    setNoteLinks.mutate({
+      noteId: linkNote.id,
+      taskIds: linkTaskIds,
+      eventIds: linkEventIds,
+    });
+    setLinkNote(null);
+  }
+
   function openFolderMenu(folder: NoteFolder) {
     setMenuFolder(folder);
     setMenuTitle(folder.title);
@@ -342,7 +461,7 @@ export function NotesScreen() {
   }
 
   function deleteFolderById(id: string) {
-    confirmDelete(
+    requestConfirm(
       "Usunąć ten folder? Notatki zostaną przeniesione do „Bez folderu”.",
       () => {
         deleteFolder.mutate(id);
@@ -376,10 +495,7 @@ export function NotesScreen() {
     setContextMenu({ kind: "folder", folder, ...point });
   }
 
-  function openNoteContextMenu(
-    note: Note,
-    point: { x: number; y: number },
-  ) {
+  function openNoteContextMenu(note: Note, point: { x: number; y: number }) {
     setContextMenu({ kind: "note", note, ...point });
   }
 
@@ -431,6 +547,16 @@ export function NotesScreen() {
       return;
     }
 
+    requestConfirm(
+      "Wysłać zaznaczony tekst do AI, aby zaproponować zadania i wydarzenia?",
+      () => {
+        void runScheduleSelection(selectedText);
+      },
+      { confirmLabel: "Wyślij do AI", tone: "default" },
+    );
+  }
+
+  async function runScheduleSelection(selectedText: string) {
     try {
       await flushPendingEditorSaves();
       enqueueAiPlanningRequest(selectedText);
@@ -469,6 +595,7 @@ export function NotesScreen() {
             />
           </TouchableOpacity>
           <TextInput
+            ref={titleInputRef}
             value={title}
             onChangeText={(t) => {
               setTitle(t);
@@ -476,12 +603,31 @@ export function NotesScreen() {
             }}
             placeholder="Tytuł"
             placeholderTextColor={editorTheme.mutedText}
+            selectTextOnFocus
             className="flex-1 font-headline text-xl"
             style={[
               NO_OUTLINE,
               { color: editorTheme.text, textAlign: "center" },
             ]}
           />
+          <TouchableOpacity
+            onPress={() => selectedNote && openLinkModal(selectedNote)}
+            className="flex-row items-center gap-1 p-1.5"
+          >
+            <MaterialIcons name="link" size={20} color={editorTheme.text} />
+            {selectedNote &&
+            (selectedNote.linkedTaskIds.length +
+              selectedNote.linkedEventIds.length) >
+              0 ? (
+              <Text
+                className="font-label text-xs"
+                style={{ color: editorTheme.text }}
+              >
+                {selectedNote.linkedTaskIds.length +
+                  selectedNote.linkedEventIds.length}
+              </Text>
+            ) : null}
+          </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} className="p-1.5">
             <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
           </TouchableOpacity>
@@ -495,6 +641,7 @@ export function NotesScreen() {
         initialHtml={selectedNote.content.html}
         isDark={isDark}
         backgroundColor={editorTheme.background}
+        fontSize={editorFontSize}
         onChange={scheduleContentSave}
         onScheduleSelection={handleScheduleSelection}
         onStateChange={setToolbarState}
@@ -551,7 +698,7 @@ export function NotesScreen() {
           style={
             isDesktop
               ? {
-                  width: Math.min(960, width - 80),
+                  width: Math.min(1320, width - 48),
                   height: "96%",
                   borderRadius: 20,
                 }
@@ -688,25 +835,23 @@ export function NotesScreen() {
   /* ---------- finder context menu (web / desktop) ---------- */
 
   const contextMenuItemCount =
-    contextMenu?.kind === "note" && contextMenu.note.noteFolderId ? 3 : 2;
+    contextMenu?.kind === "note"
+      ? contextMenu.note.noteFolderId
+        ? 4
+        : 3
+      : 2;
   const contextMenuHeight =
     contextMenuItemCount * CONTEXT_MENU_ITEM_HEIGHT + 25;
   const contextMenuLeft = contextMenu
     ? Math.max(
         8,
-        Math.min(
-          contextMenu.x,
-          Math.max(8, width - CONTEXT_MENU_WIDTH - 8),
-        ),
+        Math.min(contextMenu.x, Math.max(8, width - CONTEXT_MENU_WIDTH - 8)),
       )
     : 8;
   const contextMenuTop = contextMenu
     ? Math.max(
         8,
-        Math.min(
-          contextMenu.y,
-          Math.max(8, height - contextMenuHeight - 8),
-        ),
+        Math.min(contextMenu.y, Math.max(8, height - contextMenuHeight - 8)),
       )
     : 8;
 
@@ -742,14 +887,24 @@ export function NotesScreen() {
               );
             }}
           />
-          {contextMenu.kind === "note" &&
-          contextMenu.note.noteFolderId ? (
+          {contextMenu.kind === "note" && contextMenu.note.noteFolderId ? (
             <ContextMenuItem
               icon="drive-file-move-outline"
               label="Przenieś poza folder"
               onPress={() => {
                 moveNoteToFolder(contextMenu.note.id, null);
                 setContextMenu(null);
+              }}
+            />
+          ) : null}
+          {contextMenu.kind === "note" ? (
+            <ContextMenuItem
+              icon="link"
+              label="Połącz z zadaniami / wydarzeniami"
+              onPress={() => {
+                const note = contextMenu.note;
+                setContextMenu(null);
+                openLinkModal(note);
               }}
             />
           ) : null}
@@ -896,16 +1051,14 @@ export function NotesScreen() {
                 onMove={() => setMoveNoteId(n.id)}
                 onContextMenu={(point) => openNoteContextMenu(n, point)}
                 renaming={
-                  renameTarget?.kind === "note" &&
-                  renameTarget.note.id === n.id
+                  renameTarget?.kind === "note" && renameTarget.note.id === n.id
                 }
                 onRename={commitRename}
                 onCancelRename={() => setRenameTarget(null)}
               />
             ))}
 
-            {notesInView.length === 0 &&
-              (currentFolderId || folders.length === 0) && (
+            {notesInView.length === 0 && (
                 <View className="items-center py-10 gap-2 w-full">
                   <MaterialIcons
                     name="sticky-note-2"
@@ -925,6 +1078,77 @@ export function NotesScreen() {
     </View>
   );
 
+  const confirmModal = (
+    <Modal
+      visible={!!confirmState}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setConfirmState(null)}
+    >
+      <Pressable
+        className="flex-1 bg-black/40 items-center justify-center px-6"
+        onPress={() => setConfirmState(null)}
+      >
+        <Pressable
+          onPress={() => {}}
+          className="w-full max-w-[360px] bg-surface-container-lowest rounded-2xl p-5 gap-4 border border-outline-variant"
+        >
+          <Text className="text-on-surface font-headline text-base">
+            {confirmState?.tone === "danger"
+              ? "Potwierdź usunięcie"
+              : "Potwierdź"}
+          </Text>
+          <Text className="text-on-surface-variant font-body text-sm">
+            {confirmState?.message}
+          </Text>
+          <View className="flex-row items-center justify-end gap-2 mt-1">
+            <TouchableOpacity
+              onPress={() => setConfirmState(null)}
+              className="px-4 py-2 rounded-md"
+            >
+              <Text className="text-on-surface-variant font-label text-sm">
+                Anuluj
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                const action = confirmState?.onConfirm;
+                setConfirmState(null);
+                action?.();
+              }}
+              className={`px-4 py-2 rounded-md ${
+                confirmState?.tone === "danger"
+                  ? "bg-[rgba(192,57,43,0.1)] border border-[rgba(192,57,43,0.4)]"
+                  : "bg-action"
+              }`}
+            >
+              <Text
+                className={`font-headline text-sm ${
+                  confirmState?.tone === "danger"
+                    ? "text-[#C0392B]"
+                    : "text-on-action"
+                }`}
+              >
+                {confirmState?.confirmLabel ?? "OK"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Pressable>
+      </Pressable>
+    </Modal>
+  );
+
+  const linkModal = (
+    <LinkCheckboxModal
+      visible={!!linkNote}
+      title="Połącz notatkę"
+      searchPlaceholder="Szukaj zadań i wydarzeń…"
+      sections={linkSections}
+      onClose={() => setLinkNote(null)}
+      onSave={saveLinks}
+    />
+  );
+
   return (
     <PageLayout>
       <View ref={finderDragSurfaceRef} className="flex-1">
@@ -934,6 +1158,8 @@ export function NotesScreen() {
       {folderEditModal}
       {moveSheet}
       {finderContextMenu}
+      {confirmModal}
+      {linkModal}
     </PageLayout>
   );
 }
@@ -1068,7 +1294,7 @@ function FolderTile({
   const tile = (
     <TouchableOpacity
       activeOpacity={0.8}
-      onPress={Platform.OS === "web" ? undefined : onOpen}
+      onPress={renaming ? undefined : onOpen}
       onLongPress={Platform.OS === "web" ? undefined : onMenu}
       className="items-center gap-1 w-[112px] py-2 rounded-xl"
       style={over ? { backgroundColor: "rgba(77,65,223,0.12)" } : undefined}
@@ -1103,7 +1329,6 @@ function FolderTile({
     return (
       <div
         ref={ref as unknown as React.Ref<HTMLDivElement>}
-        onDoubleClick={renaming ? undefined : onOpen}
         onContextMenu={(event: ReactMouseEvent<HTMLDivElement>) => {
           event.preventDefault();
           event.stopPropagation();
@@ -1123,6 +1348,7 @@ function FolderTile({
 function NoteFileTile({
   note,
   isDark,
+  folderLabel,
   onOpen,
   onMove,
   onContextMenu,
@@ -1132,6 +1358,7 @@ function NoteFileTile({
 }: {
   note: Note;
   isDark: boolean;
+  folderLabel?: string;
   onOpen: () => void;
   onMove: () => void;
   onContextMenu: (point: { x: number; y: number }) => void;
@@ -1165,13 +1392,13 @@ function NoteFileTile({
           {note.title || "Bez tytułu"}
         </Text>
         {preview ? (
-            <Text
-              className="font-body mt-1"
-              style={{
-                color: noteTheme.mutedText,
-                fontSize: 9,
-                lineHeight: 12,
-              }}
+          <Text
+            className="font-body mt-1"
+            style={{
+              color: noteTheme.mutedText,
+              fontSize: 9,
+              lineHeight: 12,
+            }}
             numberOfLines={8}
           >
             {preview}
@@ -1186,12 +1413,22 @@ function NoteFileTile({
           onCancel={onCancelRename}
         />
       ) : (
-        <Text
-          className="font-body text-xs text-on-surface text-center w-[120px]"
-          numberOfLines={2}
-        >
-          {note.title || "Bez tytułu"}
-        </Text>
+        <View className="items-center w-[120px] gap-0.5">
+          <Text
+            className="font-body text-xs text-on-surface text-center w-[120px]"
+            numberOfLines={2}
+          >
+            {note.title || "Bez tytułu"}
+          </Text>
+          {folderLabel ? (
+            <Text
+              className="font-body text-[10px] text-on-surface-variant text-center w-[120px]"
+              numberOfLines={1}
+            >
+              {folderLabel}
+            </Text>
+          ) : null}
+        </View>
       )}
     </TouchableOpacity>
   );

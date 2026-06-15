@@ -10,6 +10,7 @@ public class Workspace : AggregateRoot<WorkspaceId>
 
     public string WorkspaceName { get; private set; } = null!;
     public UserId CreatedBy { get; private set; }
+    public WorkspaceVisibility Visibility { get; private set; }
     public DateTime CreatedAt { get; private set; }
     public DateTime UpdatedAt { get; private set; }
 
@@ -22,7 +23,8 @@ public class Workspace : AggregateRoot<WorkspaceId>
     public static Result<Workspace> Create(
         string workspaceName,
         IEnumerable<UserId>? assignedUsers,
-        UserId createdBy)
+        UserId createdBy,
+        WorkspaceVisibility visibility = WorkspaceVisibility.Private)
     {
         if (string.IsNullOrWhiteSpace(workspaceName))
             return Result.Failure<Workspace>(WorkspaceException.MissingWorkspaceName);
@@ -34,12 +36,14 @@ public class Workspace : AggregateRoot<WorkspaceId>
             Id = WorkspaceId.New(),
             WorkspaceName = workspaceName,
             CreatedBy = createdBy,
+            Visibility = visibility,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
 
-        foreach (var userId in assignedUsers ?? [])
-            workspace._assignedUsers.Add(WorkspaceUser.Create(workspace.Id, userId));
+        if (visibility == WorkspaceVisibility.Public)
+            foreach (var userId in assignedUsers ?? [])
+                workspace._assignedUsers.Add(WorkspaceUser.Create(workspace.Id, userId));
 
         if (workspace._assignedUsers.All(u => u.UserId != createdBy))
             workspace._assignedUsers.Add(WorkspaceUser.Create(workspace.Id, createdBy));
@@ -47,10 +51,23 @@ public class Workspace : AggregateRoot<WorkspaceId>
         return Result.Success(workspace);
     }
 
+    public Result ChangeVisibility(WorkspaceVisibility visibility, UserId performingUserId)
+    {
+        if (performingUserId != CreatedBy)
+            return Result.Failure(WorkspaceException.UnauthorizedAccess);
+
+        Visibility = visibility;
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
+
     public Result AddUserToWorkspace(IEnumerable<UserId> usersToAssign, UserId performingUserId)
     {
         if (performingUserId != CreatedBy)
             return Result.Failure(WorkspaceException.UnauthorizedAccess);
+
+        if (Visibility != WorkspaceVisibility.Public)
+            return Result.Failure(WorkspaceException.PrivateWorkspace);
 
         var newUsers = usersToAssign.ToHashSet();
         if (newUsers.Count == 0)

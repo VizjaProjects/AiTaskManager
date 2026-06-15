@@ -51,6 +51,12 @@ export const taskApi = {
 
   delete: (workspaceId: string, taskId: string) =>
     api.delete(`${ws(workspaceId)}/task/${encodeURIComponent(taskId)}`),
+
+  setAssignees: (workspaceId: string, taskId: string, userIds: string[]) =>
+    api.put(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/assignees`,
+      { userIds },
+    ),
 };
 
 export const categoryApi = {

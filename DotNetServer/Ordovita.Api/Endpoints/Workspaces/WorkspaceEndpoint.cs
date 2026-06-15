@@ -3,11 +3,13 @@ using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Workspaces;
 using Ordovita.Application.Workspaces.AssignUsersByEmail;
 using Ordovita.Application.Workspaces.AssignUsersToWorkspace;
+using Ordovita.Application.Workspaces.ChangeWorkspaceVisibility;
 using Ordovita.Application.Workspaces.CreateWorkspace;
 using Ordovita.Application.Workspaces.DeleteWorkspace;
 using Ordovita.Application.Workspaces.GetMyWorkspaces;
 using Ordovita.Application.Workspaces.GetWorkspaceById;
 using Ordovita.Application.Workspaces.RemoveUsersFromWorkspace;
+using Ordovita.Domain.Workspace;
 
 namespace Ordovita.Api.Endpoints.Workspaces;
 
@@ -53,6 +55,13 @@ public static class WorkspaceEndpoint
             .Produces(401)
             .Produces(404);
 
+        g.MapPut("/{workspaceId:guid}/visibility", ChangeVisibility)
+            .WithName("ChangeWorkspaceVisibility")
+            .Produces<WorkspaceDto>(200)
+            .Produces(400)
+            .Produces(401)
+            .Produces(404);
+
         g.MapDelete("/delete/{workspaceId:guid}", DeleteWorkspace)
             .WithName("DeleteWorkspace")
             .Produces(204)
@@ -65,7 +74,9 @@ public static class WorkspaceEndpoint
     private static async Task<IResult> CreateWorkspace(CreateWorkspaceRequest request, ISender sender,
         CancellationToken ct)
     {
-        var result = await sender.Send(new CreateWorkspaceCommand(request.WorkspaceName, request.AssignedUserIds), ct);
+        var visibility = ParseVisibility(request.Visibility);
+        var result = await sender.Send(
+            new CreateWorkspaceCommand(request.WorkspaceName, request.AssignedUserIds, visibility), ct);
         return result.IsSuccess
             ? Results.Created($"/api/v1/workspace/{result.Value!.WorkspaceId}", result.Value)
             : result.Error.ToProblem();
@@ -110,7 +121,27 @@ public static class WorkspaceEndpoint
         return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
     }
 
-    private sealed record CreateWorkspaceRequest(string WorkspaceName, IReadOnlyList<Guid>? AssignedUserIds);
+    private static async Task<IResult> ChangeVisibility(
+        Guid workspaceId, ChangeVisibilityRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new ChangeWorkspaceVisibilityCommand(workspaceId, ParseVisibility(request.Visibility)), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static WorkspaceVisibility ParseVisibility(string? value)
+    {
+        return Enum.TryParse<WorkspaceVisibility>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : WorkspaceVisibility.Private;
+    }
+
+    private sealed record CreateWorkspaceRequest(
+        string WorkspaceName,
+        IReadOnlyList<Guid>? AssignedUserIds,
+        string? Visibility);
+
+    private sealed record ChangeVisibilityRequest(string Visibility);
 
     private sealed record WorkspaceUsersRequest(IReadOnlyList<Guid> UserIds);
 

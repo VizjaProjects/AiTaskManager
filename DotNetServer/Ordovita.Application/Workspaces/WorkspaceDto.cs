@@ -9,6 +9,7 @@ public sealed record WorkspaceDto(
     Guid WorkspaceId,
     string WorkspaceName,
     Guid CreatedBy,
+    string Visibility,
     IReadOnlyList<WorkspaceUserDto> AssignedUsers,
     DateTime CreatedAt,
     DateTime UpdatedAt);
@@ -23,6 +24,7 @@ public static class WorkspaceMapper
             workspace.Id.Value,
             workspace.WorkspaceName,
             workspace.CreatedBy.Value,
+            workspace.Visibility.ToString(),
             workspace.AssignedUsers
                 .Select(u =>
                 {

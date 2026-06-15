@@ -23,6 +23,12 @@ public sealed class WorkspaceConfiguration : IEntityTypeConfiguration<Domain.Wor
         builder.Property(w => w.CreatedBy)
             .HasConversion(id => id.Value, value => UserId.From(value))
             .IsRequired();
+        
+        builder.Property(w => w.Visibility)
+            .HasConversion<string>()
+            .HasMaxLength(20)
+            .HasDefaultValue(WorkspaceVisibility.Public)
+            .IsRequired();
 
         builder.Property(w => w.CreatedAt).IsRequired();
         builder.Property(w => w.UpdatedAt).IsRequired();

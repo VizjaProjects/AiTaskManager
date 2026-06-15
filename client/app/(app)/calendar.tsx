@@ -17,14 +17,17 @@ import {
   viewToHTMLElement,
 } from "@/lib/utils/webDom";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useNavigation, useLocalSearchParams } from "expo-router";
+import { useNavigation, useLocalSearchParams, useRouter } from "expo-router";
 import { PageLayout } from "@/components/organisms";
 import { Button, Input, InlineDatePicker } from "@/components/atoms";
+import { LinkCheckboxModal } from "@/components/molecules";
 import {
   useEvents,
   useCreateEvent,
   useEditEvent,
   useDeleteEvent,
+  useNotes,
+  useSyncEntityNoteLinks,
 } from "@/lib/hooks";
 import { ProposedBy, EventStatus } from "@/lib/types";
 import type { CalendarEvent, EditEventRequest } from "@/lib/types";
@@ -347,8 +350,11 @@ function EditCalendarEventModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const router = useRouter();
   const editEvent = useEditEvent();
   const deleteEvent = useDeleteEvent();
+  const { data: allNotes } = useNotes();
+  const syncEntityNoteLinks = useSyncEntityNoteLinks();
   const [title, setTitle] = useState(event.title);
   const [eventDate, setEventDate] = useState(() => {
     const s = parseApiDateTime(event.startDateTime);
@@ -359,6 +365,62 @@ function EditCalendarEventModal({
   const [endHour, setEndHour] = useState("10");
   const [endMin, setEndMin] = useState("00");
   const [allDay, setAllDay] = useState(event.allDay);
+  const [noteLinkOpen, setNoteLinkOpen] = useState(false);
+  const [draftLinkedNoteIds, setDraftLinkedNoteIds] = useState<string[]>([]);
+
+  const linkedNotes = useMemo(() => {
+    if (!allNotes) return [];
+    return allNotes.filter((n) => n.linkedEventIds.includes(event.eventId));
+  }, [allNotes, event.eventId]);
+
+  const noteLinkSections = useMemo(
+    () => [
+      {
+        label: "Notatki",
+        emptyMessage: "Brak notatek w tym workspace.",
+        items: (allNotes ?? []).map((n) => ({
+          id: n.id,
+          label: n.title || "Bez tytułu",
+          subtitle:
+            n.noteDescription?.trim() ||
+            n.content.text.trim().slice(0, 80) ||
+            undefined,
+          searchText: `${n.noteDescription ?? ""} ${n.content.text}`,
+        })),
+        selectedIds: draftLinkedNoteIds,
+        onToggle: (id: string) =>
+          setDraftLinkedNoteIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          ),
+      },
+    ],
+    [allNotes, draftLinkedNoteIds],
+  );
+
+  function openNoteLinkModal() {
+    setDraftLinkedNoteIds(
+      (allNotes ?? [])
+        .filter((n) => n.linkedEventIds.includes(event.eventId))
+        .map((n) => n.id),
+    );
+    setNoteLinkOpen(true);
+  }
+
+  function saveEventNoteLinks() {
+    syncEntityNoteLinks.mutate(
+      {
+        kind: "event",
+        entityId: event.eventId,
+        selectedNoteIds: draftLinkedNoteIds,
+      },
+      { onSuccess: () => setNoteLinkOpen(false) },
+    );
+  }
+
+  function openLinkedNote(noteId: string) {
+    onClose();
+    router.push(`/(app)/notes?noteId=${encodeURIComponent(noteId)}` as never);
+  }
 
   useEffect(() => {
     if (visible) {
@@ -401,118 +463,191 @@ function EditCalendarEventModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
-        <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
-          <View className="flex-row items-center justify-between">
-            <Text className="font-headline text-on-surface text-lg">
-              Edytuj wydarzenie
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#777587" />
-            </TouchableOpacity>
-          </View>
-          <Input
-            label="Tytuł"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Nazwa wydarzenia"
-          />
-          <View>
-            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Data
-            </Text>
-            <InlineDatePicker value={eventDate} onChange={setEventDate} />
-          </View>
-          <View className="flex-row gap-6">
-            <View>
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Start
+    <>
+      <Modal visible={visible} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 items-center justify-center p-6">
+          <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
+            <View className="flex-row items-center justify-between">
+              <Text className="font-headline text-on-surface text-lg">
+                Edytuj wydarzenie
               </Text>
-              <View className="flex-row items-center gap-1">
-                <TextInput
-                  value={startHour}
-                  onChangeText={(v) =>
-                    setStartHour(v.replace(/\D/g, "").slice(0, 2))
-                  }
-                  maxLength={2}
-                  placeholder="HH"
-                  placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
-                />
-                <Text className="text-on-surface font-headline text-lg">:</Text>
-                <TextInput
-                  value={startMin}
-                  onChangeText={(v) =>
-                    setStartMin(v.replace(/\D/g, "").slice(0, 2))
-                  }
-                  maxLength={2}
-                  placeholder="MM"
-                  placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
-                />
-              </View>
+              <TouchableOpacity onPress={onClose}>
+                <MaterialIcons name="close" size={24} color="#777587" />
+              </TouchableOpacity>
             </View>
-            <View>
-              <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Koniec
-              </Text>
-              <View className="flex-row items-center gap-1">
-                <TextInput
-                  value={endHour}
-                  onChangeText={(v) =>
-                    setEndHour(v.replace(/\D/g, "").slice(0, 2))
-                  }
-                  maxLength={2}
-                  placeholder="HH"
-                  placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
-                />
-                <Text className="text-on-surface font-headline text-lg">:</Text>
-                <TextInput
-                  value={endMin}
-                  onChangeText={(v) =>
-                    setEndMin(v.replace(/\D/g, "").slice(0, 2))
-                  }
-                  maxLength={2}
-                  placeholder="MM"
-                  placeholderTextColor="#777587"
-                  className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
-                />
+
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ gap: 16 }}
+              keyboardShouldPersistTaps="handled"
+            >
+              <Input
+                label="Tytuł"
+                value={title}
+                onChangeText={setTitle}
+                placeholder="Nazwa wydarzenia"
+              />
+              <View>
+                <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                  Data
+                </Text>
+                <InlineDatePicker value={eventDate} onChange={setEventDate} />
               </View>
+              <View className="flex-row gap-6">
+                <View>
+                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                    Start
+                  </Text>
+                  <View className="flex-row items-center gap-1">
+                    <TextInput
+                      value={startHour}
+                      onChangeText={(v) =>
+                        setStartHour(v.replace(/\D/g, "").slice(0, 2))
+                      }
+                      maxLength={2}
+                      placeholder="HH"
+                      placeholderTextColor="#777587"
+                      className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                    />
+                    <Text className="text-on-surface font-headline text-lg">
+                      :
+                    </Text>
+                    <TextInput
+                      value={startMin}
+                      onChangeText={(v) =>
+                        setStartMin(v.replace(/\D/g, "").slice(0, 2))
+                      }
+                      maxLength={2}
+                      placeholder="MM"
+                      placeholderTextColor="#777587"
+                      className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                    />
+                  </View>
+                </View>
+                <View>
+                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                    Koniec
+                  </Text>
+                  <View className="flex-row items-center gap-1">
+                    <TextInput
+                      value={endHour}
+                      onChangeText={(v) =>
+                        setEndHour(v.replace(/\D/g, "").slice(0, 2))
+                      }
+                      maxLength={2}
+                      placeholder="HH"
+                      placeholderTextColor="#777587"
+                      className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                    />
+                    <Text className="text-on-surface font-headline text-lg">
+                      :
+                    </Text>
+                    <TextInput
+                      value={endMin}
+                      onChangeText={(v) =>
+                        setEndMin(v.replace(/\D/g, "").slice(0, 2))
+                      }
+                      maxLength={2}
+                      placeholder="MM"
+                      placeholderTextColor="#777587"
+                      className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
+                    />
+                  </View>
+                </View>
+              </View>
+              <TouchableOpacity
+                onPress={() => setAllDay(!allDay)}
+                className="flex-row items-center gap-2"
+              >
+                <MaterialIcons
+                  name={allDay ? "check-box" : "check-box-outline-blank"}
+                  size={22}
+                  color="#4d41df"
+                />
+                <Text className="text-on-surface font-body text-sm">
+                  Cały dzień
+                </Text>
+              </TouchableOpacity>
+
+              <View className="gap-2">
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
+                    Powiązane notatki
+                  </Text>
+                  <TouchableOpacity
+                    onPress={openNoteLinkModal}
+                    className="flex-row items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low border border-outline-variant"
+                  >
+                    <MaterialIcons name="link" size={14} color="#9b9791" />
+                    <Text className="text-on-surface-variant font-label text-xs">
+                      Podłącz
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {linkedNotes.length > 0 ? (
+                  <View className="flex-row flex-wrap gap-2">
+                    {linkedNotes.map((n) => (
+                      <TouchableOpacity
+                        key={n.id}
+                        onPress={() => openLinkedNote(n.id)}
+                        activeOpacity={0.7}
+                        className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant"
+                      >
+                        <MaterialIcons
+                          name="sticky-note-2"
+                          size={14}
+                          color="#9b9791"
+                        />
+                        <Text
+                          className="text-on-surface font-body text-xs"
+                          numberOfLines={1}
+                        >
+                          {n.title || "Bez tytułu"}
+                        </Text>
+                        <MaterialIcons
+                          name="arrow-forward"
+                          size={12}
+                          color="#9b9791"
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : (
+                  <Text className="text-on-surface-variant font-body text-sm">
+                    Brak powiązanych notatek.
+                  </Text>
+                )}
+              </View>
+            </ScrollView>
+
+            <View className="flex-row gap-3 justify-end mt-2">
+              <Button
+                variant="error"
+                label="Usuń"
+                loading={deleteEvent.isPending}
+                onPress={handleDelete}
+              />
+              <Button variant="outline" label="Anuluj" onPress={onClose} />
+              <Button
+                label="Zapisz"
+                loading={editEvent.isPending}
+                disabled={!title.trim()}
+                onPress={handleSave}
+              />
             </View>
-          </View>
-          <TouchableOpacity
-            onPress={() => setAllDay(!allDay)}
-            className="flex-row items-center gap-2"
-          >
-            <MaterialIcons
-              name={allDay ? "check-box" : "check-box-outline-blank"}
-              size={22}
-              color="#4d41df"
-            />
-            <Text className="text-on-surface font-body text-sm">
-              Cały dzień
-            </Text>
-          </TouchableOpacity>
-          <View className="flex-row gap-3 justify-end mt-2">
-            <Button
-              variant="error"
-              label="Usuń"
-              loading={deleteEvent.isPending}
-              onPress={handleDelete}
-            />
-            <Button variant="outline" label="Anuluj" onPress={onClose} />
-            <Button
-              label="Zapisz"
-              loading={editEvent.isPending}
-              disabled={!title.trim()}
-              onPress={handleSave}
-            />
           </View>
         </View>
-      </View>
-    </Modal>
+      </Modal>
+      <LinkCheckboxModal
+        visible={noteLinkOpen}
+        title="Podłącz notatki do wydarzenia"
+        searchPlaceholder="Szukaj notatek…"
+        sections={noteLinkSections}
+        onClose={() => setNoteLinkOpen(false)}
+        onSave={saveEventNoteLinks}
+        saving={syncEntityNoteLinks.isPending}
+      />
+    </>
   );
 }
 

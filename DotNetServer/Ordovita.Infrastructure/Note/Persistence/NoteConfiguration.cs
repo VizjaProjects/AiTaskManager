@@ -49,6 +49,21 @@ public class NoteConfiguration : IEntityTypeConfiguration<Domain.Note.Note>
         builder.Property(p => p.CreatedAt).IsRequired();
         builder.Property(p => p.UpdatedAt).IsRequired();
 
+        builder.HasMany(p => p.TaskLinks)
+            .WithOne()
+            .HasForeignKey(l => l.NoteId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.TaskLinks).HasField("_taskLinks");
+
+        builder.HasMany(p => p.EventLinks)
+            .WithOne()
+            .HasForeignKey(l => l.NoteId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(p => p.EventLinks).HasField("_eventLinks");
+
+        builder.Ignore(p => p.LinkedTaskIds);
+        builder.Ignore(p => p.LinkedEventIds);
+
         builder.HasIndex(p => p.WorkspaceId);
         builder.HasIndex(p => p.NoteFolderId);
     }

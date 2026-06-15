@@ -21,4 +21,8 @@ public static class WorkspaceException
 
     public static readonly Error NotFound =
         Error.NotFound("Workspace.NotFound", "Workspace was not found.");
+
+    public static readonly Error PrivateWorkspace =
+        Error.Validation("Workspace.Private",
+            "This workspace is private. Make it public before assigning members.");
 }

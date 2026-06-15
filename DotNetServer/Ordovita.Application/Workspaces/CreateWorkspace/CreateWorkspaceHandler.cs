@@ -27,9 +27,17 @@ public sealed class CreateWorkspaceHandler(
             .Select(UserId.From)
             .ToList();
 
-        var workspaceResult = Workspace.Create(command.WorkspaceName, assignedUsers, userResult.Value!.Id);
+        var workspaceResult = Workspace.Create(
+            command.WorkspaceName, assignedUsers, userResult.Value!.Id, command.Visibility);
         if (workspaceResult.IsFailure)
             return Result.Failure<WorkspaceDto>(workspaceResult.Error);
+
+        var creator = await userRepository.GetAsyncById(workspaceResult.Value!.CreatedBy, ct);
+
+        // First workspace becomes the user's default (no default set yet).
+        if (creator!.DefaultWorkspaceId is null ||
+            creator.DefaultWorkspaceId.Value.Value == Guid.Empty)
+            creator.SetupDefaultWorkspace(workspaceResult.Value.Id);
 
         var workspace = workspaceResult.Value!;
         await workspaceRepository.AddAsync(workspace, ct);

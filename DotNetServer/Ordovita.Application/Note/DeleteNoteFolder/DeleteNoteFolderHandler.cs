@@ -27,7 +27,6 @@ public sealed class DeleteNoteFolderHandler(
         if (folder is null || folder.WorkspaceId.Value != command.WorkspaceId)
             return Result.Failure<Unit>(new Error("NoteFolder.NotFound", "Folder not found in this workspace."));
 
-        // Detach the folder's notes instead of deleting them.
         var notes = await noteRepository.GetByFolderIdAsync(folderId, ct);
         foreach (var note in notes)
             note.NoteFolderId = null;

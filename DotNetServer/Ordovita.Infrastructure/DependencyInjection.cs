@@ -73,7 +73,6 @@ public static class DependencyInjection
         services.AddScoped<INoteRepository, NoteRepository>();
         services.AddScoped<INoteFolderRepository, NoteFolderRepository>();
 
-        
 
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 

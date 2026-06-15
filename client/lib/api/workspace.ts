@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { Workspace } from "../types";
+import type { Workspace, WorkspaceVisibility } from "../types";
 
 function mapWorkspace(raw: Record<string, unknown>): Workspace {
   const assignedUsers =
@@ -8,6 +8,7 @@ function mapWorkspace(raw: Record<string, unknown>): Workspace {
     workspaceId: raw.workspaceId as string,
     workspaceName: raw.workspaceName as string,
     createdBy: raw.createdBy as string,
+    visibility: (raw.visibility as Workspace["visibility"]) ?? "Private",
     assignedUsers: assignedUsers.map((u) => ({
       userId: u.userId as string,
       email: (u.email as string) ?? null,
@@ -32,10 +33,25 @@ export const workspaceApi = {
     return mapWorkspace(data);
   },
 
-  create: async (workspaceName: string, assignedUserIds?: string[]) => {
+  create: async (
+    workspaceName: string,
+    assignedUserIds?: string[],
+    visibility: WorkspaceVisibility = "Private",
+  ) => {
     const { data } = await api.post<Record<string, unknown>>(
       "/workspace/create",
-      { workspaceName, assignedUserIds },
+      { workspaceName, assignedUserIds, visibility },
+    );
+    return mapWorkspace(data);
+  },
+
+  setVisibility: async (
+    workspaceId: string,
+    visibility: WorkspaceVisibility,
+  ) => {
+    const { data } = await api.put<Record<string, unknown>>(
+      `/workspace/${encodeURIComponent(workspaceId)}/visibility`,
+      { visibility },
     );
     return mapWorkspace(data);
   },

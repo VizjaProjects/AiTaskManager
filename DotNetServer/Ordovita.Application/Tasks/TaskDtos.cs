@@ -14,6 +14,7 @@ public sealed record WorkTaskDto(
     DateTime? DueDateTime,
     Guid StatusId,
     TaskSource Source,
+    IReadOnlyList<Guid> AssignedUserIds,
     DateTime CreatedAt,
     DateTime UpdatedAt);
 
@@ -119,6 +120,7 @@ public static class TaskMapper
             task.DueDateTime,
             task.StatusId.Value,
             task.Source,
+            task.AssignedUsers.Select(a => a.UserId.Value).ToList(),
             task.CreatedAt,
             task.UpdatedAt);
     }

@@ -166,6 +166,9 @@ namespace Ordovita.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<Guid?>("DefaultWorkspaceId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -289,6 +292,24 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("Note.Notes", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Note.NoteEventLink", b =>
+                {
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("NoteId", "EventId");
+
+                    b.HasIndex("EventId");
+
+                    b.ToTable("Note.NoteEventLinks", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Note.NoteFolder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -320,6 +341,24 @@ namespace Ordovita.Infrastructure.Migrations
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("Note.NoteFolders", (string)null);
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Note.NoteTaskLink", b =>
+                {
+                    b.Property<Guid>("NoteId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("LinkedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("NoteId", "TaskId");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("Note.NoteTaskLinks", (string)null);
                 });
 
             modelBuilder.Entity("Ordovita.Domain.Surveys.Questions.Question", b =>
@@ -584,6 +623,24 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("Tasks.WorkTasks", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Tasks.WorkTaskAssignee", b =>
+                {
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("AssignedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("TaskId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Tasks.WorkTaskAssignees", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Tasks.WorkTaskStatus", b =>
                 {
                     b.Property<Guid>("Id")
@@ -636,6 +693,13 @@ namespace Ordovita.Infrastructure.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Visibility")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)")
+                        .HasDefaultValue("Public");
 
                     b.Property<string>("WorkspaceName")
                         .IsRequired()
@@ -784,6 +848,51 @@ namespace Ordovita.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Note.NoteEventLink", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Tasks.CalendarEvent", null)
+                        .WithMany()
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ordovita.Domain.Note.Note", null)
+                        .WithMany("EventLinks")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Note.NoteTaskLink", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Note.Note", null)
+                        .WithMany("TaskLinks")
+                        .HasForeignKey("NoteId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ordovita.Domain.Tasks.WorkTask", null)
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Tasks.WorkTaskAssignee", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Tasks.WorkTask", null)
+                        .WithMany("AssignedUsers")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Ordovita.Domain.Identity.DomainUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Workspace.Workspace", b =>
                 {
                     b.HasOne("Ordovita.Domain.Identity.DomainUser", null)
@@ -806,6 +915,18 @@ namespace Ordovita.Infrastructure.Migrations
                         .HasForeignKey("WorkspaceId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Note.Note", b =>
+                {
+                    b.Navigation("EventLinks");
+
+                    b.Navigation("TaskLinks");
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Tasks.WorkTask", b =>
+                {
+                    b.Navigation("AssignedUsers");
                 });
 
             modelBuilder.Entity("Ordovita.Domain.Workspace.Workspace", b =>

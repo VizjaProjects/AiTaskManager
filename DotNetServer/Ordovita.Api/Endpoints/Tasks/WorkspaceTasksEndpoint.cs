@@ -15,6 +15,7 @@ using Ordovita.Application.Tasks.TaskStatuses.EditWorkTaskStatus;
 using Ordovita.Application.Tasks.TaskStatuses.GetWorkspaceTaskStatuses;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
+using Ordovita.Application.Tasks.WorkTasks.AssignUsersToTask;
 using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.GetWorkspaceTasks;
 using Ordovita.Domain.Tasks;
@@ -31,6 +32,7 @@ public static class WorkspaceTasksEndpoint
 
         g.MapPost("/task", CreateTask).WithName("CreateWorkTask");
         g.MapPut("/task", EditTask).WithName("EditWorkTask");
+        g.MapPut("/task/{taskId:guid}/assignees", SetTaskAssignees).WithName("SetTaskAssignees");
         g.MapDelete("/task/{taskId:guid}", DeleteTask).WithName("DeleteWorkTask");
         g.MapGet("/task", GetTasks).WithName("GetWorkspaceTasks");
 
@@ -70,6 +72,14 @@ public static class WorkspaceTasksEndpoint
         var result = await sender.Send(new EditWorkTaskCommand(
             workspaceId, request.TaskId, request.Title, request.Description, request.Priority,
             request.CategoryId, request.EstimatedDuration, request.DueDateTime, request.StatusId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> SetTaskAssignees(
+        Guid workspaceId, Guid taskId, SetTaskAssigneesRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new SetTaskAssigneesCommand(
+            workspaceId, taskId, request.UserIds ?? []), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -198,6 +208,8 @@ public static class WorkspaceTasksEndpoint
         int EstimatedDuration,
         DateTime? DueDateTime,
         Guid StatusId);
+
+    private sealed record SetTaskAssigneesRequest(IReadOnlyList<Guid>? UserIds);
 
     private sealed record CreateEventRequest(
         Guid? TaskId,

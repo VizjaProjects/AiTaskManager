@@ -4,6 +4,8 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
+  Modal,
+  Pressable,
   Platform,
   Dimensions,
   useWindowDimensions,
@@ -35,6 +37,8 @@ import {
   useCategories,
   useTaskStatuses,
   useEditTask,
+  useSetTaskAssignees,
+  useNotes,
   useEvents,
 } from "@/lib/hooks";
 import { TaskPriority, TaskSource } from "@/lib/types";
@@ -48,6 +52,8 @@ import {
   resolveTaskDueDateTimeForSave,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
+import { useWorkspaceStore } from "@/lib/stores/workspace";
+import { getInitials } from "@/lib/utils";
 
 type ViewMode = "kanban" | "list";
 type ListGrouping = "status" | "category-status";
@@ -120,6 +126,32 @@ function KanbanTaskCard({
   onPress: () => void;
   isCompleted?: boolean;
 }) {
+  const members = useWorkspaceStore(
+    (s) => s.getActiveWorkspace()?.assignedUsers ?? [],
+  );
+  const setAssignees = useSetTaskAssignees();
+  const router = useRouter();
+  const { data: allNotes } = useNotes();
+  const [assignOpen, setAssignOpen] = useState(false);
+  const assignees = members.filter((m) =>
+    (task.assignedUserIds ?? []).includes(m.userId),
+  );
+  const linkedNotes = (allNotes ?? []).filter((n) =>
+    n.linkedTaskIds?.includes(task.taskId),
+  );
+
+  function openLinkedNote(noteId: string) {
+    router.push(`/(app)/notes?noteId=${encodeURIComponent(noteId)}` as never);
+  }
+
+  function toggleMember(userId: string) {
+    const current = task.assignedUserIds ?? [];
+    const next = current.includes(userId)
+      ? current.filter((id) => id !== userId)
+      : [...current, userId];
+    setAssignees.mutate({ taskId: task.taskId, userIds: next });
+  }
+
   return (
     <DraggableCard taskId={task.taskId}>
       <TouchableOpacity
@@ -137,6 +169,14 @@ function KanbanTaskCard({
             <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed">
               <MaterialIcons name="auto-awesome" size={10} color="#4d41df" />
               <Text className="text-primary text-[9px] font-label">AI</Text>
+            </View>
+          )}
+          {linkedNotes.length > 0 && (
+            <View className="flex-row items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant">
+              <MaterialIcons name="sticky-note-2" size={11} color="#777587" />
+              <Text className="text-on-surface-variant text-[9px] font-label">
+                {linkedNotes.length}
+              </Text>
             </View>
           )}
         </View>
@@ -163,15 +203,149 @@ function KanbanTaskCard({
           </Text>
         ) : null}
 
-        {task.dueDateTime && (
-          <View className="flex-row items-center gap-1.5 mt-0.5">
-            <MaterialIcons name="calendar-today" size={14} color="#777587" />
-            <Text className="text-on-surface-variant font-body text-xs">
-              {formatDate(task.dueDateTime)}
-            </Text>
+        {linkedNotes.length > 0 && (
+          <View className="flex-row flex-wrap gap-1.5">
+            {linkedNotes.slice(0, 3).map((n) => (
+              <TouchableOpacity
+                key={n.id}
+                onPress={() => openLinkedNote(n.id)}
+                activeOpacity={0.7}
+                className="flex-row items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container border border-outline-variant max-w-[92%]"
+              >
+                <MaterialIcons name="sticky-note-2" size={11} color="#777587" />
+                <Text
+                  className="text-on-surface-variant font-body text-[10px] shrink"
+                  numberOfLines={1}
+                >
+                  {n.title || "Notatka"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+            {linkedNotes.length > 3 && (
+              <Text className="text-on-surface-variant font-body text-[10px] self-center">
+                +{linkedNotes.length - 3}
+              </Text>
+            )}
           </View>
         )}
+
+        <View className="flex-row items-center justify-between mt-0.5">
+          {task.dueDateTime ? (
+            <View className="flex-row items-center gap-1.5">
+              <MaterialIcons name="calendar-today" size={14} color="#777587" />
+              <Text className="text-on-surface-variant font-body text-xs">
+                {formatDate(task.dueDateTime)}
+              </Text>
+            </View>
+          ) : (
+            <View />
+          )}
+
+          {/* Quick-assign control: avatar stack, or a dashed circle if empty. */}
+          <TouchableOpacity
+            onPress={() => setAssignOpen(true)}
+            hitSlop={8}
+            className="flex-row items-center"
+          >
+            {assignees.length === 0 ? (
+              <View className="w-7 h-7 rounded-full items-center justify-center border border-dashed border-outline">
+                <MaterialIcons name="person-add" size={14} color="#9ca3af" />
+              </View>
+            ) : (
+              <>
+                {assignees.slice(0, 4).map((m, i) => (
+                  <View
+                    key={m.userId}
+                    className="w-6 h-6 rounded-full bg-primary-fixed items-center justify-center border border-surface-container-lowest"
+                    style={{ marginLeft: i === 0 ? 0 : -6 }}
+                  >
+                    <Text className="text-primary text-[9px] font-headline">
+                      {getInitials(m.fullName ?? m.email ?? "?")}
+                    </Text>
+                  </View>
+                ))}
+                {assignees.length > 4 && (
+                  <View
+                    className="w-6 h-6 rounded-full bg-surface-container items-center justify-center border border-surface-container-lowest"
+                    style={{ marginLeft: -6 }}
+                  >
+                    <Text className="text-on-surface-variant text-[9px] font-headline">
+                      +{assignees.length - 4}
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
       </TouchableOpacity>
+
+      <Modal
+        visible={assignOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setAssignOpen(false)}
+      >
+        <Pressable
+          className="flex-1 bg-black/40 items-center justify-center px-6"
+          onPress={() => setAssignOpen(false)}
+        >
+          <Pressable
+            onPress={(e) => e.stopPropagation()}
+            className="w-full max-w-[360px] bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden"
+          >
+            <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-outline-variant">
+              <Text className="text-on-surface font-headline text-base">
+                Przypisz osoby
+              </Text>
+              <TouchableOpacity
+                onPress={() => setAssignOpen(false)}
+                className="p-1"
+              >
+                <MaterialIcons name="close" size={20} color="#9b9791" />
+              </TouchableOpacity>
+            </View>
+            {members.length === 0 ? (
+              <Text className="text-on-surface-variant font-body text-sm px-5 py-4">
+                Brak członków workspace. Dodaj ich w ustawieniach workspace.
+              </Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 320 }}>
+                {members.map((m) => {
+                  const checked = (task.assignedUserIds ?? []).includes(
+                    m.userId,
+                  );
+                  const name = m.fullName ?? m.email ?? "Użytkownik";
+                  return (
+                    <TouchableOpacity
+                      key={m.userId}
+                      onPress={() => toggleMember(m.userId)}
+                      className="flex-row items-center gap-3 px-5 py-2.5"
+                    >
+                      <View className="w-8 h-8 rounded-full bg-primary-fixed items-center justify-center">
+                        <Text className="text-primary text-[10px] font-headline">
+                          {getInitials(name)}
+                        </Text>
+                      </View>
+                      <Text
+                        className="flex-1 text-on-surface font-body text-sm"
+                        numberOfLines={1}
+                      >
+                        {name}
+                      </Text>
+                      <MaterialIcons
+                        name={checked ? "check-box" : "check-box-outline-blank"}
+                        size={20}
+                        color={checked ? "#4d41df" : "#9b9791"}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </DraggableCard>
   );
 }

@@ -6,6 +6,7 @@ using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Tasks.Ai.GenerateAiPlan;
 using Ordovita.Application.DomainUser.ChangeFullname;
 using Ordovita.Application.DomainUser.DeleteAccount;
+using Ordovita.Application.DomainUser.SetupDefaultWorkspace;
 using Ordovita.Application.Identity.ConfirmUserEmail;
 using Ordovita.Application.Identity.GoogleOAuth;
 using Ordovita.Application.Identity.RegisterUser;
@@ -24,6 +25,7 @@ using Ordovita.Application.Note.DeleteNote;
 using Ordovita.Application.Note.DeleteNoteFolder;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
+using Ordovita.Application.Note.SetNoteLinks;
 using Ordovita.Application.Note.UpdateNoteContent;
 using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
@@ -48,6 +50,7 @@ using Ordovita.Application.User;
 using Ordovita.Domain.Surveys.port;
 using Ordovita.Application.Workspaces;
 using Ordovita.Application.Workspaces.AssignUsersToWorkspace;
+using Ordovita.Application.Workspaces.ChangeWorkspaceVisibility;
 using Ordovita.Application.Workspaces.CreateWorkspace;
 using Ordovita.Application.Workspaces.DeleteWorkspace;
 using Ordovita.Application.Workspaces.GetMyWorkspaces;
@@ -74,6 +77,7 @@ using Ordovita.Application.Tasks.Proposals.RejectAiEvent;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
+using Ordovita.Application.Tasks.WorkTasks.AssignUsersToTask;
 using Ordovita.Application.Tasks.WorkTasks.GetWorkspaceTasks;
 using Ordovita.Application.Workspaces.AssignUsersByEmail;
 
@@ -93,6 +97,7 @@ public static class DependencyInjection
 
         services.AddScoped<ICommandHandler<ChangeFullNameCommand, UserDto>, ChangeFullnameHandler>();
         services.AddScoped<ICommandHandler<DeleteAccountCommand, UserDto>, DeleteAccountHandler>();
+        services.AddScoped<ICommandHandler<SetUpDefaultWorkspaceCommand, UserDto>, SetUpDefaultWorkspaceHandler>();
 
         services.AddScoped<ICommandHandler<CreateSurveyCommand, CreateSurveyResult>, CreateSurveyHandler>();
         services.AddScoped<ICommandHandler<EditSurveyCommand, SurveySummaryDto>, EditSurveyHandler>();
@@ -135,6 +140,9 @@ public static class DependencyInjection
         services
             .AddScoped<ICommandHandler<RemoveUsersFromWorkspaceCommand, WorkspaceDto>,
                 RemoveUsersFromWorkspaceHandler>();
+        services
+            .AddScoped<ICommandHandler<ChangeWorkspaceVisibilityCommand, WorkspaceDto>,
+                ChangeWorkspaceVisibilityHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkspaceCommand, Unit>, DeleteWorkspaceHandler>();
 
         services.AddScoped<WorkspaceTaskEnsurer>();
@@ -143,6 +151,8 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<CreateWorkTaskCommand, CreateWorkTaskResult>, CreateWorkTaskHandler>();
         services.AddScoped<ICommandHandler<EditWorkTaskCommand, EditWorkTaskResult>, EditWorkTaskHandler>();
         services.AddScoped<ICommandHandler<DeleteWorkTaskCommand, Unit>, DeleteWorkTaskHandler>();
+        services
+            .AddScoped<ICommandHandler<SetTaskAssigneesCommand, EditWorkTaskResult>, SetTaskAssigneesHandler>();
         services
             .AddScoped<IQueryHandler<GetWorkspaceTasksQuery, IReadOnlyList<WorkTaskDto>>, GetWorkspaceTasksHandler>();
 
@@ -197,15 +207,18 @@ public static class DependencyInjection
         services
             .AddScoped<IQueryHandler<GetAllLlmSettingsQuery, IReadOnlyList<LlmSettingsDto>>, GetLlmSettingsHandler>();
         services.AddScoped<ICommandHandler<UpdateLlmSettingsCommand, LlmSettingsDto>, UpdateLlmSettingsHandler>();
-        
+
         services.AddScoped<ICommandHandler<CreateNoteFolderCommand, CreateNoteFolderResult>, CreateNoteFolderHandler>();
         services.AddScoped<ICommandHandler<UpdateNoteFolderCommand, Unit>, UpdateNoteFolderHandler>();
         services.AddScoped<ICommandHandler<DeleteNoteFolderCommand, Unit>, DeleteNoteFolderHandler>();
-        services.AddScoped<IQueryHandler<GetWorkspaceNoteFoldersQuery, IReadOnlyList<NoteFolderDto>>, GetWorkspaceNoteFoldersHandler>();
-        
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceNoteFoldersQuery, IReadOnlyList<NoteFolderDto>>,
+                GetWorkspaceNoteFoldersHandler>();
+
         services.AddScoped<ICommandHandler<CreateNoteCommand, CreateNoteResult>, CreateNoteHandler>();
         services.AddScoped<ICommandHandler<UpdateNoteContentCommand, Unit>, UpdateNoteContentHandler>();
         services.AddScoped<ICommandHandler<UpdateNoteMetadataCommand, Unit>, UpdateNoteMetadataHandler>();
+        services.AddScoped<ICommandHandler<SetNoteLinksCommand, Unit>, SetNoteLinksHandler>();
         services.AddScoped<ICommandHandler<DeleteNoteCommand, Unit>, DeleteNoteHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceNotesQuery, IReadOnlyList<NoteDto>>, GetWorkspaceNotesHandler>();
 

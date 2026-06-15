@@ -59,12 +59,15 @@ export function buildEditorHtml(options: {
   backgroundColor: string;
   placeholder?: string;
   enableScheduleSelection?: boolean;
+  /** Base editor font size in px; scales the whole note for device readability. */
+  fontSize?: number;
 }): string {
   const {
     isDark,
     backgroundColor,
     placeholder = "Zacznij pisać…",
     enableScheduleSelection = false,
+    fontSize = 17.5,
   } = options;
   const initialTheme = isDark ? EDITOR_THEMES.dark : EDITOR_THEMES.light;
   const initialThemeName = isDark ? "dark" : "light";
@@ -86,7 +89,7 @@ export function buildEditorHtml(options: {
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
     color: var(--editor-fg);
-    font-size: 17.5px;
+    font-size: ${fontSize}px;
     line-height: 1.6;
   }
   ::selection { background: var(--editor-selection); }
@@ -154,11 +157,56 @@ export function buildEditorHtml(options: {
     cursor: pointer;
   }
   #schedule-selection:hover { background: var(--schedule-bg-hover); }
+  #slash-menu {
+    display: none;
+    position: fixed;
+    z-index: 1100;
+    min-width: 220px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: var(--note-background);
+    border: 1px solid var(--editor-line);
+    border-radius: 10px;
+    padding: 6px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  }
+  #slash-menu .slash-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--editor-muted);
+    padding: 8px 10px 4px;
+  }
+  #slash-menu .slash-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--editor-fg);
+  }
+  #slash-menu .slash-item .slash-glyph {
+    width: 26px;
+    height: 26px;
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--editor-line);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--editor-muted);
+  }
+  #slash-menu .slash-item .slash-label { font-size: 14px; }
+  #slash-menu .slash-item.active { background: var(--editor-selection); }
+  #slash-menu .slash-item.active .slash-glyph { color: var(--editor-fg); border-color: var(--editor-accent); }
 </style>
 </head>
 <body>
 <div id="editor" contenteditable="true" data-placeholder="${placeholder.replace(/"/g, "&quot;")}"></div>
 ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zaplanuj z AI</button>' : ""}
+<div id="slash-menu" role="listbox"></div>
 <script>
   (function () {
     var editor = document.getElementById("editor");
@@ -340,12 +388,48 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
       sel.addRange(range);
     }
 
+    // Keep a multi-line block selection highlighted after a formatting command
+    // so the user can chain another action on the same lines.
+    function selectAcrossNodes(firstNode, lastNode) {
+      if (!firstNode || !lastNode) return;
+      var sel = window.getSelection();
+      var range = document.createRange();
+      range.setStartBefore(firstNode);
+      range.setEndAfter(lastNode);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
     function insertChecklist() {
       var sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) { editor.focus(); }
       sel = window.getSelection();
       if (!sel || sel.rangeCount === 0) return;
       var range = sel.getRangeAt(0);
+      var hadSelection = !range.collapsed;
+
+      // Toggle behaviour: if the selection already covers checklist items,
+      // convert them back to plain paragraphs (remove the checkboxes).
+      var existing = checklistItemsInRange(range);
+      if (existing.length > 0) {
+        var firstP = null;
+        var lastP = null;
+        for (var e = 0; e < existing.length; e++) {
+          var done = existing[e];
+          var doneSpan = done.querySelector("span");
+          var p2 = document.createElement("p");
+          var txt = doneSpan ? doneSpan.textContent : "";
+          if (txt && txt.length) p2.textContent = txt;
+          else p2.innerHTML = "<br/>";
+          done.parentNode.replaceChild(p2, done);
+          if (!firstP) firstP = p2;
+          lastP = p2;
+        }
+        // Re-select the converted lines so the selection "sticks".
+        if (existing.length > 1) selectAcrossNodes(firstP, lastP);
+        else if (lastP) placeCaretAtEnd(lastP);
+        return;
+      }
 
       var lines;
       if (range.collapsed) {
@@ -373,14 +457,21 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
       }
 
       var frag = document.createDocumentFragment();
+      var first = null;
       var last = null;
       for (var i = 0; i < lines.length; i++) {
         last = makeChecklistItem(lines[i]);
+        if (!first) first = last;
         frag.appendChild(last);
       }
       range.deleteContents();
       range.insertNode(frag);
-      if (last) placeCaretAtEnd(last.querySelector("span"));
+      // Preserve a multi-line selection; collapse to caret for a single line.
+      if (hadSelection && first && last && first !== last) {
+        selectAcrossNodes(first, last);
+      } else if (last) {
+        placeCaretAtEnd(last.querySelector("span"));
+      }
     }
 
     function insertTable(value) {
@@ -405,14 +496,43 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
       return el && el.closest ? el.closest(".checklist-item") : null;
     }
 
-    editor.addEventListener("input", emitChange);
-    editor.addEventListener("keyup", function () {
+    // All checklist items touched by the given range (handles multi-line
+    // selections as well as a collapsed caret sitting inside one item).
+    function checklistItemsInRange(range) {
+      var items = editor.querySelectorAll(".checklist-item");
+      var result = [];
+      for (var i = 0; i < items.length; i++) {
+        var intersects = range.intersectsNode
+          ? range.intersectsNode(items[i])
+          : false;
+        if (intersects) result.push(items[i]);
+      }
+      if (result.length === 0) {
+        var caretItem = closestChecklistItem(range.startContainer);
+        if (caretItem) result.push(caretItem);
+      }
+      return result;
+    }
+
+    editor.addEventListener("input", function () {
+      emitChange();
+      updateSlash();
+    });
+    editor.addEventListener("keyup", function (e) {
       emitState();
       updateScheduleButton();
+      if (e.key !== "ArrowUp" && e.key !== "ArrowDown" && e.key !== "Enter" && e.key !== "Tab") {
+        updateSlash();
+      }
     });
     editor.addEventListener("mouseup", function () {
       emitState();
       updateScheduleButton();
+      hideSlash();
+    });
+    editor.addEventListener("blur", function () {
+      // Delay so a menu click (mousedown) can still resolve first.
+      setTimeout(hideSlash, 120);
     });
     document.addEventListener("selectionchange", function () {
       emitState();
@@ -420,7 +540,6 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
     });
     window.addEventListener("scroll", hideScheduleButton, true);
     window.addEventListener("resize", hideScheduleButton);
-
     if (scheduleButton) {
       scheduleButton.addEventListener("mousedown", function (e) {
         e.preventDefault();
@@ -457,20 +576,218 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
     });
 
     // checklist toggling: gray out completed items and persist the state.
-    editor.addEventListener("change", function (e) {
-      if (!e.target || !e.target.matches('input[type=checkbox]')) return;
-      var item = e.target.closest(".checklist-item");
+    // Clicking a checkbox inside a contenteditable host can place a caret
+    // instead of toggling, so we mirror the live checked state on BOTH click
+    // and change and keep the serialized checked attribute in sync each time.
+    function syncCheckbox(cb) {
+      if (!cb || !cb.matches || !cb.matches('input[type=checkbox]')) return;
+      var item = cb.closest(".checklist-item");
       if (item) {
-        if (e.target.checked) {
+        if (cb.checked) {
           item.classList.add("done");
-          e.target.setAttribute("checked", "");
+          cb.setAttribute("checked", "");
         } else {
           item.classList.remove("done");
-          e.target.removeAttribute("checked");
+          cb.removeAttribute("checked");
         }
       }
       emitChange();
+    }
+    editor.addEventListener("change", function (e) {
+      syncCheckbox(e.target);
     });
+    editor.addEventListener("click", function (e) {
+      if (e.target && e.target.matches && e.target.matches('input[type=checkbox]')) {
+        // .checked is already toggled by the browser when click fires.
+        syncCheckbox(e.target);
+      }
+    });
+
+    /* ---------- Notion-style "/" slash command menu ---------- */
+    var slashMenu = document.getElementById("slash-menu");
+    var slashItems = [
+      { command: "h1", label: "Nagłówek 1", glyph: "H1" },
+      { command: "h2", label: "Nagłówek 2", glyph: "H2" },
+      { command: "p", label: "Tekst", glyph: "T" },
+      { command: "insertUnorderedList", label: "Lista punktowana", glyph: "•" },
+      { command: "insertOrderedList", label: "Lista numerowana", glyph: "1." },
+      { command: "checklist", label: "Lista zadań", glyph: "☑" },
+      { command: "blockquote", label: "Cytat", glyph: "\u201D" },
+      { command: "code", label: "Kod", glyph: "<>" },
+      { command: "hr", label: "Separator", glyph: "—" }
+    ];
+    var slashOpen = false;
+    var slashNode = null;
+    var slashStart = -1;
+    var slashActiveIndex = 0;
+    var slashFiltered = [];
+
+    function hideSlash() {
+      if (!slashMenu) return;
+      slashOpen = false;
+      slashNode = null;
+      slashStart = -1;
+      slashMenu.style.display = "none";
+    }
+
+    function caretTextInfo() {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return null;
+      var range = sel.getRangeAt(0);
+      if (!range.collapsed) return null;
+      var node = range.startContainer;
+      if (!node || node.nodeType !== 3) return null;
+      if (!editor.contains(node)) return null;
+      return { node: node, offset: range.startOffset };
+    }
+
+    function renderSlash(query) {
+      var q = query.toLowerCase();
+      slashFiltered = slashItems.filter(function (it) {
+        return it.label.toLowerCase().indexOf(q) !== -1;
+      });
+      if (slashFiltered.length === 0) { hideSlash(); return; }
+      if (slashActiveIndex >= slashFiltered.length) slashActiveIndex = 0;
+      var html = '<div class="slash-section">Bloki</div>';
+      for (var i = 0; i < slashFiltered.length; i++) {
+        var it = slashFiltered[i];
+        var cls = "slash-item" + (i === slashActiveIndex ? " active" : "");
+        html += '<div class="' + cls + '" data-index="' + i + '">' +
+          '<span class="slash-glyph">' + it.glyph + '</span>' +
+          '<span class="slash-label">' + it.label + '</span></div>';
+      }
+      slashMenu.innerHTML = html;
+      slashMenu.style.display = "block";
+      slashOpen = true;
+      positionSlash();
+    }
+
+    function positionSlash() {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      var rect = sel.getRangeAt(0).getBoundingClientRect();
+      requestAnimationFrame(function () {
+        var menuRect = slashMenu.getBoundingClientRect();
+        var left = Math.max(8, Math.min(rect.left, window.innerWidth - menuRect.width - 8));
+        var top = rect.bottom + 6;
+        if (top + menuRect.height > window.innerHeight - 8) {
+          top = rect.top - menuRect.height - 6;
+        }
+        if (top < 8) top = 8;
+        slashMenu.style.left = left + "px";
+        slashMenu.style.top = top + "px";
+      });
+    }
+
+    function updateSlash() {
+      var info = caretTextInfo();
+      if (!info) { hideSlash(); return; }
+      var text = info.node.textContent || "";
+      var caret = info.offset;
+      var slashPos = -1;
+      for (var i = caret - 1; i >= 0; i--) {
+        var ch = text.charAt(i);
+        if (ch === "/") { slashPos = i; break; }
+        if (ch === " " || ch === "\\u00A0" || ch === "\\n") break;
+      }
+      if (slashPos === -1) { hideSlash(); return; }
+      if (slashPos > 0) {
+        var prev = text.charAt(slashPos - 1);
+        if (prev !== " " && prev !== "\\u00A0" && prev !== "\\n") { hideSlash(); return; }
+      }
+      var query = text.substring(slashPos + 1, caret);
+      if (/\\s/.test(query)) { hideSlash(); return; }
+      // Reset the highlight to the top each time the menu opens fresh.
+      if (!slashOpen) slashActiveIndex = 0;
+      slashNode = info.node;
+      slashStart = slashPos;
+      renderSlash(query);
+    }
+
+    function applySlash(index) {
+      var it = slashFiltered[index];
+      if (!it || !slashNode) { hideSlash(); return; }
+      // Remove the "/query" text, then run the formatting command.
+      var sel = window.getSelection();
+      var caret = sel && sel.rangeCount ? sel.getRangeAt(0).startOffset : slashStart;
+      try {
+        var range = document.createRange();
+        range.setStart(slashNode, slashStart);
+        range.setEnd(slashNode, caret);
+        range.deleteContents();
+        var after = document.createRange();
+        after.setStart(slashNode, slashStart);
+        after.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(after);
+      } catch (err) {}
+      hideSlash();
+      exec(it.command);
+    }
+
+    if (slashMenu) {
+      slashMenu.addEventListener("mousedown", function (e) {
+        var target = e.target && e.target.closest ? e.target.closest(".slash-item") : null;
+        if (!target) return;
+        e.preventDefault();
+        applySlash(parseInt(target.getAttribute("data-index"), 10) || 0);
+      });
+    }
+
+    function highlightSlashActive() {
+      if (!slashMenu) return;
+      var nodes = slashMenu.querySelectorAll(".slash-item");
+      for (var i = 0; i < nodes.length; i++) {
+        if (i === slashActiveIndex) {
+          nodes[i].classList.add("active");
+          // Keep the highlighted row visible when the list overflows.
+          if (nodes[i].scrollIntoView) {
+            nodes[i].scrollIntoView({ block: "nearest" });
+          }
+        } else {
+          nodes[i].classList.remove("active");
+        }
+      }
+    }
+
+    // Capture phase so menu navigation wins over the checklist Enter handler.
+    editor.addEventListener("keydown", function (e) {
+      if (!slashOpen || slashFiltered.length === 0) return;
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        e.stopPropagation();
+        slashActiveIndex = (slashActiveIndex + 1) % slashFiltered.length;
+        highlightSlashActive();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        slashActiveIndex = (slashActiveIndex - 1 + slashFiltered.length) % slashFiltered.length;
+        highlightSlashActive();
+      } else if (e.key === "Enter" || e.key === "Tab") {
+        e.preventDefault();
+        e.stopPropagation();
+        applySlash(slashActiveIndex);
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        hideSlash();
+      }
+    }, true);
+
+    window.addEventListener("scroll", function (e) {
+      // Ignore the slash menu's OWN internal scrolling (triggered by
+      // scrollIntoView during arrow navigation) — only outer scrolls dismiss.
+      if (
+        slashMenu &&
+        e.target &&
+        (e.target === slashMenu ||
+          (e.target.nodeType === 1 && slashMenu.contains(e.target)))
+      ) {
+        return;
+      }
+      hideSlash();
+    }, true);
+    window.addEventListener("resize", hideSlash);
 
     function handleMessage(raw) {
       var msg;

@@ -5,7 +5,10 @@ public static class NoteMapper
     public static NoteDto ToDto(Domain.Note.Note note)
     {
         return new NoteDto(note.Id.Value, note.WorkspaceId.Value, note.NoteFolderId?.Value, note.Title, note.NoteColor,
-            note.Content.RawJson, note.NoteDescription, note.CreatedBy.Value, note.CreatedAt, note.UpdatedAt);
+            note.Content.RawJson, note.NoteDescription,
+            note.LinkedTaskIds.Select(id => id.Value).ToList(),
+            note.LinkedEventIds.Select(id => id.Value).ToList(),
+            note.CreatedBy.Value, note.CreatedAt, note.UpdatedAt);
     }
 
     public static NoteFolderDto ToDto(Domain.Note.NoteFolder folder)

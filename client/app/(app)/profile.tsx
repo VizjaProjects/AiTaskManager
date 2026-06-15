@@ -15,6 +15,7 @@ import { PageLayout } from "@/components/organisms";
 import { LlmSettingsPanel } from "@/components/organisms/LlmSettingsPanel";
 import { Button, Input, Card, Avatar } from "@/components/atoms";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useWorkspaceStore } from "@/lib/stores";
 import { identityApi, userApi } from "@/lib/api";
 import {
   changePasswordSchema,
@@ -43,11 +44,30 @@ export default function ProfileScreen() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const { user, setUser, logout } = useAuthStore();
   const { mode } = useThemeStore();
+  const workspaces = useWorkspaceStore((s) => s.workspaces);
+  const defaultWorkspaceId = useWorkspaceStore((s) => s.defaultWorkspaceId);
+  const setDefaultWorkspace = useWorkspaceStore((s) => s.setDefaultWorkspace);
   const [activeTab, setActiveTab] = useState<SettingsTab>("account");
   const [nameLoading, setNameLoading] = useState(false);
   const [passLoading, setPassLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [defaultWsLoading, setDefaultWsLoading] = useState<string | null>(null);
+
+  async function handleSetDefaultWorkspace(id: string) {
+    if (id === defaultWorkspaceId) return;
+    setDefaultWsLoading(id);
+    setError(null);
+    try {
+      await setDefaultWorkspace(id);
+    } catch (e: any) {
+      setError(
+        e.response?.data?.message ?? "Nie udało się ustawić domyślnego workspace",
+      );
+    } finally {
+      setDefaultWsLoading(null);
+    }
+  }
 
   useEffect(() => {
     if (isSettingsTab(params.tab)) {
@@ -220,6 +240,66 @@ export default function ProfileScreen() {
                   />
                 </View>
               </Card>
+
+              {workspaces.length > 0 && (
+                <Card variant="elevated">
+                  <Text className="text-on-surface font-headline text-title-lg mb-1">
+                    Default Workspace
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-body-md mb-4">
+                    Choose the workspace you land on when you open the app.
+                  </Text>
+                  <View className="gap-2">
+                    {workspaces.map((ws) => {
+                      const isDefault = ws.workspaceId === defaultWorkspaceId;
+                      const loading = defaultWsLoading === ws.workspaceId;
+                      return (
+                        <TouchableOpacity
+                          key={ws.workspaceId}
+                          disabled={loading || isDefault}
+                          onPress={() =>
+                            handleSetDefaultWorkspace(ws.workspaceId)
+                          }
+                          className={`flex-row items-center justify-between gap-3 rounded-md border px-4 py-3 ${
+                            isDefault
+                              ? "border-primary bg-surface-container-low"
+                              : "border-outline-variant"
+                          }`}
+                        >
+                          <View className="flex-row items-center gap-3 flex-1 min-w-0">
+                            <MaterialIcons
+                              name="workspaces"
+                              size={18}
+                              color={mode === "dark" ? "#a0a0a5" : "#777587"}
+                            />
+                            <Text
+                              className="text-on-surface font-body text-body-md flex-1"
+                              numberOfLines={1}
+                            >
+                              {ws.workspaceName}
+                            </Text>
+                          </View>
+                          <MaterialIcons
+                            name={
+                              isDefault
+                                ? "radio-button-checked"
+                                : "radio-button-unchecked"
+                            }
+                            size={20}
+                            color={
+                              isDefault
+                                ? "#4d41df"
+                                : mode === "dark"
+                                  ? "#5c5c60"
+                                  : "#9ca3af"
+                            }
+                          />
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Card>
+              )}
 
               <Card variant="elevated">
                 <Text className="text-on-surface font-headline text-title-lg mb-1">

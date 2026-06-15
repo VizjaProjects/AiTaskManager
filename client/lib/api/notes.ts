@@ -80,4 +80,14 @@ export const noteApi = {
 
   delete: (workspaceId: string, noteId: string) =>
     api.delete(`${noteBase(workspaceId)}/${encodeURIComponent(noteId)}`),
+
+  setLinks: (
+    workspaceId: string,
+    noteId: string,
+    links: { taskIds: string[]; eventIds: string[] },
+  ) =>
+    api.put(`${noteBase(workspaceId)}/${encodeURIComponent(noteId)}/links`, {
+      taskIds: links.taskIds,
+      eventIds: links.eventIds,
+    }),
 };

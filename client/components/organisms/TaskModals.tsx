@@ -5,14 +5,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Modal,
+  Pressable,
   Platform,
   useWindowDimensions,
 } from "react-native";
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, Input } from "../atoms";
 import { PriorityBadge, ColorBadge } from "../atoms";
 import { InlineDatePicker } from "../atoms";
+import { Avatar } from "../atoms/Avatar";
+import { LinkCheckboxModal } from "../molecules";
 import type { Task, Category, TaskStatus, CalendarEvent } from "@/lib/types";
 import { TaskPriority, TaskSource, EventStatus } from "@/lib/types";
 import {
@@ -33,12 +37,16 @@ import {
   useEditTask,
   useDeleteTask,
   useCreateTask,
+  useSetTaskAssignees,
   useCategories,
   useTaskStatuses,
   useEvents,
   useTasks,
+  useNotes,
+  useSyncEntityNoteLinks,
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
+import { useWorkspaceStore } from "@/lib/stores/workspace";
 
 type TaskSaveData = {
   title: string;
@@ -86,11 +94,17 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const editTask = useEditTask();
   const deleteTask = useDeleteTask();
+  const setAssignees = useSetTaskAssignees();
+  const router = useRouter();
   const themeMode = useThemeStore((s) => s.mode);
   const isDark = themeMode === "dark";
   const pColors = isDark ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
   const { data: allEvents } = useEvents();
   const { data: liveTasks } = useTasks();
+  const { data: allNotes } = useNotes();
+  const workspaceMembers = useWorkspaceStore(
+    (s) => s.getActiveWorkspace()?.assignedUsers ?? [],
+  );
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
   const isNarrow = width < 600;
@@ -106,6 +120,18 @@ export function TaskDetailModal({
   const [dueHour, setDueHour] = useState("12");
   const [dueMin, setDueMin] = useState("00");
   const [showDuePicker, setShowDuePicker] = useState(false);
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
+  const [noteLinkOpen, setNoteLinkOpen] = useState(false);
+  const [draftLinkedNoteIds, setDraftLinkedNoteIds] = useState<string[]>([]);
+  const syncEntityNoteLinks = useSyncEntityNoteLinks();
+
+  function toggleAssignee(userId: string) {
+    setAssigneeIds((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId],
+    );
+  }
 
   const task = useMemo(() => {
     if (!taskProp) return null;
@@ -122,6 +148,23 @@ export function TaskDetailModal({
     setShowDuePicker(false);
   }, [task?.taskId, visible, forceEdit, onSaveCustom]);
 
+  // ESC closes the detail modal; Ctrl/Cmd+Enter confirms while editing.
+  useEffect(() => {
+    if (Platform.OS !== "web" || !visible) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "Enter" && editing) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, onClose, editing, title, description, priority, statusId, categoryId, estimatedDuration, dueDate, dueHour, dueMin]);
+
   const cat = task?.categoryId
     ? categories.find((c) => c.categoryId === task.categoryId)
     : undefined;
@@ -136,6 +179,67 @@ export function TaskDetailModal({
     );
   }, [task, allEvents]);
 
+  const assignedMembers = useMemo(() => {
+    const ids = task?.assignedUserIds ?? [];
+    return workspaceMembers.filter((m) => ids.includes(m.userId));
+  }, [task?.assignedUserIds, workspaceMembers]);
+
+  const linkedNotes = useMemo(() => {
+    if (!task || !allNotes) return [];
+    return allNotes.filter((n) => n.linkedTaskIds?.includes(task.taskId));
+  }, [task, allNotes]);
+
+  const noteLinkSections = useMemo(
+    () => [
+      {
+        label: "Notatki",
+        emptyMessage: "Brak notatek w tym workspace.",
+        items: (allNotes ?? []).map((n) => ({
+          id: n.id,
+          label: n.title || "Bez tytułu",
+          subtitle:
+            n.noteDescription?.trim() ||
+            n.content.text.trim().slice(0, 80) ||
+            undefined,
+          searchText: `${n.noteDescription ?? ""} ${n.content.text}`,
+        })),
+        selectedIds: draftLinkedNoteIds,
+        onToggle: (id: string) =>
+          setDraftLinkedNoteIds((prev) =>
+            prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+          ),
+      },
+    ],
+    [allNotes, draftLinkedNoteIds],
+  );
+
+  function openNoteLinkModal() {
+    if (!task) return;
+    setDraftLinkedNoteIds(
+      (allNotes ?? [])
+        .filter((n) => n.linkedTaskIds.includes(task.taskId))
+        .map((n) => n.id),
+    );
+    setNoteLinkOpen(true);
+  }
+
+  function saveTaskNoteLinks() {
+    if (!task) return;
+    syncEntityNoteLinks.mutate(
+      {
+        kind: "task",
+        entityId: task.taskId,
+        selectedNoteIds: draftLinkedNoteIds,
+      },
+      { onSuccess: () => setNoteLinkOpen(false) },
+    );
+  }
+
+  function openLinkedNote(noteId: string) {
+    onClose();
+    router.push(`/(app)/notes?noteId=${encodeURIComponent(noteId)}` as never);
+  }
+
   function startEdit() {
     if (!task) return;
     setTitle(task.title);
@@ -143,6 +247,7 @@ export function TaskDetailModal({
     setPriority(task.priority);
     setStatusId(task.statusId);
     setCategoryId(task.categoryId);
+    setAssigneeIds(task.assignedUserIds ?? []);
     setEstimatedDuration(
       task.estimatedDuration > 0 ? String(task.estimatedDuration) : "",
     );
@@ -193,6 +298,14 @@ export function TaskDetailModal({
       onSaveCustom(data);
       return;
     }
+    // Persist assignee changes alongside the edit (only when they differ).
+    const current = task.assignedUserIds ?? [];
+    const changed =
+      current.length !== assigneeIds.length ||
+      current.some((id) => !assigneeIds.includes(id));
+    if (changed) {
+      setAssignees.mutate({ taskId: task.taskId, userIds: assigneeIds });
+    }
     editTask.mutate(
       { taskId: task.taskId, data },
       {
@@ -242,9 +355,21 @@ export function TaskDetailModal({
   if (!task) return null;
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/40 items-center justify-center p-4">
-        <View className="bg-surface rounded-2xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant">
+    <>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <Pressable
+        className="flex-1 bg-black/40 items-center justify-center p-4"
+        onPress={onClose}
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          className="bg-surface rounded-2xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant"
+        >
           <ScrollView
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ padding: 0 }}
@@ -731,6 +856,72 @@ export function TaskDetailModal({
                   )}
                 </View>
 
+                {/* Assignees */}
+                <View>
+                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
+                    Przypisani
+                  </Text>
+                  {editing ? (
+                    workspaceMembers.length === 0 ? (
+                      <Text className="text-on-surface-variant font-body text-sm">
+                        Brak członków workspace
+                      </Text>
+                    ) : (
+                      <View className="flex-row gap-2 flex-wrap">
+                        {workspaceMembers.map((m) => {
+                          const selected = assigneeIds.includes(m.userId);
+                          return (
+                            <TouchableOpacity
+                              key={m.userId}
+                              onPress={() => toggleAssignee(m.userId)}
+                              className={`flex-row items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border ${
+                                selected
+                                  ? "border-transparent bg-accent/15"
+                                  : "border-outline-variant"
+                              }`}
+                            >
+                              <Avatar
+                                fullName={m.fullName ?? m.email ?? "?"}
+                                size="sm"
+                              />
+                              <Text
+                                className={`text-xs font-label ${
+                                  selected
+                                    ? "text-accent"
+                                    : "text-on-surface-variant"
+                                }`}
+                              >
+                                {m.fullName ?? m.email ?? "Użytkownik"}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )
+                  ) : assignedMembers.length === 0 ? (
+                    <Text className="text-on-surface-variant font-body text-sm">
+                      Nikt nie jest przypisany
+                    </Text>
+                  ) : (
+                    <View className="flex-row flex-wrap gap-2">
+                      {assignedMembers.map((m) => (
+                        <View
+                          key={m.userId}
+                          className="flex-row items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full bg-surface-container-low border border-outline-variant"
+                        >
+                          <Avatar
+                            fullName={m.fullName ?? m.email ?? "?"}
+                            size="sm"
+                          />
+                          <Text className="text-on-surface font-body text-xs">
+                            {m.fullName ?? m.email ?? "Użytkownik"}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+
                 {/* Created at */}
                 {!editing && (
                   <View>
@@ -796,6 +987,59 @@ export function TaskDetailModal({
                     );
                   })}
                 </View>
+              </View>
+            )}
+
+            {/* Linked notes */}
+            {!editing && (
+              <View className="px-6 pb-4">
+                <View className="flex-row items-center justify-between mb-3">
+                  <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
+                    Powiązane notatki
+                  </Text>
+                  <TouchableOpacity
+                    onPress={openNoteLinkModal}
+                    className="flex-row items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low border border-outline-variant"
+                  >
+                    <MaterialIcons name="link" size={14} color="#9b9791" />
+                    <Text className="text-on-surface-variant font-label text-xs">
+                      Podłącz
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+                {linkedNotes.length > 0 ? (
+                  <View className="flex-row flex-wrap gap-2">
+                    {linkedNotes.map((n) => (
+                      <TouchableOpacity
+                        key={n.id}
+                        onPress={() => openLinkedNote(n.id)}
+                        activeOpacity={0.7}
+                        className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant"
+                      >
+                        <MaterialIcons
+                          name="sticky-note-2"
+                          size={14}
+                          color="#9b9791"
+                        />
+                        <Text
+                          className="text-on-surface font-body text-xs"
+                          numberOfLines={1}
+                        >
+                          {n.title || "Bez tytułu"}
+                        </Text>
+                        <MaterialIcons
+                          name="arrow-forward"
+                          size={12}
+                          color="#9b9791"
+                        />
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : (
+                  <Text className="text-on-surface-variant font-body text-sm">
+                    Brak powiązanych notatek.
+                  </Text>
+                )}
               </View>
             )}
 
@@ -928,9 +1172,19 @@ export function TaskDetailModal({
               )}
             </View>
           </ScrollView>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
+    <LinkCheckboxModal
+      visible={noteLinkOpen}
+      title="Podłącz notatki do zadania"
+      searchPlaceholder="Szukaj notatek…"
+      sections={noteLinkSections}
+      onClose={() => setNoteLinkOpen(false)}
+      onSave={saveTaskNoteLinks}
+      saving={syncEntityNoteLinks.isPending}
+    />
+    </>
   );
 }
 
@@ -976,6 +1230,20 @@ export function CreateTaskModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, defaultStatusId, statuses]);
 
+  // Ctrl/Cmd+Enter confirms the task once it has been filled in.
+  useEffect(() => {
+    if (Platform.OS !== "web" || !visible) return;
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        handleCreate();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, title, statusId, description, priority, categoryId, estimatedDuration]);
+
   function reset() {
     setTitle("");
     setDescription("");
@@ -1009,9 +1277,15 @@ export function CreateTaskModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
-        <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4">
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable
+        className="flex-1 bg-black/50 items-center justify-center p-6"
+        onPress={onClose}
+      >
+        <Pressable
+          onPress={(e) => e.stopPropagation()}
+          className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4"
+        >
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
               Nowe zadanie
@@ -1182,8 +1456,8 @@ export function CreateTaskModal({
               onPress={handleCreate}
             />
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }

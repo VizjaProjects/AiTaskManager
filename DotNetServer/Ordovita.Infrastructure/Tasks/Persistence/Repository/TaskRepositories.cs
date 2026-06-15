@@ -15,7 +15,9 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
 
     public async Task<WorkTask?> GetByIdAsync(TaskId id, CancellationToken ct = default)
     {
-        return await context.WorkTasks.FirstOrDefaultAsync(t => t.Id == id, ct);
+        return await context.WorkTasks
+            .Include(t => t.AssignedUsers)
+            .FirstOrDefaultAsync(t => t.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<WorkTask>> GetAcceptedByWorkspaceIdAsync(
@@ -23,6 +25,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
     {
         return await context.WorkTasks
             .AsNoTracking()
+            .Include(t => t.AssignedUsers)
             .Where(t => t.WorkspaceId == workspaceId && t.Accepted)
             .ToListAsync(ct);
     }
@@ -32,6 +35,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
     {
         return await context.WorkTasks
             .AsNoTracking()
+            .Include(t => t.AssignedUsers)
             .Where(t => t.WorkspaceId == workspaceId && !t.Accepted)
             .ToListAsync(ct);
     }

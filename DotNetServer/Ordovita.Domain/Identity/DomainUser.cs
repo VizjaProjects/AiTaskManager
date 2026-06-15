@@ -1,6 +1,7 @@
 using Ordovita.Domain.Common;
 using Ordovita.Domain.Identity.Event;
 using Ordovita.Domain.Identity.Exception;
+using Ordovita.Domain.Workspace;
 
 namespace Ordovita.Domain.Identity;
 
@@ -15,6 +16,7 @@ public sealed class DomainUser : AggregateRoot<UserId>
     public bool IsEmailVerified { get; private set; }
     public DateTime EmailVerificationAt { get; private set; }
     public string AspIdentityUserId { get; private set; }
+    public WorkspaceId? DefaultWorkspaceId { get; private set; }
 
     private DomainUser()
     {
@@ -56,6 +58,14 @@ public sealed class DomainUser : AggregateRoot<UserId>
         IsEnable = true;
         UpdatedAt = DateTime.UtcNow;
 
+
+        return Result.Success();
+    }
+
+    public Result SetupDefaultWorkspace(WorkspaceId workspaceId)
+    {
+        DefaultWorkspaceId = workspaceId;
+        UpdatedAt = DateTime.UtcNow;
 
         return Result.Success();
     }

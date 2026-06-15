@@ -23,10 +23,11 @@ import {
   workspaceApi,
 } from "../api";
 import { noteApi } from "../api/notes";
-import { buildNoteContentJson } from "../api/adapters";
+import { buildNoteContentJson, parseNoteContent } from "../api/adapters";
 import { useWorkspaceStore } from "../stores/workspace";
 import type {
   Task,
+  Note,
   CalendarEvent,
   CreateTaskRequest,
   EditTaskRequest,
@@ -42,6 +43,7 @@ import type {
   AcceptAiEventRequest,
   QuestionType,
 } from "../types";
+import type { WorkspaceVisibility } from "../types";
 
 function useWorkspaceId() {
   return useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -79,10 +81,29 @@ export function useCreateWorkspace() {
     mutationFn: ({
       name,
       assignedUserIds,
+      visibility,
     }: {
       name: string;
       assignedUserIds?: string[];
-    }) => createWorkspace(name, assignedUserIds),
+      visibility?: WorkspaceVisibility;
+    }) => createWorkspace(name, assignedUserIds, visibility),
+  });
+}
+
+export function useSetWorkspaceVisibility() {
+  const setWorkspaceVisibility = useWorkspaceStore(
+    (s) => s.setWorkspaceVisibility,
+  );
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workspaceId,
+      visibility,
+    }: {
+      workspaceId: string;
+      visibility: WorkspaceVisibility;
+    }) => setWorkspaceVisibility(workspaceId, visibility),
+    onSuccess: () => qc.invalidateQueries(),
   });
 }
 
@@ -218,7 +239,41 @@ export function useDeleteTask() {
   return useMutation({
     mutationFn: (taskId: string) =>
       taskApi.delete(requireWorkspaceId(workspaceId), taskId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+    onMutate: async (taskId) => {
+      await qc.cancelQueries({ queryKey: ["tasks", workspaceId] });
+      const previous = qc.getQueryData<Task[]>(["tasks", workspaceId]);
+      qc.setQueryData<Task[]>(["tasks", workspaceId], (old) =>
+        (old ?? []).filter((t) => t.taskId !== taskId),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tasks", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+  });
+}
+
+export function useSetTaskAssignees() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, userIds }: { taskId: string; userIds: string[] }) =>
+      taskApi.setAssignees(requireWorkspaceId(workspaceId), taskId, userIds),
+    onMutate: async ({ taskId, userIds }) => {
+      await qc.cancelQueries({ queryKey: ["tasks", workspaceId] });
+      const previous = qc.getQueryData<Task[]>(["tasks", workspaceId]);
+      qc.setQueryData<Task[]>(["tasks", workspaceId], (old) =>
+        (old ?? []).map((t) =>
+          t.taskId === taskId ? { ...t, assignedUserIds: userIds } : t,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["tasks", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
   });
 }
 
@@ -1088,7 +1143,35 @@ export function useCreateNote() {
         noteDescription: input.noteDescription ?? "",
         contentJson: buildNoteContentJson(input.html ?? ""),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onMutate: async (input) => {
+      await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
+      const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
+      const now = new Date().toISOString();
+      const contentJson = buildNoteContentJson(input.html ?? "");
+      const tempNote = {
+        id: `temp-${now}-${Math.random().toString(36).slice(2)}`,
+        workspaceId: workspaceId ?? "",
+        noteFolderId: input.noteFolderId ?? null,
+        title: input.title,
+        noteColor: input.noteColor,
+        contentJson,
+        content: parseNoteContent(contentJson),
+        noteDescription: input.noteDescription ?? "",
+        createdBy: "",
+        createdAt: now,
+        updatedAt: now,
+        __optimistic: true,
+      } as unknown as Note;
+      qc.setQueryData<Note[]>(["notes", workspaceId], (old) => [
+        tempNote,
+        ...(old ?? []),
+      ]);
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
   });
 }
 
@@ -1100,7 +1183,23 @@ export function useUpdateNoteContent() {
       noteApi.updateContent(requireWorkspaceId(workspaceId), noteId, {
         contentJson: buildNoteContentJson(html),
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onMutate: async ({ noteId, html }) => {
+      await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
+      const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
+      const contentJson = buildNoteContentJson(html);
+      const content = parseNoteContent(contentJson);
+      const now = new Date().toISOString();
+      qc.setQueryData<Note[]>(["notes", workspaceId], (old) =>
+        (old ?? []).map((n) =>
+          n.id === noteId ? { ...n, contentJson, content, updatedAt: now } : n,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
   });
 }
 
@@ -1127,7 +1226,33 @@ export function useUpdateNoteMetadata() {
         noteFolderId: noteFolderId ?? null,
         noteDescription: noteDescription ?? "",
       }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
+      const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
+      const now = new Date().toISOString();
+      qc.setQueryData<Note[]>(["notes", workspaceId], (old) =>
+        (old ?? []).map((n) =>
+          n.id === vars.noteId
+            ? {
+                ...n,
+                title: vars.title,
+                noteColor: vars.noteColor,
+                noteFolderId:
+                  vars.noteFolderId !== undefined
+                    ? vars.noteFolderId
+                    : n.noteFolderId,
+                noteDescription: vars.noteDescription ?? n.noteDescription,
+                updatedAt: now,
+              }
+            : n,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
   });
 }
 
@@ -1137,6 +1262,104 @@ export function useDeleteNote() {
   return useMutation({
     mutationFn: (noteId: string) =>
       noteApi.delete(requireWorkspaceId(workspaceId), noteId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onMutate: async (noteId) => {
+      await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
+      const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
+      qc.setQueryData<Note[]>(["notes", workspaceId], (old) =>
+        (old ?? []).filter((n) => n.id !== noteId),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+  });
+}
+
+export function useSetNoteLinks() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      noteId,
+      taskIds,
+      eventIds,
+    }: {
+      noteId: string;
+      taskIds: string[];
+      eventIds: string[];
+    }) =>
+      noteApi.setLinks(requireWorkspaceId(workspaceId), noteId, {
+        taskIds,
+        eventIds,
+      }),
+    onMutate: async ({ noteId, taskIds, eventIds }) => {
+      await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
+      const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
+      qc.setQueryData<Note[]>(["notes", workspaceId], (old) =>
+        (old ?? []).map((n) =>
+          n.id === noteId
+            ? { ...n, linkedTaskIds: taskIds, linkedEventIds: eventIds }
+            : n,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+  });
+}
+
+/** Sync note↔task/event links from the task or event side (updates affected notes). */
+export function useSyncEntityNoteLinks() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      kind,
+      entityId,
+      selectedNoteIds,
+    }: {
+      kind: "task" | "event";
+      entityId: string;
+      selectedNoteIds: string[];
+    }) => {
+      const wsId = requireWorkspaceId(workspaceId);
+      const notes = qc.getQueryData<Note[]>(["notes", workspaceId]) ?? [];
+      const selected = new Set(selectedNoteIds);
+      const updates: Promise<unknown>[] = [];
+
+      for (const note of notes) {
+        const linked =
+          kind === "task"
+            ? note.linkedTaskIds.includes(entityId)
+            : note.linkedEventIds.includes(entityId);
+        const shouldLink = selected.has(note.id);
+        if (linked === shouldLink) continue;
+
+        const taskIds =
+          kind === "task"
+            ? shouldLink
+              ? [...note.linkedTaskIds, entityId]
+              : note.linkedTaskIds.filter((id) => id !== entityId)
+            : note.linkedTaskIds;
+        const eventIds =
+          kind === "event"
+            ? shouldLink
+              ? [...note.linkedEventIds, entityId]
+              : note.linkedEventIds.filter((id) => id !== entityId)
+            : note.linkedEventIds;
+
+        updates.push(
+          noteApi.setLinks(wsId, note.id, { taskIds, eventIds }),
+        );
+      }
+
+      await Promise.all(updates);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
   });
 }

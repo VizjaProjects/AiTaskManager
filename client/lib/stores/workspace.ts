@@ -1,8 +1,9 @@
 import { create } from "zustand";
 import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
-import type { Workspace } from "../types";
+import type { Workspace, WorkspaceVisibility } from "../types";
 import { workspaceApi } from "../api";
+import { userApi } from "../api/user";
 
 const STORAGE_KEY = "activeWorkspaceId";
 
@@ -29,11 +30,21 @@ async function loadActiveId(): Promise<string | null> {
 interface WorkspaceState {
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
+  defaultWorkspaceId: string | null;
   isLoading: boolean;
 
   fetchWorkspaces: () => Promise<void>;
   setActiveWorkspace: (id: string) => Promise<void>;
-  createWorkspace: (name: string, assignedUserIds?: string[]) => Promise<Workspace>;
+  setDefaultWorkspace: (id: string) => Promise<void>;
+  createWorkspace: (
+    name: string,
+    assignedUserIds?: string[],
+    visibility?: WorkspaceVisibility,
+  ) => Promise<Workspace>;
+  setWorkspaceVisibility: (
+    id: string,
+    visibility: WorkspaceVisibility,
+  ) => Promise<void>;
   deleteWorkspace: (id: string) => Promise<void>;
   reset: () => void;
   getActiveWorkspace: () => Workspace | null;
@@ -42,21 +53,42 @@ interface WorkspaceState {
 export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   workspaces: [],
   activeWorkspaceId: null,
+  defaultWorkspaceId: null,
   isLoading: false,
 
   fetchWorkspaces: async () => {
     set({ isLoading: true });
     try {
       const workspaces = await workspaceApi.getAll();
+
+      // The user's server-side default workspace takes priority on load,
+      // then the locally remembered choice, then the first workspace.
+      let serverDefaultId: string | null = null;
+      try {
+        const { data } = await userApi.getMe();
+        serverDefaultId = data.defaultWorkspaceId ?? null;
+      } catch {
+        // Non-fatal: fall back to local/first below.
+      }
+
       const storedId = await loadActiveId();
-      const activeWorkspaceId =
-        storedId && workspaces.some((w) => w.workspaceId === storedId)
+      const isValid = (id: string | null) =>
+        !!id && workspaces.some((w) => w.workspaceId === id);
+
+      const activeWorkspaceId = isValid(serverDefaultId)
+        ? serverDefaultId
+        : isValid(storedId)
           ? storedId
           : workspaces[0]?.workspaceId ?? null;
 
       if (activeWorkspaceId) await persistActiveId(activeWorkspaceId);
 
-      set({ workspaces, activeWorkspaceId, isLoading: false });
+      set({
+        workspaces,
+        activeWorkspaceId,
+        defaultWorkspaceId: serverDefaultId,
+        isLoading: false,
+      });
     } catch {
       set({ isLoading: false });
       throw new Error("Failed to load workspaces");
@@ -68,12 +100,31 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ activeWorkspaceId: id });
   },
 
-  createWorkspace: async (name, assignedUserIds) => {
-    const workspace = await workspaceApi.create(name, assignedUserIds);
+  setDefaultWorkspace: async (id) => {
+    await userApi.setDefaultWorkspace(id);
+    await persistActiveId(id);
+    set({ defaultWorkspaceId: id, activeWorkspaceId: id });
+  },
+
+  createWorkspace: async (name, assignedUserIds, visibility = "Private") => {
+    const workspace = await workspaceApi.create(
+      name,
+      assignedUserIds,
+      visibility,
+    );
     const workspaces = [...get().workspaces, workspace];
     await persistActiveId(workspace.workspaceId);
     set({ workspaces, activeWorkspaceId: workspace.workspaceId });
     return workspace;
+  },
+
+  setWorkspaceVisibility: async (id, visibility) => {
+    const updated = await workspaceApi.setVisibility(id, visibility);
+    set({
+      workspaces: get().workspaces.map((w) =>
+        w.workspaceId === id ? updated : w,
+      ),
+    });
   },
 
   deleteWorkspace: async (id) => {
@@ -88,7 +139,12 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   reset: () => {
-    set({ workspaces: [], activeWorkspaceId: null, isLoading: false });
+    set({
+      workspaces: [],
+      activeWorkspaceId: null,
+      defaultWorkspaceId: null,
+      isLoading: false,
+    });
   },
 
   getActiveWorkspace: () => {

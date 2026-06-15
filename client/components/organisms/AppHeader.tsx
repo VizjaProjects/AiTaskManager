@@ -16,7 +16,10 @@ import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { NavItem } from "../molecules/NavItem";
 import { UserMenu } from "../molecules/UserMenu";
 import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
-import { NotificationsDrawer } from "./NotificationsDrawer";
+import {
+  NotificationsDrawer,
+  useNotificationItems,
+} from "./NotificationsDrawer";
 import { SearchModal } from "./SearchModal";
 import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
@@ -63,6 +66,7 @@ export function AppHeader({
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const hasNotifications = useNotificationItems().length > 0;
 
   const drawerItems = DRAWER_NAV_ITEMS.filter((item) => {
     if (item.path.includes("admin-surveys") && user?.role !== Role.ADMIN)
@@ -130,7 +134,9 @@ export function AppHeader({
               size={22}
               color="#6b6965"
             />
-            <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C0392B]" />
+            {hasNotifications && (
+              <View className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#C0392B]" />
+            )}
           </TouchableOpacity>
 
           <UserMenu />

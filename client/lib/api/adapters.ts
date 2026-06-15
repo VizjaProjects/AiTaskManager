@@ -52,6 +52,9 @@ export function mapTaskDto(raw: Record<string, unknown>): Task {
     statusId: raw.statusId as string,
     source: raw.source as Task["source"],
     accepted: true,
+    assignedUserIds: Array.isArray(raw.assignedUserIds)
+      ? (raw.assignedUserIds as string[])
+      : [],
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
   };
@@ -262,6 +265,12 @@ export function mapNoteDto(raw: Record<string, unknown>): Note {
     contentJson,
     content: parseNoteContent(contentJson),
     noteDescription: (raw.noteDescription as string) ?? null,
+    linkedTaskIds: Array.isArray(raw.linkedTaskIds)
+      ? (raw.linkedTaskIds as string[])
+      : [],
+    linkedEventIds: Array.isArray(raw.linkedEventIds)
+      ? (raw.linkedEventIds as string[])
+      : [],
     createdBy: raw.createdBy as string,
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),

@@ -15,13 +15,18 @@ public class NoteRepository(AppDbContext context) : INoteRepository
 
     public async Task<Domain.Note.Note?> GetByIdAsync(NoteId id, CancellationToken ct = default)
     {
-        return await context.Set<Domain.Note.Note>().FirstOrDefaultAsync(n => n.Id == id, ct);
+        return await context.Set<Domain.Note.Note>()
+            .Include(n => n.TaskLinks)
+            .Include(n => n.EventLinks)
+            .FirstOrDefaultAsync(n => n.Id == id, ct);
     }
 
     public async Task<IReadOnlyList<Domain.Note.Note>> GetByWorkspaceIdAsync(WorkspaceId workspaceId,
         CancellationToken ct = default)
     {
         return await context.Set<Domain.Note.Note>()
+            .Include(n => n.TaskLinks)
+            .Include(n => n.EventLinks)
             .Where(n => n.WorkspaceId == workspaceId)
             .ToArrayAsync(ct);
     }
@@ -30,6 +35,8 @@ public class NoteRepository(AppDbContext context) : INoteRepository
         CancellationToken ct = default)
     {
         return await context.Set<Domain.Note.Note>()
+            .Include(n => n.TaskLinks)
+            .Include(n => n.EventLinks)
             .Where(n => n.NoteFolderId == folderId)
             .ToArrayAsync(ct);
     }

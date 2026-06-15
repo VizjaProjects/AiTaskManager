@@ -53,10 +53,13 @@ export interface Workspace {
   workspaceId: UUID;
   workspaceName: string;
   createdBy: UUID;
+  visibility: WorkspaceVisibility;
   assignedUsers: WorkspaceUser[];
   createdAt: string;
   updatedAt: string;
 }
+
+export type WorkspaceVisibility = "Public" | "Private";
 
 export interface Task {
   taskId: UUID;
@@ -70,6 +73,7 @@ export interface Task {
   statusId: UUID;
   source: TaskSource;
   accepted: boolean;
+  assignedUserIds: UUID[];
   createdAt: string;
   updatedAt: string;
 }
@@ -332,6 +336,8 @@ export interface Note {
   /** Parsed convenience view of contentJson */
   content: NoteContentEnvelope;
   noteDescription: string | null;
+  linkedTaskIds: UUID[];
+  linkedEventIds: UUID[];
   createdBy: UUID;
   createdAt: string;
   updatedAt: string;

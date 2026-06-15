@@ -22,6 +22,7 @@ export const RichTextEditor = forwardRef<
     isDark,
     backgroundColor,
     placeholder,
+    fontSize,
     onChange,
     onStateChange,
   },
@@ -32,6 +33,7 @@ export const RichTextEditor = forwardRef<
   const pendingHtmlRef = useRef(initialHtml);
   const initialThemeRef = useRef(isDark);
   const initialBackgroundRef = useRef(backgroundColor);
+  const initialFontSizeRef = useRef(fontSize);
 
   const html = useMemo(
     () =>
@@ -39,6 +41,7 @@ export const RichTextEditor = forwardRef<
         isDark: initialThemeRef.current,
         backgroundColor: initialBackgroundRef.current,
         placeholder,
+        fontSize: initialFontSizeRef.current,
       }),
     [placeholder],
   );

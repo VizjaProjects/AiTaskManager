@@ -65,7 +65,9 @@ export default function LoginScreen() {
       await startGoogleOAuth();
     } catch (e: unknown) {
       const message =
-        e instanceof Error ? e.message : "Nie udało się rozpocząć logowania Google.";
+        e instanceof Error
+          ? e.message
+          : "Nie udało się rozpocząć logowania Google.";
       setError(message);
     } finally {
       setGoogleLoading(false);
@@ -78,20 +80,27 @@ export default function LoginScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1"
       >
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+        >
           <AuthCard>
             <TouchableOpacity
               onPress={() => router.push("/")}
               className="flex-row items-center gap-1.5 mb-6 self-start"
             >
               <MaterialIcons name="arrow-back" size={18} color="#888888" />
-              <Text className="text-on-surface-variant font-body text-sm">Back to home</Text>
+              <Text className="text-on-surface-variant font-body text-sm">
+                Back to home
+              </Text>
             </TouchableOpacity>
             <AuthHeader subtitle="Welcome back. Please log in to continue." />
 
             {error && (
               <View className="bg-error-container rounded-xl px-4 py-3 mb-4">
-                <Text className="text-on-error-container font-body text-sm">{error}</Text>
+                <Text className="text-on-error-container font-body text-sm">
+                  {error}
+                </Text>
               </View>
             )}
 
@@ -114,12 +123,9 @@ export default function LoginScreen() {
                 )}
               />
               <View>
-                <View className="flex-row justify-between items-center mb-2">
-                  <Text className="text-on-surface font-label text-body-md">Password</Text>
-                  <TouchableOpacity onPress={() => router.push("/(auth)/forgot-password")}>
-                    <Text className="text-primary font-label text-sm">Forgot password?</Text>
-                  </TouchableOpacity>
-                </View>
+                <Text className="text-on-surface font-label text-body-md mb-2">
+                  Password
+                </Text>
                 <Controller
                   control={control}
                   name="password"
@@ -138,6 +144,14 @@ export default function LoginScreen() {
                     />
                   )}
                 />
+                <TouchableOpacity
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                  className="self-end mt-2"
+                >
+                  <Text className="text-primary font-label text-sm">
+                    Forgot password?
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
 
@@ -165,9 +179,13 @@ export default function LoginScreen() {
             </View>
 
             <View className="flex-row items-center justify-center gap-1 mt-6">
-              <Text className="text-on-surface-variant font-body text-sm">Nie masz konta?</Text>
+              <Text className="text-on-surface-variant font-body text-sm">
+                Nie masz konta?
+              </Text>
               <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
-                <Text className="text-primary font-headline text-sm">Zarejestruj się</Text>
+                <Text className="text-primary font-headline text-sm">
+                  Zarejestruj się
+                </Text>
               </TouchableOpacity>
             </View>
           </AuthCard>

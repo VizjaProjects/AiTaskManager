@@ -28,16 +28,16 @@ interface NotificationsDrawerProps {
   onClose: () => void;
 }
 
-export function NotificationsDrawer({
-  visible,
-  onClose,
-}: NotificationsDrawerProps) {
+/**
+ * Shared notification computation so the header badge and the drawer agree on
+ * whether there is anything to show (the dot must not light up when empty).
+ */
+export function useNotificationItems(): Notification[] {
   const { data: tasks } = useTasks();
   const { data: events } = useEvents();
   const { data: proposals } = useAiProposals();
-  const { width } = useWindowDimensions();
 
-  const notifications = useMemo<Notification[]>(() => {
+  return useMemo<Notification[]>(() => {
     const notifs: Notification[] = [];
 
     (tasks ?? []).forEach((t) => {
@@ -99,6 +99,14 @@ export function NotificationsDrawer({
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
   }, [tasks, events, proposals]);
+}
+
+export function NotificationsDrawer({
+  visible,
+  onClose,
+}: NotificationsDrawerProps) {
+  const { width } = useWindowDimensions();
+  const notifications = useNotificationItems();
 
   return (
     <Modal

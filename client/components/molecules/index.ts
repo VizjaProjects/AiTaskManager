@@ -4,6 +4,11 @@ export { DashboardTaskCard } from "./DashboardTaskCard";
 export { NavItem } from "./NavItem";
 export { EventCard } from "./EventCard";
 export { SearchBar } from "./SearchBar";
+export {
+  LinkCheckboxModal,
+  type LinkCheckboxItem,
+  type LinkCheckboxSection,
+} from "./LinkCheckboxModal";
 export { FilterBar } from "./FilterBar";
 export {
   DashboardFocusItem,
