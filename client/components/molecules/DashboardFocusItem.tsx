@@ -4,6 +4,7 @@ import type { Task, Category, CalendarEvent } from "@/lib/types";
 import { TaskPriority } from "@/lib/types";
 import { PriorityBadge, AiSuggestedBadge, Avatar, ColorBadge } from "../atoms";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 interface DashboardFocusItemProps {
   task: Task;
@@ -12,6 +13,7 @@ interface DashboardFocusItemProps {
 }
 
 export function DashboardFocusItem({ task, category, onPress }: DashboardFocusItemProps) {
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const dueLabel = task.dueDateTime
     ? new Date(task.dueDateTime).toLocaleTimeString("en-US", {
@@ -35,7 +37,7 @@ export function DashboardFocusItem({ task, category, onPress }: DashboardFocusIt
           <PriorityBadge priority={task.priority} variant="soft" />
           {category && <ColorBadge label={category.name} color={category.color} />}
           {dueLabel && (
-            <Text className="text-on-surface-variant font-body text-xs">Due {dueLabel}</Text>
+            <Text className="text-on-surface-variant font-body text-xs">{t("dash.due")} {dueLabel}</Text>
           )}
         </View>
       </View>
@@ -50,6 +52,7 @@ interface DashboardEventItemProps {
 }
 
 export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const start = new Date(event.startDateTime);
   const end = new Date(event.endDateTime);
@@ -63,7 +66,7 @@ export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) 
   })();
 
   const dateLabel = isToday
-    ? "Today"
+    ? t("common.today")
     : start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 
   const timeLabel = `${start.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
@@ -110,6 +113,7 @@ export function DashboardAiProposalItem({
   onDismiss,
   loading,
 }: DashboardAiProposalItemProps) {
+  const t = useT();
   return (
     <View className="rounded-xl border border-outline-variant bg-surface-container-lowest overflow-hidden my-1">
       <View className="p-3.5 gap-2">
@@ -134,7 +138,7 @@ export function DashboardAiProposalItem({
           className="flex-1 flex-row items-center justify-center gap-1 py-2 rounded-lg border border-outline-variant"
         >
           <MaterialIcons name="close" size={14} color="#ef4444" />
-          <Text className="text-on-surface font-headline text-xs">Reject</Text>
+          <Text className="text-on-surface font-headline text-xs">{t("common.reject")}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={onAccept}
@@ -143,7 +147,7 @@ export function DashboardAiProposalItem({
         >
           <MaterialIcons name="check" size={14} color="#f0f0f0" />
           <Text className="text-on-action font-headline text-xs">
-            {loading ? "..." : "Accept"}
+            {loading ? "..." : t("common.accept")}
           </Text>
         </TouchableOpacity>
       </View>

@@ -18,9 +18,11 @@ import {
   forgotPasswordSchema,
   type ForgotPasswordFormData,
 } from "@/lib/schemas";
+import { useT } from "@/lib/i18n";
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const t = useT();
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +43,7 @@ export default function ForgotPasswordScreen() {
       await authApi.requestPasswordReset(data.email);
       setSent(true);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Nie udało się wysłać linku");
+      setError(e.response?.data?.message ?? t("auth.fp.sendError"));
     } finally {
       setLoading(false);
     }
@@ -53,11 +55,11 @@ export default function ForgotPasswordScreen() {
         <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
           <AuthCard showIllustration={false}>
             <AuthHeader
-              title={sent ? "Link wysłany!" : "Resetuj hasło"}
+              title={sent ? t("auth.fp.sentTitle") : t("auth.fp.title")}
               subtitle={
                 sent
-                  ? "Sprawdź swoją skrzynkę email i kliknij w link resetujący"
-                  : "Podaj email, a wyślemy Ci link do resetowania hasła"
+                  ? t("auth.fp.sentSubtitle")
+                  : t("auth.fp.subtitle")
               }
             />
 
@@ -84,7 +86,7 @@ export default function ForgotPasswordScreen() {
                   name="email"
                   render={({ field: { onChange, value } }) => (
                     <Input
-                      label="Email Address"
+                      label={t("auth.emailLabel")}
                       icon="email"
                       placeholder="you@example.com"
                       keyboardType="email-address"
@@ -98,13 +100,13 @@ export default function ForgotPasswordScreen() {
                   )}
                 />
                 <View className="mt-6">
-                  <Button label="Wyślij link" loading={loading} fullWidth onPress={handleSubmit(onSubmit)} />
+                  <Button label={t("auth.fp.send")} loading={loading} fullWidth onPress={handleSubmit(onSubmit)} />
                 </View>
               </>
             )}
 
             <View className="mt-4">
-              <Button variant="text" label="Wróć do logowania" fullWidth onPress={() => router.push("/(auth)/login")} />
+              <Button variant="text" label={t("auth.backToLogin")} fullWidth onPress={() => router.push("/(auth)/login")} />
             </View>
           </AuthCard>
         </ScrollView>

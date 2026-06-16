@@ -1,4 +1,5 @@
 import { View, Text } from "react-native";
+import { useT } from "@/lib/i18n";
 
 type Variant = "blocked" | "feature" | "button-disabled";
 
@@ -9,10 +10,12 @@ interface InProgressBannerProps {
 }
 
 export function InProgressBanner({
-  title = "W przygotowaniu",
+  title,
   message,
   variant = "feature",
 }: InProgressBannerProps) {
+  const t = useT();
+  const resolvedTitle = title ?? t("common.inPreparation");
   if (variant === "button-disabled") {
     return (
       <Text className="text-on-surface-variant font-body text-xs text-center mt-1">
@@ -27,7 +30,7 @@ export function InProgressBanner({
         variant === "blocked" ? "flex-1 justify-center mx-6" : ""
       }`}
     >
-      <Text className="text-primary font-headline text-sm mb-1">{title}</Text>
+      <Text className="text-primary font-headline text-sm mb-1">{resolvedTitle}</Text>
       <Text className="text-on-surface-variant font-body text-sm leading-5">
         {message}
       </Text>

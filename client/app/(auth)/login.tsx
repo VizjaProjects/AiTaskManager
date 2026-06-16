@@ -17,9 +17,11 @@ import { AuthCard, AuthHeader } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { loginSchema, type LoginFormData } from "@/lib/schemas";
 import { startGoogleOAuth } from "@/lib/oauth";
+import { useT } from "@/lib/i18n";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const t = useT();
   const login = useAuthStore((s) => s.login);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -51,7 +53,7 @@ export default function LoginScreen() {
       setError(
         e.response?.data?.detail ??
           e.response?.data?.message ??
-          "Nieprawidłowy email lub hasło",
+          t("auth.invalidCredentials"),
       );
     } finally {
       setLoading(false);
@@ -67,7 +69,7 @@ export default function LoginScreen() {
       const message =
         e instanceof Error
           ? e.message
-          : "Nie udało się rozpocząć logowania Google.";
+          : t("auth.googleLoginFailed");
       setError(message);
     } finally {
       setGoogleLoading(false);
@@ -91,10 +93,10 @@ export default function LoginScreen() {
             >
               <MaterialIcons name="arrow-back" size={18} color="#888888" />
               <Text className="text-on-surface-variant font-body text-sm">
-                Back to home
+                {t("common.backToHome")}
               </Text>
             </TouchableOpacity>
-            <AuthHeader subtitle="Welcome back. Please log in to continue." />
+            <AuthHeader subtitle={t("auth.loginSubtitle")} />
 
             {error && (
               <View className="bg-error-container rounded-xl px-4 py-3 mb-4">
@@ -110,7 +112,7 @@ export default function LoginScreen() {
                 name="email"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Email Address"
+                    label={t("auth.emailLabel")}
                     icon="email"
                     placeholder="you@example.com"
                     keyboardType="email-address"
@@ -124,7 +126,7 @@ export default function LoginScreen() {
               />
               <View>
                 <Text className="text-on-surface font-label text-body-md mb-2">
-                  Password
+                  {t("auth.password")}
                 </Text>
                 <Controller
                   control={control}
@@ -149,7 +151,7 @@ export default function LoginScreen() {
                   className="self-end mt-2"
                 >
                   <Text className="text-primary font-label text-sm">
-                    Forgot password?
+                    {t("auth.forgotPassword")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -157,7 +159,7 @@ export default function LoginScreen() {
 
             <View className="mt-6">
               <Button
-                label="Zaloguj się"
+                label={t("auth.login")}
                 icon="login"
                 loading={loading}
                 fullWidth
@@ -173,18 +175,18 @@ export default function LoginScreen() {
               >
                 <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
                 <Text className="text-on-surface font-headline text-sm">
-                  {googleLoading ? "Przekierowywanie…" : "Kontynuuj z Google"}
+                  {googleLoading ? t("common.redirecting") : t("common.continueWithGoogle")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             <View className="flex-row items-center justify-center gap-1 mt-6">
               <Text className="text-on-surface-variant font-body text-sm">
-                Nie masz konta?
+                {t("auth.noAccount")}
               </Text>
               <TouchableOpacity onPress={() => router.push("/(auth)/register")}>
                 <Text className="text-primary font-headline text-sm">
-                  Zarejestruj się
+                  {t("auth.register")}
                 </Text>
               </TouchableOpacity>
             </View>

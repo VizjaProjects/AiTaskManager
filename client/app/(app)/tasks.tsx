@@ -26,12 +26,7 @@ import {
   TaskDetailModal,
   CreateTaskModal,
 } from "@/components/organisms/TaskModals";
-import {
-  EmptyState,
-  TaskCardSkeleton,
-  PriorityBadge,
-  ColorBadge,
-} from "@/components/atoms";
+import { EmptyState, TaskCardSkeleton } from "@/components/atoms";
 import {
   useTasks,
   useCategories,
@@ -45,15 +40,20 @@ import { TaskPriority, TaskSource } from "@/lib/types";
 import type { Task, Category, TaskStatus } from "@/lib/types";
 import {
   PRIORITY_COLORS,
+  PRIORITY_COLORS_DARK,
+  PRIORITY_LABEL_SOFT,
   formatDate,
   formatDuration,
   getCategoryDisplayColor,
+  isOverdue,
+  isDueToday,
   resolveTaskCategoryId,
   resolveTaskDueDateTimeForSave,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 import { getInitials } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 type ViewMode = "kanban" | "list";
 type ListGrouping = "status" | "category-status";
@@ -130,7 +130,7 @@ function KanbanTaskCard({
     (s) => s.getActiveWorkspace()?.assignedUsers ?? [],
   );
   const setAssignees = useSetTaskAssignees();
-  const router = useRouter();
+  const t = useT();
   const { data: allNotes } = useNotes();
   const [assignOpen, setAssignOpen] = useState(false);
   const assignees = members.filter((m) =>
@@ -139,10 +139,27 @@ function KanbanTaskCard({
   const linkedNotes = (allNotes ?? []).filter((n) =>
     n.linkedTaskIds?.includes(task.taskId),
   );
-
-  function openLinkedNote(noteId: string) {
-    router.push(`/(app)/notes?noteId=${encodeURIComponent(noteId)}` as never);
-  }
+  const isDark = useThemeStore((s) => s.mode) === "dark";
+  const pColor = (isDark ? PRIORITY_COLORS_DARK : PRIORITY_COLORS)[
+    task.priority
+  ];
+  const overdue = isOverdue(task.dueDateTime);
+  const today = isDueToday(task.dueDateTime);
+  const dueColor = overdue
+    ? isDark
+      ? "#e07a6f"
+      : "#c0392b"
+    : today
+      ? isDark
+        ? "#d6a23e"
+        : "#b7770d"
+      : isDark
+        ? "rgba(255,255,255,0.45)"
+        : "#9b9791";
+  const isCritical =
+    task.priority === TaskPriority.CRITICAL ||
+    task.priority === TaskPriority.HIGH;
+  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
 
   function toggleMember(userId: string) {
     const current = task.assignedUserIds ?? [];
@@ -155,35 +172,22 @@ function KanbanTaskCard({
   return (
     <DraggableCard taskId={task.taskId}>
       <TouchableOpacity
-        activeOpacity={0.85}
+        activeOpacity={0.9}
         onPress={onPress}
-        className="bg-surface-container-lowest rounded-2xl border border-outline-variant p-4 gap-2.5 w-full"
-        style={isCompleted ? { opacity: 0.55 } : undefined}
+        {...({ dataSet: { taskCard: "true" } } as object)}
+        className="group relative bg-surface rounded-xl border border-outline-variant overflow-hidden pl-4 pr-3 py-3 w-full shadow-kanban transition-all duration-150 hover:-translate-y-px hover:shadow-kanban-hover hover:border-outline"
+        style={isCompleted ? { opacity: 0.6 } : undefined}
       >
-        <View className="flex-row items-center gap-2 flex-wrap">
-          <PriorityBadge priority={task.priority} />
-          {category && (
-            <ColorBadge label={category.name} color={category.color} />
-          )}
-          {task.source === TaskSource.AI_PARSED && (
-            <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-full bg-primary-fixed">
-              <MaterialIcons name="auto-awesome" size={10} color="#4d41df" />
-              <Text className="text-primary text-[9px] font-label">AI</Text>
-            </View>
-          )}
-          {linkedNotes.length > 0 && (
-            <View className="flex-row items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-surface-container border border-outline-variant">
-              <MaterialIcons name="sticky-note-2" size={11} color="#777587" />
-              <Text className="text-on-surface-variant text-[9px] font-label">
-                {linkedNotes.length}
-              </Text>
-            </View>
-          )}
-        </View>
+        {/* Priority rail — quiet signal instead of a loud pill */}
+        <View
+          className="absolute left-0 top-0 bottom-0 w-1"
+          style={{ backgroundColor: pColor, opacity: isCritical ? 1 : 0.85 }}
+        />
 
+        {/* Title leads the card */}
         <Text
-          className="font-headline text-on-surface text-base leading-5"
-          numberOfLines={3}
+          className="font-headline text-on-surface text-[15px] leading-[20px]"
+          numberOfLines={2}
           style={
             isCompleted ? { textDecorationLine: "line-through" } : undefined
           }
@@ -193,53 +197,68 @@ function KanbanTaskCard({
 
         {task.description ? (
           <Text
-            className="text-on-surface-variant font-body text-body-md leading-5"
-            numberOfLines={3}
-            style={
-              isCompleted ? { textDecorationLine: "line-through" } : undefined
-            }
+            className="text-on-surface-variant font-body text-[13px] leading-[18px] mt-1"
+            numberOfLines={2}
           >
             {task.description}
           </Text>
         ) : null}
 
-        {linkedNotes.length > 0 && (
-          <View className="flex-row flex-wrap gap-1.5">
-            {linkedNotes.slice(0, 3).map((n) => (
-              <TouchableOpacity
-                key={n.id}
-                onPress={() => openLinkedNote(n.id)}
-                activeOpacity={0.7}
-                className="flex-row items-center gap-1 px-2 py-0.5 rounded-md bg-surface-container border border-outline-variant max-w-[92%]"
-              >
-                <MaterialIcons name="sticky-note-2" size={11} color="#777587" />
-                <Text
-                  className="text-on-surface-variant font-body text-[10px] shrink"
-                  numberOfLines={1}
-                >
-                  {n.title || "Notatka"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-            {linkedNotes.length > 3 && (
-              <Text className="text-on-surface-variant font-body text-[10px] self-center">
-                +{linkedNotes.length - 3}
-              </Text>
-            )}
+        {category ? (
+          <View className="flex-row items-center gap-1.5 mt-2 self-start max-w-full">
+            <View
+              className="w-1.5 h-1.5 rounded-full"
+              style={{
+                backgroundColor: getCategoryDisplayColor(category.color, isDark),
+              }}
+            />
+            <Text
+              className="text-on-surface-variant font-body text-[11px]"
+              numberOfLines={1}
+            >
+              {category.name}
+            </Text>
           </View>
-        )}
+        ) : null}
 
-        <View className="flex-row items-center justify-between mt-0.5">
-          {task.dueDateTime ? (
-            <View className="flex-row items-center gap-1.5">
-              <MaterialIcons name="calendar-today" size={14} color="#777587" />
-              <Text className="text-on-surface-variant font-body text-xs">
-                {formatDate(task.dueDateTime)}
-              </Text>
-            </View>
-          ) : (
-            <View />
-          )}
+        {/* Footer: quiet metadata on the left, people on the right */}
+        <View className="flex-row items-center justify-between mt-3">
+          <View className="flex-row items-center gap-3">
+            {task.dueDateTime ? (
+              <View className="flex-row items-center gap-1">
+                <MaterialIcons name="event" size={13} color={dueColor} />
+                <Text
+                  className="font-body text-[11px]"
+                  style={{ color: dueColor }}
+                >
+                  {formatDate(task.dueDateTime)}
+                </Text>
+              </View>
+            ) : null}
+            {task.estimatedDuration > 0 ? (
+              <View className="flex-row items-center gap-1">
+                <MaterialIcons name="schedule" size={13} color="#9b9791" />
+                <Text className="text-text-tertiary font-body text-[11px]">
+                  {formatDuration(task.estimatedDuration)}
+                </Text>
+              </View>
+            ) : null}
+            {linkedNotes.length > 0 ? (
+              <View className="flex-row items-center gap-1">
+                <MaterialIcons name="sticky-note-2" size={13} color="#9b9791" />
+                <Text className="text-text-tertiary font-body text-[11px]">
+                  {linkedNotes.length}
+                </Text>
+              </View>
+            ) : null}
+            {task.source === TaskSource.AI_PARSED ? (
+              <MaterialIcons
+                name="auto-awesome"
+                size={13}
+                color={isDark ? "#9b8cff" : "#5b4ee0"}
+              />
+            ) : null}
+          </View>
 
           {/* Quick-assign control: avatar stack, or a dashed circle if empty. */}
           <TouchableOpacity
@@ -248,15 +267,15 @@ function KanbanTaskCard({
             className="flex-row items-center"
           >
             {assignees.length === 0 ? (
-              <View className="w-7 h-7 rounded-full items-center justify-center border border-dashed border-outline">
-                <MaterialIcons name="person-add" size={14} color="#9ca3af" />
+              <View className="w-6 h-6 rounded-full items-center justify-center border border-dashed border-outline">
+                <MaterialIcons name="person-add" size={13} color="#9ca3af" />
               </View>
             ) : (
               <>
                 {assignees.slice(0, 4).map((m, i) => (
                   <View
                     key={m.userId}
-                    className="w-6 h-6 rounded-full bg-primary-fixed items-center justify-center border border-surface-container-lowest"
+                    className="w-6 h-6 rounded-full bg-primary-fixed items-center justify-center border border-surface"
                     style={{ marginLeft: i === 0 ? 0 : -6 }}
                   >
                     <Text className="text-primary text-[9px] font-headline">
@@ -266,7 +285,7 @@ function KanbanTaskCard({
                 ))}
                 {assignees.length > 4 && (
                   <View
-                    className="w-6 h-6 rounded-full bg-surface-container items-center justify-center border border-surface-container-lowest"
+                    className="w-6 h-6 rounded-full bg-surface-container items-center justify-center border border-surface"
                     style={{ marginLeft: -6 }}
                   >
                     <Text className="text-on-surface-variant text-[9px] font-headline">
@@ -296,7 +315,7 @@ function KanbanTaskCard({
           >
             <View className="flex-row items-center justify-between px-5 pt-4 pb-3 border-b border-outline-variant">
               <Text className="text-on-surface font-headline text-base">
-                Przypisz osoby
+                {t("tasks.assignPeople")}
               </Text>
               <TouchableOpacity
                 onPress={() => setAssignOpen(false)}
@@ -307,7 +326,7 @@ function KanbanTaskCard({
             </View>
             {members.length === 0 ? (
               <Text className="text-on-surface-variant font-body text-sm px-5 py-4">
-                Brak członków workspace. Dodaj ich w ustawieniach workspace.
+                {t("tasks.noMembers")}
               </Text>
             ) : (
               <ScrollView style={{ maxHeight: 320 }}>
@@ -315,7 +334,7 @@ function KanbanTaskCard({
                   const checked = (task.assignedUserIds ?? []).includes(
                     m.userId,
                   );
-                  const name = m.fullName ?? m.email ?? "Użytkownik";
+                  const name = m.fullName ?? m.email ?? t("common.user");
                   return (
                     <TouchableOpacity
                       key={m.userId}
@@ -336,7 +355,7 @@ function KanbanTaskCard({
                       <MaterialIcons
                         name={checked ? "check-box" : "check-box-outline-blank"}
                         size={20}
-                        color={checked ? "#4d41df" : "#9b9791"}
+                        color={checked ? accentColor : "#9b9791"}
                       />
                     </TouchableOpacity>
                   );
@@ -415,10 +434,10 @@ function DropColumn({
   return (
     <View
       ref={ref}
-      className={`w-72 rounded-2xl p-3 ${
+      className={`w-[300px] rounded-2xl p-2.5 border transition-colors duration-150 ${
         isDragOver
-          ? "bg-primary/10 border-2 border-dashed border-primary"
-          : "bg-surface-container-low/50"
+          ? "bg-accent/[0.06] border-accent"
+          : "bg-surface-container-low/40 border-outline-variant/70"
       }`}
       style={{ alignSelf: "stretch" }}
     >
@@ -437,7 +456,10 @@ export default function TasksScreen() {
   const { data: categories } = useCategories();
   const { data: statuses, isLoading: statusesLoading } = useTaskStatuses();
   const editTask = useEditTask();
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
+  const mutedIcon = isDark ? "rgba(255,255,255,0.45)" : "#9b9791";
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
     Platform.OS === "web" && Dimensions.get("window").width >= 1024
@@ -666,7 +688,7 @@ export default function TasksScreen() {
         result.push({
           categoryId: catId,
           categoryName: cat?.name ?? "Bez kategorii",
-          categoryColor: cat?.color ?? "#777587",
+          categoryColor: cat?.color ?? mutedIcon,
           groups: statusGroups,
         });
       }
@@ -715,11 +737,11 @@ export default function TasksScreen() {
   }
 
   return (
-    <PageLayout searchPlaceholder="Search tasks...">
+    <PageLayout searchPlaceholder={t("tasks.searchPlaceholder")}>
       <View className="gap-4 flex-1">
         <View className="flex-row items-center gap-2">
           <Text className="text-on-surface font-headline text-headline-md">
-            All Tasks
+            {t("tasks.allTasks")}
           </Text>
           <View className="bg-surface-container px-2.5 py-0.5 rounded-full">
             <Text className="text-on-surface-variant font-label text-label-md">
@@ -738,7 +760,7 @@ export default function TasksScreen() {
                 <Text
                   className={`text-xs font-label ${viewMode === "list" ? "text-on-primary" : "text-on-surface-variant"}`}
                 >
-                  List
+                  {t("tasks.viewList")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -748,7 +770,7 @@ export default function TasksScreen() {
                 <Text
                   className={`text-xs font-label ${viewMode === "kanban" ? "text-on-primary" : "text-on-surface-variant"}`}
                 >
-                  Kanban
+                  {t("tasks.viewKanban")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -762,7 +784,7 @@ export default function TasksScreen() {
                   <Text
                     className={`text-[10px] font-label ${listGrouping === "status" ? "text-white" : "text-on-surface-variant"}`}
                   >
-                    Status
+                    {t("tasks.groupStatus")}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -772,7 +794,7 @@ export default function TasksScreen() {
                   <Text
                     className={`text-[10px] font-label ${listGrouping === "category-status" ? "text-white" : "text-on-surface-variant"}`}
                   >
-                    Kategoria + Status
+                    {t("tasks.groupCategoryStatus")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -792,7 +814,7 @@ export default function TasksScreen() {
               color={isDark ? "#121212" : "#fff"}
             />
             <Text className="text-on-primary font-headline text-sm">
-              New Task
+              {t("tasks.newTask")}
             </Text>
           </TouchableOpacity>
         </View>
@@ -827,7 +849,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -859,12 +881,12 @@ export default function TasksScreen() {
                   size={18}
                   color={
                     selectedPriorities.size === priorities.length
-                      ? "#4d41df"
-                      : "#777587"
+                      ? accentColor
+                      : mutedIcon
                   }
                 />
                 <Text className="text-xs font-label text-on-surface-variant">
-                  Zaznacz wszystko
+                  {t("tasks.selectAll")}
                 </Text>
               </TouchableOpacity>
               {priorities.map((p) => {
@@ -880,12 +902,12 @@ export default function TasksScreen() {
                         return next;
                       });
                     }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 mx-1 rounded-lg hover:bg-surface-container-low"
                   >
                     <MaterialIcons
                       name={active ? "check-box" : "check-box-outline-blank"}
                       size={18}
-                      color={active ? PRIORITY_COLORS[p] : "#777587"}
+                      color={active ? PRIORITY_COLORS[p] : mutedIcon}
                     />
                     <View
                       className="w-2.5 h-2.5 rounded-full"
@@ -908,7 +930,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -943,12 +965,12 @@ export default function TasksScreen() {
                   size={18}
                   color={
                     selectedCategoryIds.size === (categories?.length ?? 0)
-                      ? "#4d41df"
-                      : "#777587"
+                      ? accentColor
+                      : mutedIcon
                   }
                 />
                 <Text className="text-xs font-label text-on-surface-variant">
-                  Zaznacz wszystko
+                  {t("tasks.selectAll")}
                 </Text>
               </TouchableOpacity>
               {categories?.map((cat) => {
@@ -964,7 +986,7 @@ export default function TasksScreen() {
                         return next;
                       });
                     }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 mx-1 rounded-lg hover:bg-surface-container-low"
                   >
                     <MaterialIcons
                       name={active ? "check-box" : "check-box-outline-blank"}
@@ -972,7 +994,7 @@ export default function TasksScreen() {
                       color={
                         active
                           ? getCategoryDisplayColor(cat.color, isDark)
-                          : "#777587"
+                          : mutedIcon
                       }
                     />
                     <View
@@ -1001,7 +1023,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
                 top: dropdownPos.top,
@@ -1036,12 +1058,12 @@ export default function TasksScreen() {
                   size={18}
                   color={
                     selectedStatusIds.size === (statuses?.length ?? 0)
-                      ? "#4d41df"
-                      : "#777587"
+                      ? accentColor
+                      : mutedIcon
                   }
                 />
                 <Text className="text-xs font-label text-on-surface-variant">
-                  Zaznacz wszystko
+                  {t("tasks.selectAll")}
                 </Text>
               </TouchableOpacity>
               {statuses?.map((s) => {
@@ -1057,12 +1079,12 @@ export default function TasksScreen() {
                         return next;
                       });
                     }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 mx-1 rounded-lg hover:bg-surface-container-low"
                   >
                     <MaterialIcons
                       name={active ? "check-box" : "check-box-outline-blank"}
                       size={18}
-                      color={active ? s.color : "#777587"}
+                      color={active ? s.color : mutedIcon}
                     />
                     <View
                       className="w-2.5 h-2.5 rounded-full"
@@ -1086,7 +1108,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
-              className="bg-surface-container-lowest rounded-xl shadow-card py-1"
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
                 top: sortMenuPos.top,
@@ -1101,14 +1123,14 @@ export default function TasksScreen() {
             >
               {(
                 [
-                  { key: "default", label: "Domyślne", icon: "remove" },
+                  { key: "default", label: t("tasks.sortDefault"), icon: "remove" },
                   {
                     key: "updated",
-                    label: "Ostatnio zmienione",
+                    label: t("tasks.sortUpdated"),
                     icon: "update",
                   },
-                  { key: "priority", label: "Priorytet", icon: "flag" },
-                  { key: "category", label: "Kategoria", icon: "folder" },
+                  { key: "priority", label: t("tasks.sortPriority"), icon: "flag" },
+                  { key: "category", label: t("tasks.sortCategory"), icon: "folder" },
                 ] as const
               ).map((opt) => {
                 const currentSort = columnSorts[openSortMenu] ?? "default";
@@ -1123,12 +1145,12 @@ export default function TasksScreen() {
                       setOpenSortMenu(null);
                       setSortMenuPos(null);
                     }}
-                    className="flex-row items-center gap-2.5 px-3 py-2.5"
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 mx-1 rounded-lg hover:bg-surface-container-low"
                   >
                     <MaterialIcons
                       name={opt.icon as any}
                       size={16}
-                      color={currentSort === opt.key ? "#4d41df" : "#777587"}
+                      color={currentSort === opt.key ? accentColor : mutedIcon}
                     />
                     <Text
                       className={`text-xs font-label ${
@@ -1143,7 +1165,7 @@ export default function TasksScreen() {
                       <MaterialIcons
                         name="check"
                         size={14}
-                        color="#4d41df"
+                        color={accentColor}
                         style={{ marginLeft: "auto" as any }}
                       />
                     )}
@@ -1168,19 +1190,19 @@ export default function TasksScreen() {
               onPress={() => openDropdownAt("priority", priorityBtnRef)}
               className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                 selectedPriorities.size > 0
-                  ? "bg-primary/10 border-primary"
+                  ? "bg-accent/10 border-accent"
                   : "bg-surface-container-high border-outline-variant"
               }`}
             >
               <MaterialIcons
                 name="flag"
                 size={14}
-                color={selectedPriorities.size > 0 ? "#4d41df" : "#777587"}
+                color={selectedPriorities.size > 0 ? accentColor : mutedIcon}
               />
               <Text
-                className={`text-xs font-label ${selectedPriorities.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
+                className={`text-xs font-label ${selectedPriorities.size > 0 ? "text-accent" : "text-on-surface-variant"}`}
               >
-                Priorytet
+                {t("tasks.filterPriority")}
                 {selectedPriorities.size > 0
                   ? ` (${selectedPriorities.size})`
                   : ""}
@@ -1190,7 +1212,7 @@ export default function TasksScreen() {
                   openDropdown === "priority" ? "expand-less" : "expand-more"
                 }
                 size={16}
-                color="#777587"
+                color={mutedIcon}
               />
             </TouchableOpacity>
           </View>
@@ -1205,19 +1227,19 @@ export default function TasksScreen() {
                 onPress={() => openDropdownAt("category", categoryBtnRef)}
                 className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                   selectedCategoryIds.size > 0
-                    ? "bg-primary/10 border-primary"
+                    ? "bg-accent/10 border-accent"
                     : "bg-surface-container-high border-outline-variant"
                 }`}
               >
                 <MaterialIcons
                   name="folder"
                   size={14}
-                  color={selectedCategoryIds.size > 0 ? "#4d41df" : "#777587"}
+                  color={selectedCategoryIds.size > 0 ? accentColor : mutedIcon}
                 />
                 <Text
-                  className={`text-xs font-label ${selectedCategoryIds.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
+                  className={`text-xs font-label ${selectedCategoryIds.size > 0 ? "text-accent" : "text-on-surface-variant"}`}
                 >
-                  Kategoria
+                  {t("tasks.filterCategory")}
                   {selectedCategoryIds.size > 0
                     ? ` (${selectedCategoryIds.size})`
                     : ""}
@@ -1227,7 +1249,7 @@ export default function TasksScreen() {
                     openDropdown === "category" ? "expand-less" : "expand-more"
                   }
                   size={16}
-                  color="#777587"
+                  color={mutedIcon}
                 />
               </TouchableOpacity>
             </View>
@@ -1243,19 +1265,19 @@ export default function TasksScreen() {
                 onPress={() => openDropdownAt("status", statusBtnRef)}
                 className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
                   selectedStatusIds.size > 0
-                    ? "bg-primary/10 border-primary"
+                    ? "bg-accent/10 border-accent"
                     : "bg-surface-container-high border-outline-variant"
                 }`}
               >
                 <MaterialIcons
                   name="view-kanban"
                   size={14}
-                  color={selectedStatusIds.size > 0 ? "#4d41df" : "#777587"}
+                  color={selectedStatusIds.size > 0 ? accentColor : mutedIcon}
                 />
                 <Text
-                  className={`text-xs font-label ${selectedStatusIds.size > 0 ? "text-primary" : "text-on-surface-variant"}`}
+                  className={`text-xs font-label ${selectedStatusIds.size > 0 ? "text-accent" : "text-on-surface-variant"}`}
                 >
-                  Status
+                  {t("tasks.filterStatus")}
                   {selectedStatusIds.size > 0
                     ? ` (${selectedStatusIds.size})`
                     : ""}
@@ -1265,7 +1287,7 @@ export default function TasksScreen() {
                     openDropdown === "status" ? "expand-less" : "expand-more"
                   }
                   size={16}
-                  color="#777587"
+                  color={mutedIcon}
                 />
               </TouchableOpacity>
             </View>
@@ -1283,7 +1305,7 @@ export default function TasksScreen() {
               }}
               className="px-3 py-2"
             >
-              <Text className="text-xs font-label text-primary">Wyczyść</Text>
+              <Text className="text-xs font-label text-primary">{t("tasks.clear")}</Text>
             </TouchableOpacity>
           )}
 
@@ -1291,29 +1313,29 @@ export default function TasksScreen() {
             onPress={() => setShowCompleted((v) => !v)}
             className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
               showCompleted
-                ? "bg-primary/10 border-primary"
+                ? "bg-accent/10 border-accent"
                 : "bg-surface-container-high border-outline-variant"
             }`}
           >
             <MaterialIcons
               name={showCompleted ? "visibility" : "visibility-off"}
               size={14}
-              color={showCompleted ? "#4d41df" : "#777587"}
+              color={showCompleted ? accentColor : mutedIcon}
             />
             <Text
-              className={`text-xs font-label ${showCompleted ? "text-primary" : "text-on-surface-variant"}`}
+              className={`text-xs font-label ${showCompleted ? "text-accent" : "text-on-surface-variant"}`}
             >
-              Ukończone
+              {t("tasks.completed")}
             </Text>
           </TouchableOpacity>
         </View>
 
         {!tasks?.length ? (
           <EmptyState
-            title="Brak zadań"
-            description="Utwórz swoje pierwsze zadanie lub pozwól AI zaplanować Twój dzień"
+            title={t("tasks.emptyTitle")}
+            description={t("tasks.emptyDesc")}
             primaryAction={{
-              label: "Utwórz zadanie",
+              label: t("tasks.createTask"),
               onPress: () => {
                 setCreateStatusId(orderedStatuses[0]?.statusId);
                 setShowCreate(true);
@@ -1345,49 +1367,50 @@ export default function TasksScreen() {
                     setShowCreate(true);
                   }}
                 >
-                  <View className="flex-row items-center justify-between mb-4 px-1">
-                    <View className="flex-row items-center gap-2">
-                      <View
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      <Text className="font-headline text-on-surface text-sm">
-                        {status.name}
-                      </Text>
-                      <View className="bg-surface-container-high px-2 py-0.5 rounded-full">
-                        <Text className="text-xs font-label text-on-surface-variant">
+                  <View className="mb-3 px-1.5 pt-0.5">
+                    <View className="flex-row items-center justify-between">
+                      <View className="flex-row items-center gap-2 flex-1 min-w-0">
+                        <View
+                          className="w-2.5 h-2.5 rounded-[3px]"
+                          style={{ backgroundColor: status.color }}
+                        />
+                        <Text
+                          className="font-headline text-on-surface text-[13px]"
+                          numberOfLines={1}
+                        >
+                          {status.name}
+                        </Text>
+                        <Text className="font-label text-[11px] text-text-tertiary">
                           {statusTasks.length}
                         </Text>
                       </View>
-                    </View>
-                    <View className="flex-row items-center gap-0.5">
-                      {colIdx > 0 && (
+                      <View className="flex-row items-center gap-0.5">
+                        {colIdx > 0 && (
+                          <TouchableOpacity
+                            onPress={() => moveColumn(status.statusId, -1)}
+                            className="p-1 rounded-md hover:bg-surface-container-low"
+                          >
+                            <MaterialIcons
+                              name="chevron-left"
+                              size={16}
+                              color="#9b9791"
+                            />
+                          </TouchableOpacity>
+                        )}
+                        {colIdx < orderedStatuses.length - 1 && (
+                          <TouchableOpacity
+                            onPress={() => moveColumn(status.statusId, 1)}
+                            className="p-1 rounded-md hover:bg-surface-container-low"
+                          >
+                            <MaterialIcons
+                              name="chevron-right"
+                              size={16}
+                              color="#9b9791"
+                            />
+                          </TouchableOpacity>
+                        )}
                         <TouchableOpacity
-                          onPress={() => moveColumn(status.statusId, -1)}
-                          className="p-1"
-                        >
-                          <MaterialIcons
-                            name="chevron-left"
-                            size={18}
-                            color="#777587"
-                          />
-                        </TouchableOpacity>
-                      )}
-                      {colIdx < orderedStatuses.length - 1 && (
-                        <TouchableOpacity
-                          onPress={() => moveColumn(status.statusId, 1)}
-                          className="p-1"
-                        >
-                          <MaterialIcons
-                            name="chevron-right"
-                            size={18}
-                            color="#777587"
-                          />
-                        </TouchableOpacity>
-                      )}
-                      <View>
-                        <TouchableOpacity
-                          className="p-1"
+                          className="p-1 rounded-md hover:bg-surface-container-low"
                           ref={(el: any) => {
                             if (Platform.OS === "web" && el) {
                               sortBtnRefs.current[status.statusId] =
@@ -1413,11 +1436,18 @@ export default function TasksScreen() {
                         >
                           <MaterialIcons
                             name="sort"
-                            size={18}
-                            color={
-                              colSort !== "default" ? "#4d41df" : "#777587"
-                            }
+                            size={16}
+                            color={colSort !== "default" ? "#5b4ee0" : "#9b9791"}
                           />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => {
+                            setCreateStatusId(status.statusId);
+                            setShowCreate(true);
+                          }}
+                          className="p-1 rounded-md hover:bg-surface-container-low"
+                        >
+                          <MaterialIcons name="add" size={18} color="#9b9791" />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1425,23 +1455,44 @@ export default function TasksScreen() {
 
                   <ScrollView
                     showsVerticalScrollIndicator={false}
-                    contentContainerStyle={{ gap: 10 }}
+                    contentContainerStyle={{ gap: 8 }}
                     style={{ flex: 1 }}
                   >
-                    {statusTasks.map((task) => (
-                      <KanbanTaskCard
-                        key={task.taskId}
-                        task={task}
-                        category={
-                          task.categoryId
-                            ? categoryMap.get(task.categoryId)
-                            : undefined
-                        }
-                        onPress={() => setSelectedTask(task)}
-                        isCompleted={isDoneStatus(task.statusId)}
-                      />
-                    ))}
+                    {statusTasks.length === 0 ? (
+                      <View className="items-center justify-center py-10 px-3">
+                        <Text className="text-text-tertiary font-body text-[11px] text-center leading-4">
+                          {t("tasks.dropHere")}
+                        </Text>
+                      </View>
+                    ) : (
+                      statusTasks.map((task) => (
+                        <KanbanTaskCard
+                          key={task.taskId}
+                          task={task}
+                          category={
+                            task.categoryId
+                              ? categoryMap.get(task.categoryId)
+                              : undefined
+                          }
+                          onPress={() => setSelectedTask(task)}
+                          isCompleted={isDoneStatus(task.statusId)}
+                        />
+                      ))
+                    )}
                   </ScrollView>
+
+                  <TouchableOpacity
+                    onPress={() => {
+                      setCreateStatusId(status.statusId);
+                      setShowCreate(true);
+                    }}
+                    className="mt-2 flex-row items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-outline-variant hover:border-outline hover:bg-surface-container-low/60"
+                  >
+                    <MaterialIcons name="add" size={15} color="#9b9791" />
+                    <Text className="text-text-tertiary font-label text-[11px]">
+                      {t("tasks.newTask")}
+                    </Text>
+                  </TouchableOpacity>
                 </DropColumn>
               );
             })}

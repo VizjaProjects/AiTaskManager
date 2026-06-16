@@ -5,6 +5,7 @@ import { NavItem } from "../molecules/NavItem";
 import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 import { Role } from "@/lib/types";
 
 const NAV_ITEMS: Array<{
@@ -16,46 +17,46 @@ const NAV_ITEMS: Array<{
 }> = [
   {
     icon: "dashboard",
-    label: "Dashboard",
+    label: "nav.dashboard",
     path: "/(app)/dashboard",
     match: ["/dashboard"],
   },
   {
     icon: "auto-awesome",
-    label: "AI Task",
+    label: "nav.aiTask",
     path: "/(app)/ai-task",
     match: ["/ai-task"],
   },
   {
     icon: "calendar-today",
-    label: "Calendar",
+    label: "nav.calendar",
     path: "/(app)/calendar",
     match: ["/calendar"],
   },
   {
     icon: "checklist",
-    label: "Tasks",
+    label: "nav.tasks",
     path: "/(app)/tasks",
     match: ["/tasks"],
   },
   {
     icon: "sticky-note-2",
-    label: "Notes",
+    label: "nav.notes",
     path: "/(app)/notes",
     match: ["/notes"],
   },
   {
     icon: "tune",
-    label: "Categories & Statuses",
+    label: "nav.categoriesStatuses",
     path: "/(app)/categories",
     match: ["/categories", "/statuses"],
   },
   {
     icon: "bar-chart",
-    label: "Statistics",
+    label: "nav.statistics",
     path: "/(app)/statistics",
     match: ["/statistics"],
-    badge: "In Progress",
+    badge: "common.inProgress",
   },
 ];
 
@@ -65,6 +66,7 @@ export function SideNavBar() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const mode = useThemeStore((s) => s.mode);
+  const t = useT();
 
   function isActive(matches: string[]) {
     return matches.some((m) => pathname.startsWith(m) || pathname.includes(m));
@@ -90,8 +92,8 @@ export function SideNavBar() {
               <NavItem
                 key={item.path}
                 icon={item.icon}
-                label={item.label}
-                badge={item.badge}
+                label={t(item.label)}
+                badge={item.badge ? t(item.badge) : undefined}
                 active={isActive(
                   item.match ?? [item.path.replace("/(app)", "")],
                 )}
@@ -101,7 +103,7 @@ export function SideNavBar() {
             {user?.role === Role.ADMIN && (
               <NavItem
                 icon="poll"
-                label="Surveys"
+                label={t("nav.surveysAdmin")}
                 active={pathname.includes("admin-survey")}
                 onPress={() => router.push("/(app)/admin-surveys" as never)}
               />
@@ -109,7 +111,7 @@ export function SideNavBar() {
             {user?.role === Role.USER && (
               <NavItem
                 icon="assignment"
-                label="Ankiety"
+                label={t("nav.surveys")}
                 active={
                   pathname.includes("/surveys") ||
                   pathname.includes("/survey-onboarding") ||
@@ -133,7 +135,7 @@ export function SideNavBar() {
             color={mode === "dark" ? "rgba(255,255,255,0.5)" : "#6b6965"}
           />
           <Text className="text-on-surface-variant font-body text-body-md">
-            Sign Out
+            {t("common.signOut")}
           </Text>
         </TouchableOpacity>
       </View>

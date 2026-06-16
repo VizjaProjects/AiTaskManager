@@ -8,9 +8,11 @@ import { useTasks, useCategories, useEvents } from "@/lib/hooks";
 import { getCategoryDisplayColor } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 import type { Category } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
 export default function SearchScreen() {
   const [query, setQuery] = useState("");
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const { data: tasks } = useTasks();
   const { data: categories } = useCategories();
@@ -50,8 +52,8 @@ export default function SearchScreen() {
 
         {query.trim() && !hasResults && (
           <EmptyState
-            title="Brak wyników"
-            description={`Nie znaleziono wyników dla "${query}"`}
+            title={t("search.noResults")}
+            description={t("search.noResultsFor", { query })}
           />
         )}
 
@@ -63,7 +65,7 @@ export default function SearchScreen() {
             {results.tasks.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Zadania ({results.tasks.length})
+                  {t("nav.tasks")} ({results.tasks.length})
                 </Text>
                 {results.tasks.map((task) => (
                   <TaskCard
@@ -82,7 +84,7 @@ export default function SearchScreen() {
             {results.events.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Wydarzenia ({results.events.length})
+                  {t("search.events")} ({results.events.length})
                 </Text>
                 {results.events.map((event) => (
                   <View
@@ -100,7 +102,7 @@ export default function SearchScreen() {
             {results.categories.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Kategorie ({results.categories.length})
+                  {t("search.categories")} ({results.categories.length})
                 </Text>
                 {results.categories.map((cat) => (
                   <View

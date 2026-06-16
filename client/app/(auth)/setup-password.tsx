@@ -19,6 +19,7 @@ import {
   type SetupPasswordFormData,
 } from "@/lib/schemas";
 import { useAuthStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 type SetupStep = "password" | "confirmation";
 
@@ -41,6 +42,7 @@ function getApiErrorMessage(error: any, fallback: string): string {
 
 export default function SetupPasswordScreen() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ email?: string }>();
   const login = useAuthStore((state) => state.login);
   const email = typeof params.email === "string" ? params.email : "";
@@ -73,7 +75,7 @@ export default function SetupPasswordScreen() {
       setError(
         getApiErrorMessage(
           requestError,
-          "Nie udało się wysłać wiadomości potwierdzającej.",
+          t("auth.sp.sendError"),
         ),
       );
     } finally {
@@ -83,7 +85,7 @@ export default function SetupPasswordScreen() {
 
   async function confirmPassword() {
     if (!resetCode.trim()) {
-      setError("Wpisz kod otrzymany w wiadomości e-mail.");
+      setError(t("auth.sp.enterCode"));
       return;
     }
 
@@ -103,7 +105,7 @@ export default function SetupPasswordScreen() {
       setError(
         getApiErrorMessage(
           confirmationError,
-          "Kod jest nieprawidłowy lub wygasł.",
+          t("auth.sp.codeInvalid"),
         ),
       );
     } finally {
@@ -127,13 +129,13 @@ export default function SetupPasswordScreen() {
             <AuthHeader
               title={
                 step === "password"
-                  ? "Ustaw hasło"
-                  : "Potwierdź adres e-mail"
+                  ? t("auth.sp.titlePassword")
+                  : t("auth.sp.titleConfirm")
               }
               subtitle={
                 step === "password"
-                  ? `Konto ${email} zostało utworzone przez Google. Ustaw hasło, aby móc logować się także adresem e-mail.`
-                  : `Wysłaliśmy kod potwierdzający na ${email}. Wpisz go poniżej, aby zapisać hasło.`
+                  ? t("auth.sp.subtitlePassword", { email })
+                  : t("auth.sp.subtitleConfirm", { email })
               }
             />
 
@@ -162,7 +164,7 @@ export default function SetupPasswordScreen() {
                   name="newPassword"
                   render={({ field: { onChange, value } }) => (
                     <Input
-                      label="Nowe hasło"
+                      label={t("auth.sp.newPassword")}
                       icon="lock"
                       secureToggle
                       secureTextEntry
@@ -178,7 +180,7 @@ export default function SetupPasswordScreen() {
                   name="confirmPassword"
                   render={({ field: { onChange, value } }) => (
                     <Input
-                      label="Powtórz nowe hasło"
+                      label={t("auth.sp.repeatPassword")}
                       icon="lock"
                       secureToggle
                       secureTextEntry
@@ -192,7 +194,7 @@ export default function SetupPasswordScreen() {
                   )}
                 />
                 <Button
-                  label="Wyślij kod potwierdzający"
+                  label={t("auth.sp.sendCode")}
                   loading={loading}
                   fullWidth
                   onPress={handleSubmit(requestConfirmation)}
@@ -201,7 +203,7 @@ export default function SetupPasswordScreen() {
             ) : (
               <View className="gap-4">
                 <Input
-                  label="Kod z wiadomości e-mail"
+                  label={t("auth.sp.codeLabel")}
                   icon="verified-user"
                   autoCapitalize="none"
                   autoCorrect={false}
@@ -211,14 +213,14 @@ export default function SetupPasswordScreen() {
                   onSubmitEditing={confirmPassword}
                 />
                 <Button
-                  label="Potwierdź i ustaw hasło"
+                  label={t("auth.sp.confirmSet")}
                   loading={loading}
                   fullWidth
                   onPress={confirmPassword}
                 />
                 <Button
                   variant="text"
-                  label="Wyślij kod ponownie"
+                  label={t("auth.sp.resendCode")}
                   disabled={loading}
                   fullWidth
                   onPress={requestConfirmation}
@@ -229,7 +231,7 @@ export default function SetupPasswordScreen() {
             <View className="mt-4">
               <Button
                 variant="text"
-                label="Wróć do logowania"
+                label={t("auth.backToLogin")}
                 fullWidth
                 onPress={() => router.replace("/(auth)/login")}
               />

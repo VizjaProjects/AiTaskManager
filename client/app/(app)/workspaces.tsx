@@ -5,9 +5,11 @@ import { PageLayout } from "@/components/organisms";
 import { Button, Card, EmptyState } from "@/components/atoms";
 import { useWorkspaces, useSetActiveWorkspace } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 export default function WorkspacesScreen() {
   const router = useRouter();
+  const t = useT();
   const { workspaces, isLoading } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActive = useSetActiveWorkspace();
@@ -17,24 +19,24 @@ export default function WorkspacesScreen() {
       <View className="gap-4 p-4 max-w-2xl w-full self-center">
         <View className="flex-row items-center justify-between">
           <Text className="text-on-surface-variant font-body text-sm">
-            Zarządzaj przestrzeniami roboczymi
+            {t("ws.manage")}
           </Text>
           <Button
-            label="Nowy workspace"
+            label={t("ws.new")}
             onPress={() => router.push("/(app)/workspace-create" as never)}
           />
         </View>
 
         {isLoading ? (
           <Text className="text-on-surface-variant font-body text-sm">
-            Ładowanie...
+            {t("common.loading")}
           </Text>
         ) : workspaces.length === 0 ? (
           <EmptyState
-            title="Brak workspace"
-            description="Utwórz pierwszy workspace, aby zacząć zarządzać zadaniami."
+            title={t("ws.empty")}
+            description={t("ws.emptyDesc")}
             primaryAction={{
-              label: "Utwórz workspace",
+              label: t("ws.create"),
               onPress: () => router.push("/(app)/workspace-create" as never),
             }}
           />
@@ -58,13 +60,14 @@ export default function WorkspacesScreen() {
                       {isActive && (
                         <View className="bg-primary/15 px-2 py-0.5 rounded-full">
                           <Text className="text-primary font-label text-xs">
-                            Aktywny
+                            {t("ws.active")}
                           </Text>
                         </View>
                       )}
                     </View>
                     <Text className="text-on-surface-variant font-body text-xs">
-                      {ws.assignedUsers.length} użytkowników · utworzono{" "}
+                      {ws.assignedUsers.length} {t("ws.membersWord")} ·{" "}
+                      {t("ws.createdWord")}{" "}
                       {new Date(ws.createdAt).toLocaleDateString("pl-PL")}
                     </Text>
                   </TouchableOpacity>
@@ -79,7 +82,7 @@ export default function WorkspacesScreen() {
                   >
                     <MaterialIcons name="settings" size={16} color="#777587" />
                     <Text className="text-on-surface-variant font-body text-sm">
-                      Ustawienia
+                      {t("menu.settings")}
                     </Text>
                   </TouchableOpacity>
                 </Card>

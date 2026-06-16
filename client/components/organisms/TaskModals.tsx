@@ -47,6 +47,7 @@ import {
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
+import { useT } from "@/lib/i18n";
 
 type TaskSaveData = {
   title: string;
@@ -86,13 +87,14 @@ export function TaskDetailModal({
   forceEdit = false,
   onSaveCustom,
   saveLoading,
-  saveLabel = "Zapisz",
+  saveLabel,
   showDelete = true,
   onDeleteCustom,
   acceptAction,
   rejectAction,
 }: TaskDetailModalProps) {
   const editTask = useEditTask();
+  const t = useT();
   const deleteTask = useDeleteTask();
   const setAssignees = useSetTaskAssignees();
   const router = useRouter();
@@ -192,11 +194,11 @@ export function TaskDetailModal({
   const noteLinkSections = useMemo(
     () => [
       {
-        label: "Notatki",
-        emptyMessage: "Brak notatek w tym workspace.",
+        label: t("nav.notes"),
+        emptyMessage: t("taskModal.noNotesInWorkspace"),
         items: (allNotes ?? []).map((n) => ({
           id: n.id,
-          label: n.title || "Bez tytułu",
+          label: n.title || t("taskModal.noteFallback"),
           subtitle:
             n.noteDescription?.trim() ||
             n.content.text.trim().slice(0, 80) ||
@@ -486,7 +488,7 @@ export function TaskDetailModal({
               <View className={`${isWide ? "flex-1" : ""} gap-4`}>
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Opis zadania
+                    {t("taskModal.description")}
                   </Text>
                   {editing ? (
                     <TextInput
@@ -497,18 +499,18 @@ export function TaskDetailModal({
                       value={description}
                       onChangeText={setDescription}
                       placeholderTextColor="#777587"
-                      placeholder="Opis zadania..."
+                      placeholder={t("taskModal.descPlaceholder")}
                     />
                   ) : (
                     <Text className="text-on-surface font-body text-sm leading-5">
-                      {task.description || "Brak opisu"}
+                      {task.description || t("taskModal.noDescription")}
                     </Text>
                   )}
                 </View>
 
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Kategoria
+                    {t("taskModal.category")}
                   </Text>
                   {editing ? (
                     <View className="flex-row gap-2 flex-wrap">
@@ -521,7 +523,7 @@ export function TaskDetailModal({
                         }`}
                       >
                         <Text className="text-xs font-label text-on-surface-variant">
-                          Brak
+                          {t("taskModal.none")}
                         </Text>
                       </TouchableOpacity>
                       {categories.map((c) => (
@@ -577,7 +579,7 @@ export function TaskDetailModal({
                     </View>
                   ) : (
                     <Text className="text-on-surface-variant font-body text-sm">
-                      Brak
+                      {t("taskModal.none")}
                     </Text>
                   )}
                 </View>
@@ -588,7 +590,7 @@ export function TaskDetailModal({
                 {/* Status */}
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Status
+                    {t("taskModal.status")}
                   </Text>
                   {editing ? (
                     <View className="flex-row gap-2 flex-wrap">
@@ -672,7 +674,7 @@ export function TaskDetailModal({
                 {/* Priority */}
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Priorytet
+                    {t("taskModal.priority")}
                   </Text>
                   {editing ? (
                     <View className="flex-row gap-2 flex-wrap">
@@ -723,13 +725,13 @@ export function TaskDetailModal({
                 {/* Duration */}
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                    Czas trwania
+                    {t("taskModal.duration")}
                   </Text>
                   {editing ? (
                     <Input
                       value={estimatedDuration}
                       onChangeText={setEstimatedDuration}
-                      placeholder="min"
+                      placeholder={t("taskModal.minPlaceholder")}
                       keyboardType="numeric"
                     />
                   ) : (
@@ -751,7 +753,7 @@ export function TaskDetailModal({
                 {/* Due date */}
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                    Termin
+                    {t("taskModal.dueDate")}
                   </Text>
                   {editing ? (
                     <View>
@@ -769,7 +771,7 @@ export function TaskDetailModal({
                                   year: "numeric",
                                 })} ${dueHour}:${dueMin}`;
                               })()
-                            : "Wybierz termin..."}
+                            : t("taskModal.pickDate")}
                         </Text>
                         <MaterialIcons
                           name={
@@ -790,7 +792,7 @@ export function TaskDetailModal({
                           />
                           <View className="flex-row items-center gap-2 mt-3">
                             <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                              Godzina
+                              {t("taskModal.hour")}
                             </Text>
                             <TextInput
                               value={dueHour}
@@ -828,7 +830,7 @@ export function TaskDetailModal({
                             className="mt-2 self-start"
                           >
                             <Text className="text-error font-label text-xs">
-                              Usuń termin
+                              {t("taskModal.removeDue")}
                             </Text>
                           </TouchableOpacity>
                         </View>
@@ -859,12 +861,12 @@ export function TaskDetailModal({
                 {/* Assignees */}
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Przypisani
+                    {t("taskModal.assignees")}
                   </Text>
                   {editing ? (
                     workspaceMembers.length === 0 ? (
                       <Text className="text-on-surface-variant font-body text-sm">
-                        Brak członków workspace
+                        {t("taskModal.noMembers")}
                       </Text>
                     ) : (
                       <View className="flex-row gap-2 flex-wrap">
@@ -891,7 +893,7 @@ export function TaskDetailModal({
                                     : "text-on-surface-variant"
                                 }`}
                               >
-                                {m.fullName ?? m.email ?? "Użytkownik"}
+                                {m.fullName ?? m.email ?? t("common.user")}
                               </Text>
                             </TouchableOpacity>
                           );
@@ -900,7 +902,7 @@ export function TaskDetailModal({
                     )
                   ) : assignedMembers.length === 0 ? (
                     <Text className="text-on-surface-variant font-body text-sm">
-                      Nikt nie jest przypisany
+                      {t("taskModal.nobodyAssigned")}
                     </Text>
                   ) : (
                     <View className="flex-row flex-wrap gap-2">
@@ -914,7 +916,7 @@ export function TaskDetailModal({
                             size="sm"
                           />
                           <Text className="text-on-surface font-body text-xs">
-                            {m.fullName ?? m.email ?? "Użytkownik"}
+                            {m.fullName ?? m.email ?? t("common.user")}
                           </Text>
                         </View>
                       ))}
@@ -926,7 +928,7 @@ export function TaskDetailModal({
                 {!editing && (
                   <View>
                     <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                      Utworzono
+                      {t("taskModal.createdAt")}
                     </Text>
                     <View className="flex-row items-center gap-1.5">
                       <MaterialIcons
@@ -947,7 +949,7 @@ export function TaskDetailModal({
             {!editing && relatedEvents.length > 0 && (
               <View className="px-6 pb-4">
                 <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
-                  Powiązane wydarzenia
+                  {t("taskModal.relatedEvents")}
                 </Text>
                 <View className="flex-row flex-wrap gap-3">
                   {relatedEvents.map((evt) => {
@@ -995,7 +997,7 @@ export function TaskDetailModal({
               <View className="px-6 pb-4">
                 <View className="flex-row items-center justify-between mb-3">
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                    Powiązane notatki
+                    {t("taskModal.relatedNotes")}
                   </Text>
                   <TouchableOpacity
                     onPress={openNoteLinkModal}
@@ -1003,7 +1005,7 @@ export function TaskDetailModal({
                   >
                     <MaterialIcons name="link" size={14} color="#9b9791" />
                     <Text className="text-on-surface-variant font-label text-xs">
-                      Podłącz
+                      {t("taskModal.link")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -1025,7 +1027,7 @@ export function TaskDetailModal({
                           className="text-on-surface font-body text-xs"
                           numberOfLines={1}
                         >
-                          {n.title || "Bez tytułu"}
+                          {n.title || t("taskModal.noteFallback")}
                         </Text>
                         <MaterialIcons
                           name="arrow-forward"
@@ -1037,7 +1039,7 @@ export function TaskDetailModal({
                   </View>
                 ) : (
                   <Text className="text-on-surface-variant font-body text-sm">
-                    Brak powiązanych notatek.
+                    {t("taskModal.noLinkedNotes")}
                   </Text>
                 )}
               </View>
@@ -1063,13 +1065,13 @@ export function TaskDetailModal({
                         color="#ef4444"
                       />
                       <Text className="text-error font-headline text-sm">
-                        Usuń
+                        {t("common.delete")}
                       </Text>
                     </TouchableOpacity>
                   )}
                   {!showDelete && !isNarrow && <View className="flex-1" />}
                   <Button
-                    label={saveLabel}
+                    label={saveLabel ?? t("common.save")}
                     icon="check"
                     fullWidth={isNarrow}
                     loading={saveLoading ?? editTask.isPending}
@@ -1077,7 +1079,7 @@ export function TaskDetailModal({
                   />
                   <Button
                     variant="outline"
-                    label="Anuluj"
+                    label={t("common.cancel")}
                     fullWidth={isNarrow}
                     onPress={() => {
                       if (onSaveCustom) onClose();
@@ -1095,7 +1097,7 @@ export function TaskDetailModal({
                         color="#ef4444"
                       />
                       <Text className="text-error font-headline text-sm">
-                        Usuń
+                        {t("common.delete")}
                       </Text>
                     </TouchableOpacity>
                   )}
@@ -1123,7 +1125,7 @@ export function TaskDetailModal({
                   />
                   <Button
                     variant="outline"
-                    label="Edytuj"
+                    label={t("taskModal.edit")}
                     fullWidth={isNarrow}
                     onPress={startEdit}
                   />
@@ -1142,13 +1144,13 @@ export function TaskDetailModal({
               ) : (
                 <>
                   <Button
-                    label="Edytuj"
+                    label={t("taskModal.edit")}
                     fullWidth={isNarrow}
                     onPress={startEdit}
                   />
                   <Button
                     variant="outline"
-                    label="Oznacz jako zakończone"
+                    label={t("taskModal.markComplete")}
                     fullWidth={isNarrow}
                     loading={editTask.isPending}
                     onPress={handleMarkComplete}
@@ -1165,7 +1167,7 @@ export function TaskDetailModal({
                       color="#ef4444"
                     />
                     <Text className="text-error font-headline text-sm">
-                      Usuń
+                      {t("common.delete")}
                     </Text>
                   </TouchableOpacity>
                 </>
@@ -1177,8 +1179,8 @@ export function TaskDetailModal({
     </Modal>
     <LinkCheckboxModal
       visible={noteLinkOpen}
-      title="Podłącz notatki do zadania"
-      searchPlaceholder="Szukaj notatek…"
+      title={t("taskModal.linkNotesTitle")}
+      searchPlaceholder={t("taskModal.searchNotes")}
       sections={noteLinkSections}
       onClose={() => setNoteLinkOpen(false)}
       onSave={saveTaskNoteLinks}
@@ -1204,6 +1206,7 @@ export function CreateTaskModal({
   statuses,
 }: CreateTaskModalProps) {
   const createTask = useCreateTask();
+  const t = useT();
   const cThemeMode = useThemeStore((s) => s.mode);
   const cPColors =
     cThemeMode === "dark" ? PRIORITY_COLORS_DARK : PRIORITY_COLORS;
@@ -1276,185 +1279,246 @@ export function CreateTaskModal({
     );
   }
 
+  const selectedStatus = statuses.find((s) => s.statusId === statusId);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable
-        className="flex-1 bg-black/50 items-center justify-center p-6"
+        className="flex-1 bg-black/50 items-center justify-center p-4"
         onPress={onClose}
       >
         <Pressable
           onPress={(e) => e.stopPropagation()}
-          className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4"
+          className="bg-surface rounded-2xl w-full max-w-lg max-h-[90%] overflow-hidden border border-outline-variant shadow-modal"
         >
-          <View className="flex-row items-center justify-between">
-            <Text className="font-headline text-on-surface text-lg">
-              Nowe zadanie
-            </Text>
-            <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#777587" />
+          {/* Header */}
+          <View className="flex-row items-center justify-between px-5 py-4 border-b border-outline-variant">
+            <View className="flex-row items-center gap-2.5">
+              <View className="w-7 h-7 rounded-lg bg-primary-fixed items-center justify-center">
+                <MaterialIcons name="add-task" size={16} color="#5b4ee0" />
+              </View>
+              <Text className="font-headline text-on-surface text-base">
+                {t("tasks.newTask")}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={onClose}
+              className="p-1 rounded-md hover:bg-surface-container-low"
+            >
+              <MaterialIcons name="close" size={20} color="#9b9791" />
             </TouchableOpacity>
           </View>
 
-          <Input
-            label="Tytuł"
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Wpisz tytuł zadania"
-          />
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ padding: 20, gap: 18 }}
+          >
+            {/* Title — leads, borderless and prominent */}
+            <View className="w-full">
+              <TextInput
+                className="text-on-surface font-headline text-lg pb-1"
+                style={NO_OUTLINE}
+                value={title}
+                onChangeText={setTitle}
+                placeholder={t("taskModal.namePlaceholder")}
+                placeholderTextColor="#b8b4af"
+                autoFocus={Platform.OS === "web"}
+              />
+              <View className="h-px bg-outline-variant" />
+            </View>
 
-          <View className="w-full">
-            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Opis
-            </Text>
-            <TextInput
-              className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-base border border-outline-variant"
-              style={[{ minHeight: 80 }, NO_OUTLINE]}
-              multiline
-              textAlignVertical="top"
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Opcjonalny opis..."
-              placeholderTextColor="#777587"
-            />
-          </View>
+            {/* Description */}
+            <View className="w-full">
+              <Text className="text-on-surface-variant font-label text-[11px] mb-1.5">
+                {t("taskModal.descLabel")}
+              </Text>
+              <TextInput
+                className="bg-surface-container-lowest rounded-lg px-3.5 py-3 text-on-surface font-body text-sm border border-outline-variant"
+                style={[{ minHeight: 76 }, NO_OUTLINE]}
+                multiline
+                textAlignVertical="top"
+                value={description}
+                onChangeText={setDescription}
+                placeholder={t("taskModal.descOptional")}
+                placeholderTextColor="#b8b4af"
+              />
+            </View>
 
-          <View className="w-full">
-            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Priorytet
-            </Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {Object.values(TaskPriority).map((p) => (
+            {/* Priority — soft-tinted chips with a color dot */}
+            <View className="w-full">
+              <Text className="text-on-surface-variant font-label text-[11px] mb-1.5">
+                {t("taskModal.priority")}
+              </Text>
+              <View className="flex-row gap-1.5 flex-wrap">
+                {Object.values(TaskPriority).map((p) => {
+                  const active = priority === p;
+                  return (
+                    <TouchableOpacity
+                      key={p}
+                      onPress={() => setPriority(p)}
+                      className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg border"
+                      style={
+                        active
+                          ? {
+                              backgroundColor: `${cPColors[p]}1A`,
+                              borderColor: cPColors[p],
+                            }
+                          : { borderColor: "transparent" }
+                      }
+                    >
+                      <View
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: cPColors[p] }}
+                      />
+                      <Text
+                        className="text-xs font-label"
+                        style={{
+                          color: active ? cPColors[p] : "#6b6965",
+                        }}
+                      >
+                        {p}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Status */}
+            <View className="w-full">
+              <Text className="text-on-surface-variant font-label text-[11px] mb-1.5">
+                {t("taskModal.status")}
+              </Text>
+              <View className="flex-row gap-1.5 flex-wrap">
+                {statuses.map((s) => {
+                  const active = statusId === s.statusId;
+                  return (
+                    <TouchableOpacity
+                      key={s.statusId}
+                      onPress={() => setStatusId(s.statusId)}
+                      className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg border"
+                      style={
+                        active
+                          ? {
+                              backgroundColor: `${s.color}1A`,
+                              borderColor: s.color,
+                            }
+                          : { borderColor: "transparent" }
+                      }
+                    >
+                      <View
+                        className="w-2 h-2 rounded-[2px]"
+                        style={{ backgroundColor: s.color }}
+                      />
+                      <Text
+                        className="text-xs font-label"
+                        style={{ color: active ? s.color : "#6b6965" }}
+                      >
+                        {s.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Category */}
+            <View className="w-full">
+              <Text className="text-on-surface-variant font-label text-[11px] mb-1.5">
+                {t("taskModal.category")}
+              </Text>
+              <View className="flex-row gap-1.5 flex-wrap">
                 <TouchableOpacity
-                  key={p}
-                  onPress={() => setPriority(p)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    priority === p
-                      ? "border-transparent"
-                      : "border-outline-variant"
-                  }`}
-                  style={
-                    priority === p
-                      ? { backgroundColor: cPColors[p] }
-                      : undefined
-                  }
+                  onPress={() => setCategoryId(null)}
+                  className="px-2.5 py-1.5 rounded-lg border"
+                  style={{
+                    borderColor: !categoryId ? "#c8c4be" : "transparent",
+                    backgroundColor: !categoryId
+                      ? "rgba(0,0,0,0.03)"
+                      : "transparent",
+                  }}
                 >
-                  <Text
-                    className={`text-xs font-label ${
-                      priority === p ? "text-white" : "text-on-surface-variant"
-                    }`}
-                  >
-                    {p}
+                  <Text className="text-xs font-label text-on-surface-variant">
+                    {t("taskModal.none")}
                   </Text>
                 </TouchableOpacity>
-              ))}
+                {categories.map((c) => {
+                  const active = categoryId === c.categoryId;
+                  return (
+                    <TouchableOpacity
+                      key={c.categoryId}
+                      onPress={() => setCategoryId(c.categoryId)}
+                      className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-lg border"
+                      style={
+                        active
+                          ? {
+                              backgroundColor: `${c.color}1A`,
+                              borderColor: c.color,
+                            }
+                          : { borderColor: "transparent" }
+                      }
+                    >
+                      <View
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: c.color }}
+                      />
+                      <Text
+                        className="text-xs font-label"
+                        style={{ color: active ? c.color : "#6b6965" }}
+                      >
+                        {c.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
-          </View>
 
-          <View className="w-full">
-            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Status
-            </Text>
-            <View className="flex-row gap-2 flex-wrap">
-              {statuses.map((s) => (
-                <TouchableOpacity
-                  key={s.statusId}
-                  onPress={() => setStatusId(s.statusId)}
-                  className={`px-3 py-1.5 rounded-full border ${
-                    statusId === s.statusId
-                      ? "border-transparent"
-                      : "border-outline-variant"
-                  }`}
-                  style={
-                    statusId === s.statusId
-                      ? { backgroundColor: s.color }
-                      : undefined
-                  }
-                >
-                  <Text
-                    className={`text-xs font-label ${
-                      statusId === s.statusId
-                        ? "text-white"
-                        : "text-on-surface-variant"
-                    }`}
-                  >
-                    {s.name}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            {/* Duration */}
+            <View className="w-40">
+              <Text className="text-on-surface-variant font-label text-[11px] mb-1.5">
+                {t("taskModal.duration")}
+              </Text>
+              <View className="flex-row items-center bg-surface-container-lowest rounded-lg border border-outline-variant pr-3">
+                <TextInput
+                  className="flex-1 px-3.5 py-2.5 text-on-surface font-body text-sm"
+                  style={NO_OUTLINE}
+                  value={estimatedDuration}
+                  onChangeText={setEstimatedDuration}
+                  placeholder={t("taskModal.durationExample")}
+                  placeholderTextColor="#b8b4af"
+                  keyboardType="numeric"
+                />
+                <Text className="text-text-tertiary font-label text-xs">{t("taskModal.minPlaceholder")}</Text>
+              </View>
             </View>
-          </View>
+          </ScrollView>
 
-          <View className="w-full">
-            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Kategoria
-            </Text>
-            <View className="flex-row gap-2 flex-wrap">
-              <TouchableOpacity
-                onPress={() => setCategoryId(null)}
-                className={`px-3 py-1.5 rounded-full border ${
-                  !categoryId
-                    ? "border-transparent bg-outline-variant"
-                    : "border-outline-variant"
-                }`}
-              >
-                <Text className="text-xs font-label text-on-surface-variant">
-                  Brak
-                </Text>
-              </TouchableOpacity>
-              {categories.map((c) => (
-                <TouchableOpacity
-                  key={c.categoryId}
-                  onPress={() => setCategoryId(c.categoryId)}
-                  className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
-                    categoryId === c.categoryId
-                      ? "border-transparent"
-                      : "border-outline-variant"
-                  }`}
-                  style={
-                    categoryId === c.categoryId
-                      ? { backgroundColor: `${c.color}20` }
-                      : undefined
-                  }
-                >
+          {/* Footer */}
+          <View className="flex-row items-center justify-between px-5 py-3.5 border-t border-outline-variant">
+            <View className="flex-row items-center gap-1.5">
+              {selectedStatus && (
+                <>
                   <View
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: c.color }}
+                    className="w-2 h-2 rounded-[2px]"
+                    style={{ backgroundColor: selectedStatus.color }}
                   />
-                  <Text
-                    className={`text-xs font-label ${
-                      categoryId === c.categoryId
-                        ? ""
-                        : "text-on-surface-variant"
-                    }`}
-                    style={
-                      categoryId === c.categoryId
-                        ? { color: c.color }
-                        : undefined
-                    }
-                  >
-                    {c.name}
+                  <Text className="text-text-tertiary font-body text-xs">
+                    {selectedStatus.name}
                   </Text>
-                </TouchableOpacity>
-              ))}
+                </>
+              )}
             </View>
-          </View>
-
-          <Input
-            label="Czas trwania (min)"
-            value={estimatedDuration}
-            onChangeText={setEstimatedDuration}
-            placeholder="np. 45"
-            keyboardType="numeric"
-          />
-
-          <View className="flex-row gap-3 justify-end mt-2">
-            <Button variant="outline" label="Anuluj" onPress={onClose} />
-            <Button
-              label="Utwórz zadanie"
-              loading={createTask.isPending}
-              disabled={!title.trim() || !statusId}
-              onPress={handleCreate}
-            />
+            <View className="flex-row gap-2.5">
+              <Button variant="outline" label={t("common.cancel")} onPress={onClose} />
+              <Button
+                label={t("tasks.createTask")}
+                icon="check"
+                loading={createTask.isPending}
+                disabled={!title.trim() || !statusId}
+                onPress={handleCreate}
+              />
+            </View>
           </View>
         </Pressable>
       </Pressable>

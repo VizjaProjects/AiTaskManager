@@ -22,6 +22,7 @@ import {
 } from "./NotificationsDrawer";
 import { SearchModal } from "./SearchModal";
 import { useAuthStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 import { Role } from "@/lib/types";
 
 const DRAWER_NAV_ITEMS: Array<{
@@ -30,20 +31,20 @@ const DRAWER_NAV_ITEMS: Array<{
   path: string;
   badge?: string;
 }> = [
-  { icon: "dashboard", label: "Dashboard", path: "/(app)/dashboard" },
-  { icon: "auto-awesome", label: "AI Task", path: "/(app)/ai-task" },
-  { icon: "calendar-today", label: "Kalendarz", path: "/(app)/calendar" },
-  { icon: "checklist", label: "Zadania", path: "/(app)/tasks" },
-  { icon: "sticky-note-2", label: "Notatki", path: "/(app)/notes" },
-  { icon: "tune", label: "Kategorie i statusy", path: "/(app)/categories" },
+  { icon: "dashboard", label: "nav.dashboard", path: "/(app)/dashboard" },
+  { icon: "auto-awesome", label: "nav.aiTask", path: "/(app)/ai-task" },
+  { icon: "calendar-today", label: "nav.calendar", path: "/(app)/calendar" },
+  { icon: "checklist", label: "nav.tasks", path: "/(app)/tasks" },
+  { icon: "sticky-note-2", label: "nav.notes", path: "/(app)/notes" },
+  { icon: "tune", label: "nav.categoriesStatuses", path: "/(app)/categories" },
   {
     icon: "bar-chart",
-    label: "Statystyki",
+    label: "nav.statistics",
     path: "/(app)/statistics",
-    badge: "In Progress",
+    badge: "common.inProgress",
   },
-  { icon: "assignment", label: "Ankiety", path: "/(app)/surveys" },
-  { icon: "poll", label: "Surveys", path: "/(app)/admin-surveys" },
+  { icon: "assignment", label: "nav.surveys", path: "/(app)/surveys" },
+  { icon: "poll", label: "nav.surveysAdmin", path: "/(app)/admin-surveys" },
 ];
 
 interface AppHeaderProps {
@@ -55,9 +56,10 @@ interface AppHeaderProps {
 export function AppHeader({
   title,
   showSearch = true,
-  searchPlaceholder = "Search tasks, events...",
+  searchPlaceholder,
 }: AppHeaderProps) {
   const router = useRouter();
+  const t = useT();
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
@@ -110,7 +112,7 @@ export function AppHeader({
           >
             <MaterialIcons name="search" size={18} color="#9b9791" />
             <Text className="flex-1 ml-2 text-text-tertiary font-body text-body-md">
-              {searchPlaceholder}
+              {searchPlaceholder ?? t("search.placeholder")}
             </Text>
           </TouchableOpacity>
         )}
@@ -185,8 +187,8 @@ export function AppHeader({
                     <NavItem
                       key={item.path}
                       icon={item.icon}
-                      label={item.label}
-                      badge={item.badge}
+                      label={t(item.label)}
+                      badge={item.badge ? t(item.badge) : undefined}
                       active={active}
                       onPress={() => {
                         setDrawerOpen(false);
@@ -207,7 +209,7 @@ export function AppHeader({
                 >
                   <MaterialIcons name="logout" size={20} color="#6b6965" />
                   <Text className="text-on-surface-variant font-body text-sm">
-                    Sign Out
+                    {t("common.signOut")}
                   </Text>
                 </TouchableOpacity>
               </View>

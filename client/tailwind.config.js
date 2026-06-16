@@ -129,6 +129,15 @@ module.exports = {
       boxShadow: {
         card: "none",
         "card-dark": "none",
+        // Modern-SaaS depth — kept scoped to board + modals so the rest of the
+        // Arena surfaces stay flat. Multi-layer, very subtle resting shadow.
+        kanban:
+          "0 1px 2px rgba(16,24,40,0.04), 0 1px 3px rgba(16,24,40,0.07)",
+        "kanban-hover":
+          "0 6px 16px rgba(16,24,40,0.10), 0 2px 6px rgba(16,24,40,0.06)",
+        "kanban-drag":
+          "0 16px 32px rgba(16,24,40,0.18), 0 4px 8px rgba(16,24,40,0.10)",
+        modal: "0 24px 60px -16px rgba(16,24,40,0.30)",
       },
     },
   },

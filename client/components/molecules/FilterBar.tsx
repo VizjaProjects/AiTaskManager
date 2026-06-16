@@ -2,6 +2,7 @@ import { View, ScrollView, TouchableOpacity, Text } from "react-native";
 import { TaskPriority } from "@/lib/types";
 import { PRIORITY_COLORS, getCategoryDisplayColor } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 interface FilterBarProps {
   selectedPriority: TaskPriority | null;
@@ -19,6 +20,7 @@ export function FilterBar({
   onSelectCategory,
 }: FilterBarProps) {
   const priorities = Object.values(TaskPriority);
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
 
   return (
@@ -91,7 +93,7 @@ export function FilterBar({
           }}
           className="px-3 py-1.5"
         >
-          <Text className="text-xs font-label text-primary">Wyczyść</Text>
+          <Text className="text-xs font-label text-primary">{t("tasks.clear")}</Text>
         </TouchableOpacity>
       )}
     </ScrollView>

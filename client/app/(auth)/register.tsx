@@ -17,9 +17,11 @@ import { AuthCard } from "@/components/molecules/AuthCard";
 import { useAuthStore } from "@/lib/stores";
 import { registerSchema, type RegisterFormData } from "@/lib/schemas";
 import { startGoogleOAuth } from "@/lib/oauth";
+import { useT } from "@/lib/i18n";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const t = useT();
   const register = useAuthStore((s) => s.register);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -58,7 +60,7 @@ export default function RegisterScreen() {
         params: { userId, email: data.email },
       } as never);
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Błąd rejestracji");
+      setError(e.response?.data?.message ?? t("auth.registerError"));
     } finally {
       setLoading(false);
     }
@@ -66,7 +68,7 @@ export default function RegisterScreen() {
 
   async function onGoogleRegister() {
     if (!termsAccepted) {
-      setError("Zaakceptuj regulamin i politykę prywatności, aby kontynuować.");
+      setError(t("auth.acceptTermsFirst"));
       return;
     }
 
@@ -76,7 +78,7 @@ export default function RegisterScreen() {
       await startGoogleOAuth();
     } catch (e: unknown) {
       const message =
-        e instanceof Error ? e.message : "Nie udało się rozpocząć rejestracji Google.";
+        e instanceof Error ? e.message : t("auth.googleRegisterFailed");
       setError(message);
     } finally {
       setGoogleLoading(false);
@@ -96,13 +98,13 @@ export default function RegisterScreen() {
               className="flex-row items-center gap-1.5 mb-6 self-start"
             >
               <MaterialIcons name="arrow-back" size={18} color="#888888" />
-              <Text className="text-on-surface-variant font-body text-sm">Back to home</Text>
+              <Text className="text-on-surface-variant font-body text-sm">{t("common.backToHome")}</Text>
             </TouchableOpacity>
             <View className="items-center gap-3 mb-8">
               <OrdovitaLogo size="lg" variant="stacked" />
-              <Text className="text-on-surface font-headline text-headline-md">Create account</Text>
+              <Text className="text-on-surface font-headline text-headline-md">{t("auth.createAccount")}</Text>
               <Text className="text-on-surface-variant font-body text-body-md text-center">
-                Join your intelligent workspace.
+                {t("auth.registerSubtitle")}
               </Text>
             </View>
 
@@ -118,7 +120,7 @@ export default function RegisterScreen() {
                 name="fullName"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Imię i nazwisko"
+                    label={t("auth.fullName")}
                     icon="person"
                     placeholder="Jan Kowalski"
                     autoCapitalize="words"
@@ -133,7 +135,7 @@ export default function RegisterScreen() {
                 name="email"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Adres e-mail"
+                    label={t("auth.emailLabel")}
                     icon="email"
                     placeholder="jan@example.com"
                     keyboardType="email-address"
@@ -149,7 +151,7 @@ export default function RegisterScreen() {
                 name="rawPassword"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Hasło"
+                    label={t("auth.password")}
                     icon="lock"
                     placeholder="••••••••"
                     secureToggle
@@ -165,7 +167,7 @@ export default function RegisterScreen() {
                 name="confirmPassword"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Potwierdź hasło"
+                    label={t("auth.confirmPassword")}
                     icon="lock-reset"
                     placeholder="••••••••"
                     secureToggle
@@ -194,19 +196,19 @@ export default function RegisterScreen() {
                 color={termsAccepted ? "#4d41df" : "#777587"}
               />
               <Text className="flex-1 text-on-surface-variant font-body text-body-md">
-                Akceptuję{" "}
+                {t("auth.acceptPrefix")}{" "}
                 <Text
                   className="text-primary"
                   onPress={() => router.push("/terms-of-service" as never)}
                 >
-                  Regulamin
+                  {t("auth.terms")}
                 </Text>{" "}
-                i{" "}
+                {t("auth.and")}{" "}
                 <Text
                   className="text-primary"
                   onPress={() => router.push("/privacy-policy" as never)}
                 >
-                  Politykę prywatności
+                  {t("auth.privacy")}
                 </Text>
               </Text>
             </TouchableOpacity>
@@ -218,7 +220,7 @@ export default function RegisterScreen() {
 
             <View className="mt-6">
               <Button
-                label="Zarejestruj się"
+                label={t("auth.register")}
                 icon="arrow-forward"
                 loading={loading}
                 fullWidth
@@ -234,18 +236,18 @@ export default function RegisterScreen() {
               >
                 <MaterialIcons name="g-mobiledata" size={22} color="#4285F4" />
                 <Text className="text-on-surface font-headline text-sm">
-                  {googleLoading ? "Przekierowywanie…" : "Kontynuuj z Google"}
+                  {googleLoading ? t("common.redirecting") : t("common.continueWithGoogle")}
                 </Text>
               </TouchableOpacity>
               <Text className="text-on-surface-variant font-body text-xs text-center mt-2">
-                Pierwsze logowanie Google tworzy konto automatycznie.
+                {t("auth.googleAutoCreate")}
               </Text>
             </View>
 
             <View className="flex-row items-center justify-center gap-1 mt-6">
-              <Text className="text-on-surface-variant font-body text-sm">Masz już konto?</Text>
+              <Text className="text-on-surface-variant font-body text-sm">{t("auth.haveAccount")}</Text>
               <TouchableOpacity onPress={() => router.push("/(auth)/login")}>
-                <Text className="text-primary font-headline text-sm">Zaloguj się</Text>
+                <Text className="text-primary font-headline text-sm">{t("auth.login")}</Text>
               </TouchableOpacity>
             </View>
           </AuthCard>

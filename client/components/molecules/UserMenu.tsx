@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Avatar } from "../atoms/Avatar";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useT, useLanguageStore, LANGUAGES } from "@/lib/i18n";
 
 type AnchorRect = {
   x: number;
@@ -66,6 +67,9 @@ function MenuAction({
 
 export function UserMenu() {
   const router = useRouter();
+  const t = useT();
+  const lang = useLanguageStore((s) => s.lang);
+  const setLang = useLanguageStore((s) => s.setLang);
   const user = useAuthStore((state) => state.user);
   const { mode, toggle } = useThemeStore();
   const { width } = useWindowDimensions();
@@ -104,7 +108,7 @@ export function UserMenu() {
       <View ref={triggerRef} collapsable={false}>
         <TouchableOpacity
           accessibilityRole="button"
-          accessibilityLabel="Open user menu"
+          accessibilityLabel={t("menu.openUserMenu")}
           accessibilityState={{ expanded: open }}
           activeOpacity={0.78}
           onPress={openMenu}
@@ -125,7 +129,7 @@ export function UserMenu() {
       >
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Close user menu"
+          accessibilityLabel={t("menu.closeUserMenu")}
           className="flex-1"
           style={{
             backgroundColor: isDesktop
@@ -177,8 +181,8 @@ export function UserMenu() {
 
               <MenuAction
                 icon="settings"
-                label="Settings"
-                description="Account and AI preferences"
+                label={t("menu.settings")}
+                description={t("menu.settingsDesc")}
                 iconColor={iconColor}
                 trailing={
                   <MaterialIcons
@@ -192,18 +196,52 @@ export function UserMenu() {
 
               <MenuAction
                 icon={mode === "dark" ? "dark-mode" : "light-mode"}
-                label="Theme"
-                description={`${mode === "dark" ? "Dark" : "Light"} appearance`}
+                label={t("menu.theme")}
+                description={
+                  mode === "dark"
+                    ? t("menu.themeDescDark")
+                    : t("menu.themeDescLight")
+                }
                 iconColor={iconColor}
                 trailing={
                   <View className="px-2 py-1 rounded-md bg-surface-container-low">
                     <Text className="font-label text-[11px] text-on-surface-variant">
-                      {mode === "dark" ? "Dark" : "Light"}
+                      {mode === "dark" ? t("menu.themeDark") : t("menu.themeLight")}
                     </Text>
                   </View>
                 }
                 onPress={toggle}
               />
+
+              <View className="px-3 pt-2 pb-1">
+                <Text className="font-label text-[11px] text-on-surface-variant mb-2">
+                  {t("menu.language")}
+                </Text>
+                <View className="flex-row flex-wrap gap-1.5">
+                  {LANGUAGES.map((l) => {
+                    const activeLang = lang === l.code;
+                    return (
+                      <TouchableOpacity
+                        key={l.code}
+                        onPress={() => setLang(l.code)}
+                        className={`px-3 py-1.5 rounded-lg border ${
+                          activeLang
+                            ? "border-accent bg-accent/10"
+                            : "border-outline-variant"
+                        }`}
+                      >
+                        <Text
+                          className={`font-label text-xs ${
+                            activeLang ? "text-accent" : "text-on-surface-variant"
+                          }`}
+                        >
+                          {l.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
             </Pressable>
           </View>
         </Pressable>

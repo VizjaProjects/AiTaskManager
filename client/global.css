@@ -47,10 +47,10 @@
 .dark {
   color-scheme: dark;
   --color-background: #111111; /* app bg */
-  --color-surface: #1a1a1a; /* cards, modals */
+  --color-surface: #1c1c1c; /* cards, modals — lifted off bg since shadows don't read on near-black */
   --color-surface-dim: #141414; /* sidebar */
-  --color-surface-bright: #1c1c1c;
-  --color-surface-container-lowest: #1a1a1a; /* cards */
+  --color-surface-bright: #1f1f1f;
+  --color-surface-container-lowest: #1f1f1f; /* elevated: dropdowns, menus */
   --color-surface-container-low: rgba(255, 255, 255, 0.04); /* hover */
   --color-surface-container: rgba(255, 255, 255, 0.07); /* active */
   --color-surface-container-high: rgba(255, 255, 255, 0.1);
@@ -61,8 +61,8 @@
   --color-on-background: rgba(255, 255, 255, 0.88);
   --color-inverse-surface: #f5f3ef;
   --color-inverse-on-surface: #1a1a18;
-  --color-outline: rgba(255, 255, 255, 0.15); /* border-strong */
-  --color-outline-variant: rgba(255, 255, 255, 0.08); /* border-default */
+  --color-outline: rgba(255, 255, 255, 0.2); /* border-strong */
+  --color-outline-variant: rgba(255, 255, 255, 0.11); /* border-default — defines cards in dark */
   --color-surface-tint: #ffffff;
   --color-primary: rgba(255, 255, 255, 0.88);
   --color-on-primary: #111111;

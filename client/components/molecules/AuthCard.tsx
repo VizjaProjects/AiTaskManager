@@ -1,6 +1,7 @@
 import { View, Text, Platform, useWindowDimensions } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
+import { useT } from "@/lib/i18n";
 
 interface AuthCardProps {
   children: React.ReactNode;
@@ -8,21 +9,22 @@ interface AuthCardProps {
 }
 
 function AuthIllustration() {
+  const t = useT();
   return (
     <View className="flex-1 max-w-lg h-96 rounded-2xl bg-surface-container-low items-center justify-center p-10 gap-6">
       <OrdovitaLogo size="lg" variant="stacked" />
       <View className="gap-4 w-full">
         {[
-          { icon: "checklist" as const, text: "Organize tasks & priorities" },
-          { icon: "calendar-today" as const, text: "Plan your day with events" },
-          { icon: "auto-awesome" as const, text: "AI-powered suggestions" },
+          { icon: "checklist" as const, text: "auth.illTasks" },
+          { icon: "calendar-today" as const, text: "auth.illCalendar" },
+          { icon: "auto-awesome" as const, text: "auth.illAi" },
         ].map((item) => (
           <View key={item.text} className="flex-row items-center gap-3">
             <View className="w-8 h-8 rounded-lg bg-surface-container-lowest items-center justify-center">
               <MaterialIcons name={item.icon} size={16} color="#888888" />
             </View>
             <Text className="text-on-surface-variant font-body text-body-md flex-1">
-              {item.text}
+              {t(item.text)}
             </Text>
           </View>
         ))}

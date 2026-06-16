@@ -23,6 +23,7 @@ import {
   type ChangePasswordFormData,
   type ChangeFullNameFormData,
 } from "@/lib/schemas";
+import { useT } from "@/lib/i18n";
 
 type SettingsTab = "account" | "ai";
 
@@ -31,8 +32,8 @@ const TABS: {
   label: string;
   icon: keyof typeof MaterialIcons.glyphMap;
 }[] = [
-  { id: "account", label: "Account", icon: "person" },
-  { id: "ai", label: "AI Personal", icon: "psychology" },
+  { id: "account", label: "profile.tabAccount", icon: "person" },
+  { id: "ai", label: "profile.tabAi", icon: "psychology" },
 ];
 
 function isSettingsTab(value: string | undefined): value is SettingsTab {
@@ -41,6 +42,7 @@ function isSettingsTab(value: string | undefined): value is SettingsTab {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const t = useT();
   const params = useLocalSearchParams<{ tab?: string }>();
   const { user, setUser, logout } = useAuthStore();
   const { mode } = useThemeStore();
@@ -62,7 +64,7 @@ export default function ProfileScreen() {
       await setDefaultWorkspace(id);
     } catch (e: any) {
       setError(
-        e.response?.data?.message ?? "Nie udało się ustawić domyślnego workspace",
+        e.response?.data?.message ?? t("profile.errSetDefaultWs"),
       );
     } finally {
       setDefaultWsLoading(null);
@@ -97,7 +99,7 @@ export default function ProfileScreen() {
       await userApi.changeFullName(data);
       if (user) setUser({ ...user, fullName: data.newFullName });
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Błąd zmiany imienia");
+      setError(e.response?.data?.message ?? t("profile.errNameChange"));
     } finally {
       setNameLoading(false);
     }
@@ -110,7 +112,7 @@ export default function ProfileScreen() {
       await identityApi.changePassword(data.oldPassword, data.newPassword);
       passForm.reset();
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Błąd zmiany hasła");
+      setError(e.response?.data?.message ?? t("profile.errPassChange"));
     } finally {
       setPassLoading(false);
     }
@@ -118,17 +120,19 @@ export default function ProfileScreen() {
 
   function handleDeleteAccount() {
     if (Platform.OS === "web") {
-      const confirmed = window.confirm(
-        "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna.",
-      );
+      const confirmed = window.confirm(t("profile.deleteConfirm"));
       if (confirmed) performDeleteAccount();
     } else {
       Alert.alert(
-        "Usuń konto",
-        "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna.",
+        t("profile.deleteAccount"),
+        t("profile.deleteConfirm"),
         [
-          { text: "Anuluj", style: "cancel" },
-          { text: "Usuń", style: "destructive", onPress: performDeleteAccount },
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("common.delete"),
+            style: "destructive",
+            onPress: performDeleteAccount,
+          },
         ],
       );
     }
@@ -140,7 +144,7 @@ export default function ProfileScreen() {
       await userApi.deleteAccount();
       logout();
     } catch (e: any) {
-      setError(e.response?.data?.message ?? "Błąd usuwania konta");
+      setError(e.response?.data?.message ?? t("profile.errDelete"));
     } finally {
       setDeleteLoading(false);
     }
@@ -164,10 +168,10 @@ export default function ProfileScreen() {
         >
           <View>
             <Text className="text-on-surface font-headline text-headline-md">
-              Settings
+              {t("profile.title")}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md mt-1">
-              Manage your profile, appearance, and personal AI configurations.
+              {t("profile.subtitle")}
             </Text>
           </View>
 
@@ -198,7 +202,7 @@ export default function ProfileScreen() {
                       active ? "text-on-primary" : "text-on-surface-variant"
                     }`}
                   >
-                    {tab.label}
+                    {t(tab.label)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -225,7 +229,7 @@ export default function ProfileScreen() {
                   name="newFullName"
                   render={({ field: { onChange, value } }) => (
                     <Input
-                      label="Full Name"
+                      label={t("profile.fullName")}
                       value={value}
                       onChangeText={onChange}
                       error={nameForm.formState.errors.newFullName?.message}
@@ -234,7 +238,7 @@ export default function ProfileScreen() {
                 />
                 <View className="mt-4">
                   <Button
-                    label="Save Changes"
+                    label={t("profile.saveChanges")}
                     loading={nameLoading}
                     onPress={nameForm.handleSubmit(handleNameChange)}
                   />
@@ -244,10 +248,10 @@ export default function ProfileScreen() {
               {workspaces.length > 0 && (
                 <Card variant="elevated">
                   <Text className="text-on-surface font-headline text-title-lg mb-1">
-                    Default Workspace
+                    {t("profile.defaultWorkspace")}
                   </Text>
                   <Text className="text-on-surface-variant font-body text-body-md mb-4">
-                    Choose the workspace you land on when you open the app.
+                    {t("profile.defaultWorkspaceDesc")}
                   </Text>
                   <View className="gap-2">
                     {workspaces.map((ws) => {
@@ -303,10 +307,10 @@ export default function ProfileScreen() {
 
               <Card variant="elevated">
                 <Text className="text-on-surface font-headline text-title-lg mb-1">
-                  Change Password
+                  {t("profile.changePassword")}
                 </Text>
                 <Text className="text-on-surface-variant font-body text-body-md mb-4">
-                  Update your password to keep your account secure.
+                  {t("profile.changePasswordDesc")}
                 </Text>
 
                 <View className="gap-4">
@@ -315,7 +319,7 @@ export default function ProfileScreen() {
                     name="oldPassword"
                     render={({ field: { onChange, value } }) => (
                       <Input
-                        label="Current Password"
+                        label={t("profile.currentPassword")}
                         secureToggle
                         secureTextEntry
                         value={value}
@@ -329,7 +333,7 @@ export default function ProfileScreen() {
                     name="newPassword"
                     render={({ field: { onChange, value } }) => (
                       <Input
-                        label="New Password"
+                        label={t("profile.newPassword")}
                         secureToggle
                         secureTextEntry
                         value={value}
@@ -343,7 +347,7 @@ export default function ProfileScreen() {
                     name="confirmPassword"
                     render={({ field: { onChange, value } }) => (
                       <Input
-                        label="Confirm New Password"
+                        label={t("profile.confirmNewPassword")}
                         secureToggle
                         secureTextEntry
                         value={value}
@@ -358,7 +362,7 @@ export default function ProfileScreen() {
                 <View className="mt-4">
                   <Button
                     variant="outline"
-                    label="Update Password"
+                    label={t("profile.updatePassword")}
                     loading={passLoading}
                     onPress={passForm.handleSubmit(handlePasswordChange)}
                   />
@@ -376,7 +380,7 @@ export default function ProfileScreen() {
                   color="#ba1a1a"
                 />
                 <Text className="text-error font-body text-sm">
-                  {deleteLoading ? "Deleting account..." : "Delete account"}
+                  {deleteLoading ? t("profile.deleting") : t("profile.deleteAccount")}
                 </Text>
               </TouchableOpacity>
             </View>

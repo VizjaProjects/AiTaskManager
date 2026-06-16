@@ -5,6 +5,7 @@ import { PageLayout } from "@/components/organisms";
 import { Button, Card, EmptyState } from "@/components/atoms";
 import { useTasks, useEvents, useAiProposals } from "@/lib/hooks";
 import { isOverdue, isDueToday, formatDateTime } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 interface Notification {
   id: string;
@@ -17,6 +18,7 @@ interface Notification {
 }
 
 export default function NotificationsScreen() {
+  const tr = useT();
   const { data: tasks, refetch: refetchTasks } = useTasks();
   const { data: events, refetch: refetchEvents } = useEvents();
   const { data: proposals, refetch: refetchProposals } = useAiProposals();
@@ -30,7 +32,7 @@ export default function NotificationsScreen() {
         notifs.push({
           id: `overdue-${t.taskId}`,
           type: "overdue",
-          title: "Zadanie przeterminowane",
+          title: tr("notif.overdue"),
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "warning",
@@ -40,7 +42,7 @@ export default function NotificationsScreen() {
         notifs.push({
           id: `today-${t.taskId}`,
           type: "due_today",
-          title: "Zadanie na dziś",
+          title: tr("notif.dueToday"),
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "schedule",
@@ -57,7 +59,7 @@ export default function NotificationsScreen() {
         notifs.push({
           id: `event-${e.eventId}`,
           type: "event_soon",
-          title: "Nadchodzące wydarzenie",
+          title: tr("notif.eventSoon"),
           description: e.title,
           timestamp: e.startDateTime,
           icon: "event",
@@ -71,8 +73,8 @@ export default function NotificationsScreen() {
       notifs.push({
         id: `ai-${p.taskId ?? i}`,
         type: "ai_proposal",
-        title: "Propozycja AI",
-        description: p.title ?? "Nowa propozycja zadania od AI",
+        title: tr("notif.aiProposal"),
+        description: p.title ?? tr("notif.aiProposalDesc"),
         timestamp: new Date().toISOString(),
         icon: "auto-awesome",
         color: "#006b58",
@@ -95,8 +97,8 @@ export default function NotificationsScreen() {
     <PageLayout showSearch={false}>
       {notifications.length === 0 ? (
         <EmptyState
-          title="Brak powiadomień"
-          description="Jesteś na bieżąco — nie masz żadnych nowych powiadomień"
+          title={tr("notif.empty")}
+          description={tr("notif.emptyDesc")}
         />
       ) : (
         <ScrollView
