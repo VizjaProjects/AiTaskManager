@@ -22,8 +22,8 @@ public sealed class WorkspaceTaskInitializer(
         {
             WorkTaskStatus.CreateDefault(workspaceId, createdBy, "To Do", "#3B82F6"),
             WorkTaskStatus.CreateDefault(workspaceId, createdBy, "In Progress", "#F59E0B"),
-            WorkTaskStatus.CreateDefault(workspaceId, createdBy, "Completed", "#10B981"),
-            WorkTaskStatus.CreateDefault(workspaceId, createdBy, "Cancelled", "#EF4444")
+            WorkTaskStatus.CreateDefault(workspaceId, createdBy, "Cancelled", "#EF4444"),
+            WorkTaskStatus.CreateDefault(workspaceId, createdBy, "Completed", "#10B981")
         };
 
         await statusRepository.AddRangeAsync(defaultStatuses, ct);

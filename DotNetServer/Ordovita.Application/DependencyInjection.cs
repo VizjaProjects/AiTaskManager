@@ -29,6 +29,8 @@ using Ordovita.Application.Note.SetNoteLinks;
 using Ordovita.Application.Note.UpdateNoteContent;
 using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
+using Ordovita.Application.Plan;
+using Ordovita.Application.Plan.CreatePlan;
 using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.ChangeSurveyVisibility;
 using Ordovita.Application.Surveys.CreateSurvey;
@@ -222,6 +224,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DeleteNoteCommand, Unit>, DeleteNoteHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceNotesQuery, IReadOnlyList<NoteDto>>, GetWorkspaceNotesHandler>();
 
+        services.AddScoped<ICommandHandler<CreatePlanCommand, PlanDto>, CreatePlanHandler>();
 
         return services;
     }

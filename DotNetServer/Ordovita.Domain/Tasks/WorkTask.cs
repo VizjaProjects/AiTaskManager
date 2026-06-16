@@ -133,7 +133,7 @@ public sealed class WorkTask : AggregateRoot<TaskId>
         UpdatedAt = DateTime.UtcNow;
         return Result.Success();
     }
-    
+
     public Result SetAssignees(IEnumerable<UserId> userIds)
     {
         var desired = userIds.ToHashSet();

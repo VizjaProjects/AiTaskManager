@@ -4,6 +4,7 @@ export { DashboardTaskCard } from "./DashboardTaskCard";
 export { NavItem } from "./NavItem";
 export { EventCard } from "./EventCard";
 export { SearchBar } from "./SearchBar";
+export { DashboardQuickActions } from "./DashboardQuickActions";
 export {
   LinkCheckboxModal,
   type LinkCheckboxItem,

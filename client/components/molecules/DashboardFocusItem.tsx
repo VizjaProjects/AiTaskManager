@@ -4,7 +4,8 @@ import type { Task, Category, CalendarEvent } from "@/lib/types";
 import { TaskPriority } from "@/lib/types";
 import { PriorityBadge, AiSuggestedBadge, Avatar, ColorBadge } from "../atoms";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
-import { useT } from "@/lib/i18n";
+import { useT, useLanguageStore } from "@/lib/i18n";
+import { resolveEventColor, eventColorWithAlpha } from "@/lib/utils/eventColors";
 
 interface DashboardFocusItemProps {
   task: Task;
@@ -53,7 +54,10 @@ interface DashboardEventItemProps {
 
 export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) {
   const t = useT();
+  const lang = useLanguageStore((s) => s.lang);
+  const locale = lang === "pl" ? "pl-PL" : "en-US";
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const eventColor = resolveEventColor(event);
   const start = new Date(event.startDateTime);
   const end = new Date(event.endDateTime);
   const isToday = (() => {
@@ -67,9 +71,9 @@ export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) 
 
   const dateLabel = isToday
     ? t("common.today")
-    : start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+    : start.toLocaleDateString(locale, { weekday: "short", month: "short", day: "numeric" });
 
-  const timeLabel = `${start.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}`;
+  const timeLabel = `${start.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}`;
 
   return (
     <TouchableOpacity
@@ -79,9 +83,9 @@ export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) 
     >
       <View
         className="w-10 h-10 rounded-xl border border-outline-variant items-center justify-center shrink-0"
-        style={{ backgroundColor: isDark ? "#3a2228" : "#fff0f0" }}
+        style={{ backgroundColor: eventColorWithAlpha(eventColor, isDark ? 0.25 : 0.12) }}
       >
-        <MaterialIcons name="event" size={18} color={isDark ? "#f87171" : "#e11d48"} />
+        <MaterialIcons name="event" size={18} color={eventColor} />
       </View>
       <View className="flex-1 min-w-0 gap-0.5">
         <Text className="font-headline text-on-surface text-body-md" numberOfLines={1}>

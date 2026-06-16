@@ -33,6 +33,13 @@ import { ProposedBy, EventStatus } from "@/lib/types";
 import type { CalendarEvent, EditEventRequest } from "@/lib/types";
 import { useThemeStore } from "@/lib/stores";
 import { parseApiDateTime, toLocalDateTimeString } from "@/lib/utils";
+import {
+  DEFAULT_EVENT_COLOR,
+  EVENT_COLOR_OPTIONS,
+  eventColorWithAlpha,
+  eventPillStyle,
+  resolveEventColor,
+} from "@/lib/utils/eventColors";
 import { useQueryClient } from "@tanstack/react-query";
 
 const WEEK_DAYS_SHORT = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
@@ -55,41 +62,6 @@ function formatHourLabel(h: number) {
   const hh = Math.floor(h);
   const mm = Math.round((h % 1) * 60);
   return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
-}
-
-const EVENT_COLORS = [
-  "#dc2626",
-  "#f59e0b",
-  "#3b82f6",
-  "#10b981",
-  "#a855f7",
-  "#006b58",
-];
-
-function getEventColor(event: CalendarEvent, index: number): string {
-  if (event.status === EventStatus.PROPOSED) return "#f59e0b";
-  return EVENT_COLORS[index % EVENT_COLORS.length];
-}
-
-const MONTH_PILL_PALETTE = [
-  { bg: "#fef3c7", border: "#fcd34d", text: "#92400e" },
-  { bg: "#dcfce7", border: "#86efac", text: "#166534" },
-  { bg: "#ede9fe", border: "#c4b5fd", text: "#5b21b6" },
-  { bg: "#ffe4e6", border: "#fda4af", text: "#9f1239" },
-  { bg: "#dbeafe", border: "#93c5fd", text: "#1e40af" },
-];
-
-const MONTH_PILL_PALETTE_DARK = [
-  { bg: "#3a3020", border: "#a16207", text: "#fcd34d" },
-  { bg: "#1a3028", border: "#15803d", text: "#86efac" },
-  { bg: "#2a2040", border: "#7c3aed", text: "#c4b5fd" },
-  { bg: "#3a2028", border: "#be123c", text: "#fda4af" },
-  { bg: "#1a2840", border: "#1d4ed8", text: "#93c5fd" },
-];
-
-function getMonthPillStyle(index: number, isDark: boolean) {
-  const palette = isDark ? MONTH_PILL_PALETTE_DARK : MONTH_PILL_PALETTE;
-  return palette[index % palette.length];
 }
 
 function formatCalendarTitle(
@@ -365,6 +337,7 @@ function EditCalendarEventModal({
   const [endHour, setEndHour] = useState("10");
   const [endMin, setEndMin] = useState("00");
   const [allDay, setAllDay] = useState(event.allDay);
+  const [color, setColor] = useState(resolveEventColor(event));
   const [noteLinkOpen, setNoteLinkOpen] = useState(false);
   const [draftLinkedNoteIds, setDraftLinkedNoteIds] = useState<string[]>([]);
 
@@ -426,6 +399,7 @@ function EditCalendarEventModal({
     if (visible) {
       setTitle(event.title);
       setAllDay(event.allDay);
+      setColor(resolveEventColor(event));
       const s = parseApiDateTime(event.startDateTime);
       const e = parseApiDateTime(event.endDateTime);
       setEventDate(new Date(s.getFullYear(), s.getMonth(), s.getDate()));
@@ -452,6 +426,7 @@ function EditCalendarEventModal({
           endDateTime: toLocalDateTimeString(end),
           allDay,
           status: event.status,
+          color,
         },
       },
       { onSuccess: onClose },
@@ -570,6 +545,25 @@ function EditCalendarEventModal({
               </TouchableOpacity>
 
               <View className="gap-2">
+                <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
+                  Kolor
+                </Text>
+                <View className="flex-row flex-wrap gap-2">
+                  {EVENT_COLOR_OPTIONS.map((c) => (
+                    <TouchableOpacity
+                      key={c}
+                      onPress={() => setColor(c)}
+                      className="w-8 h-8 rounded-full border-2"
+                      style={{
+                        backgroundColor: c,
+                        borderColor: color === c ? "#111827" : "transparent",
+                      }}
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <View className="gap-2">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
                     Powiązane notatki
@@ -685,6 +679,12 @@ export default function CalendarScreen() {
     }
   }, [params.eventId, events]);
 
+  useEffect(() => {
+    if (params.create === "1") {
+      setShowCreate(true);
+    }
+  }, [params.create]);
+
   const isDark = themeMode === "dark";
   const gridBorderColor = isDark ? "#464560" : "#c7c4d8";
   const gridLineColor = isDark ? "#313448" : "#e0dff0";
@@ -705,6 +705,7 @@ export default function CalendarScreen() {
 
   const displayDaysRef = useRef<Date[]>([]);
   const [gridReady, setGridReady] = useState(0);
+  const gridLayoutSyncedRef = useRef(false);
   const dragEndRef = useRef<
     ((colIdx: number, startH: number, endH: number) => void) | null
   >(null);
@@ -770,6 +771,11 @@ export default function CalendarScreen() {
     return viewType === "day" ? [selectedDate] : weekDays;
   }, [isMobile, mobileView, viewType, selectedDate, weekDays]);
   displayDaysRef.current = displayDays;
+
+  useEffect(() => {
+    gridLayoutSyncedRef.current = false;
+    setGridReady(0);
+  }, [viewType, weekStart.toISOString(), displayDays.length]);
 
   const weekNumber = useMemo(() => {
     const d = new Date(selectedDate);
@@ -1137,6 +1143,7 @@ export default function CalendarScreen() {
               endDateTime: toLocalDateTimeString(newEnd),
               allDay: evt.allDay,
               status: evt.status,
+              color: resolveEventColor(evt),
             },
           });
         }
@@ -1173,6 +1180,7 @@ export default function CalendarScreen() {
               endDateTime: toLocalDateTimeString(newEnd),
               allDay: evt.allDay,
               status: evt.status,
+              color: resolveEventColor(evt),
             },
           });
         }
@@ -1356,8 +1364,8 @@ export default function CalendarScreen() {
                     </Text>
                   )}
                 </View>
-                {dayEvents.slice(0, 3).map((evt, evtIdx) => {
-                  const pill = getMonthPillStyle(evtIdx, isDark);
+                {dayEvents.slice(0, 3).map((evt) => {
+                  const pill = eventPillStyle(resolveEventColor(evt), isDark);
                   return (
                     <TouchableOpacity
                       key={evt.eventId}
@@ -1572,14 +1580,14 @@ export default function CalendarScreen() {
               }}
             >
               {allDayEvts.map((evt) => {
-                const color = getEventColor(evt, colIdx);
+                const color = resolveEventColor(evt);
                 return (
                   <TouchableOpacity
                     key={evt.eventId}
                     onPress={() => setEditingEvent(evt)}
                     className="rounded px-1.5 py-0.5"
                     style={{
-                      backgroundColor: `${color}25`,
+                      backgroundColor: eventColorWithAlpha(color, 0.2),
                       borderLeftWidth: 3,
                       borderLeftColor: color,
                     }}
@@ -1648,7 +1656,11 @@ export default function CalendarScreen() {
           {/* Single overlay: events + drag interaction */}
           <View
             ref={gridRef}
-            onLayout={() => setGridReady((n) => n + 1)}
+            onLayout={() => {
+              if (gridLayoutSyncedRef.current) return;
+              gridLayoutSyncedRef.current = true;
+              setGridReady(1);
+            }}
             dataSet={{ calendarGrid: "true" }}
             pointerEvents={Platform.OS === "web" ? "auto" : "box-none"}
             className="absolute flex-row"
@@ -1671,7 +1683,7 @@ export default function CalendarScreen() {
                 >
                   {laidOut.map(({ event: evt, colIdx: evtCol, totalCols }) => {
                     const pos = getEventPosition(evt);
-                    const color = getEventColor(evt, colIdx);
+                    const color = resolveEventColor(evt);
                     const isProposed = evt.status === EventStatus.PROPOSED;
                     const startTime = new Date(
                       evt.startDateTime,
@@ -1702,8 +1714,8 @@ export default function CalendarScreen() {
                       backgroundColor:
                         draggingEventId === evt.eventId ||
                         resizingEventId === evt.eventId
-                          ? `${color}10`
-                          : `${color}20`,
+                          ? eventColorWithAlpha(color, 0.08)
+                          : eventColorWithAlpha(color, 0.18),
                       borderLeftWidth: 3,
                       borderLeftColor: color,
                       borderStyle: isProposed

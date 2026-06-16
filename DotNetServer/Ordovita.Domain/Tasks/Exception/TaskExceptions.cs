@@ -18,14 +18,13 @@ public static class TaskExceptions
 
     public static readonly Error NotPending =
         Error.Validation("Task.NotPending", "Task is not a pending AI proposal.");
-    
+
     public static readonly Error AlreadyAssigned =
         Error.Validation("Task.AlreadyAssigned", "You cannot add user who  is already assigned.");
 
     public static readonly Error AssigneeNotWorkspaceMember =
         Error.Validation("Task.AssigneeNotWorkspaceMember",
             "You can only assign users who are members of the task's workspace.");
-
 }
 
 public static class EventExceptions
@@ -35,6 +34,9 @@ public static class EventExceptions
 
     public static readonly Error MissingTitle =
         Error.Validation("Event.MissingTitle", "Event title is required.");
+
+    public static readonly Error MissingColor =
+        Error.Validation("Event.MissingColor", "Event color is required.");
 
     public static readonly Error MissingDates =
         Error.Validation("Event.MissingDates", "Event start and end date times are required.");

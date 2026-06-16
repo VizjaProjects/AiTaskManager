@@ -87,7 +87,7 @@ public sealed class EditWorkTaskHandler(
             else
             {
                 var eventEdit = existingEvent.Edit(
-                    command.Title, start, command.DueDateTime.Value, false, EventStatus.ACCEPTED);
+                    command.Title, start, command.DueDateTime.Value, false, EventStatus.ACCEPTED, existingEvent.Color);
                 if (eventEdit.IsFailure)
                     return Result.Failure<EditWorkTaskResult>(eventEdit.Error);
             }

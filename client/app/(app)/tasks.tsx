@@ -38,6 +38,7 @@ import {
 } from "@/lib/hooks";
 import { TaskPriority, TaskSource } from "@/lib/types";
 import type { Task, Category, TaskStatus } from "@/lib/types";
+import { sortStatusesByDefaultOrder } from "@/lib/utils/taskStatusOrder";
 import {
   PRIORITY_COLORS,
   PRIORITY_COLORS_DARK,
@@ -540,10 +541,20 @@ export default function TasksScreen() {
     }
   }, [params.taskId, tasks]);
 
+  useEffect(() => {
+    if (params.create === "1") {
+      setShowCreate(true);
+    }
+  }, [params.create]);
+
   const orderedStatuses = useMemo(() => {
     if (!statuses) return [];
-    if (columnOrder.length === 0) return statuses;
-    const statusMap = new Map(statuses.map((s) => [s.statusId, s]));
+    const base =
+      columnOrder.length === 0
+        ? sortStatusesByDefaultOrder(statuses)
+        : statuses;
+    if (columnOrder.length === 0) return base;
+    const statusMap = new Map(base.map((s) => [s.statusId, s]));
     const ordered: TaskStatus[] = [];
     for (const id of columnOrder) {
       const s = statusMap.get(id);

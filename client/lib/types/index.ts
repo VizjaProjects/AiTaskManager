@@ -101,6 +101,7 @@ export interface CalendarEvent {
   eventId: UUID;
   title: string;
   taskId: UUID | null;
+  color: string;
   startDateTime: string;
   endDateTime: string;
   allDay: boolean;
@@ -254,6 +255,7 @@ export interface EditEventRequest {
   endDateTime: string;
   allDay: boolean;
   status: EventStatus;
+  color: string;
 }
 
 export interface GenerateAiPlanRequest {

@@ -15,6 +15,7 @@ import {
   StatCard,
   DashboardTaskCard,
   DashboardEventItem,
+  DashboardQuickActions,
 } from "@/components/molecules";
 import { StatCardSkeleton } from "@/components/atoms";
 import {
@@ -26,10 +27,12 @@ import {
   useSurveyGate,
 } from "@/lib/hooks";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { useT, useLanguageStore } from "@/lib/i18n";
 import type { Category } from "@/lib/types";
 
 function SurveyBanner() {
   const router = useRouter();
+  const t = useT();
   const { hasPendingSurvey, isLoading } = useSurveyGate();
 
   if (isLoading || !hasPendingSurvey) return null;
@@ -38,17 +41,19 @@ function SurveyBanner() {
     <View className="rounded-2xl p-5 flex-row items-center gap-4 bg-surface-container-lowest border border-outline-variant">
       <View className="flex-1">
         <Text className="text-on-surface font-headline text-title-lg">
-          Weekly AI Setup Needed
+          {t("dash.surveyTitle")}
         </Text>
         <Text className="text-on-surface-variant font-body text-body-md mt-1">
-          Take a quick 2-minute survey to optimize your tasks for the week.
+          {t("dash.surveyDesc")}
         </Text>
       </View>
       <TouchableOpacity
         onPress={() => router.push("/(app)/survey-onboarding" as never)}
         className="bg-action px-5 py-2.5 rounded-xl"
       >
-        <Text className="text-on-action font-headline text-sm">Start Survey</Text>
+        <Text className="text-on-action font-headline text-sm">
+          {t("dash.startSurvey")}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -80,8 +85,18 @@ function isDoneStatus(statusId: string, statuses: { statusId: string; name: stri
   );
 }
 
+function greetingKey(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "dash.greetingMorning";
+  if (hour < 18) return "dash.greetingAfternoon";
+  return "dash.greetingEvening";
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
+  const t = useT();
+  const lang = useLanguageStore((s) => s.lang);
+  const locale = lang === "pl" ? "pl-PL" : "en-US";
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
   const isXl = Platform.OS === "web" && width >= 1280;
@@ -166,8 +181,8 @@ export default function DashboardScreen() {
   const isLoading = tasksLoading || eventsLoading;
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const iconMuted = isDark ? "#a0a0a5" : "#6b7280";
-  const firstName = user?.fullName?.split(" ")[0] ?? "there";
-  const dateLabel = new Date().toLocaleDateString("en-US", {
+  const firstName = user?.fullName?.split(" ")[0] ?? (lang === "pl" ? "użytkowniku" : "there");
+  const dateLabel = new Date().toLocaleDateString(locale, {
     weekday: "long",
     month: "short",
     day: "numeric",
@@ -185,17 +200,25 @@ export default function DashboardScreen() {
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
             <Text className="text-on-surface font-headline text-headline-md">
-              Good morning, {firstName}.
+              {t(greetingKey(), { name: firstName })}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md mt-1">
-              You have {stats.tasksToday} tasks to complete today and{" "}
-              {stats.upcomingEvents} upcoming events.
+              {t("dash.summary", {
+                tasks: stats.tasksToday,
+                events: stats.upcomingEvents,
+              })}
             </Text>
           </View>
           <Text className="text-on-surface-variant font-body text-body-md hidden md:flex">
             {dateLabel}
           </Text>
         </View>
+
+        <DashboardQuickActions
+          onAddTask={() => router.push("/(app)/tasks?create=1" as never)}
+          onAddEvent={() => router.push("/(app)/calendar?create=1" as never)}
+          onAddNote={() => router.push("/(app)/notes?create=1" as never)}
+        />
 
         <View className="flex-row flex-wrap gap-3">
           {isLoading ? (
@@ -207,16 +230,16 @@ export default function DashboardScreen() {
           ) : (
             <>
               <View className="flex-1 min-w-[120px]">
-                <StatCard label="Tasks Today" value={stats.tasksToday} icon="task-alt" />
+                <StatCard label={t("dash.tasksToday")} value={stats.tasksToday} icon="task-alt" />
               </View>
               <View className="flex-1 min-w-[120px]">
-                <StatCard label="Upcoming Events" value={stats.upcomingEvents} icon="event" tone="rose" />
+                <StatCard label={t("dash.upcomingEvents")} value={stats.upcomingEvents} icon="event" tone="rose" />
               </View>
               <View className="flex-1 min-w-[120px]">
-                <StatCard label="Pending AI" value={stats.pendingAi} icon="auto-awesome" tone="amber" />
+                <StatCard label={t("dash.pendingAi")} value={stats.pendingAi} icon="auto-awesome" tone="amber" />
               </View>
               <View className="flex-1 min-w-[120px]">
-                <StatCard label="This Week" value={stats.thisWeek} icon="date-range" tone="emerald" />
+                <StatCard label={t("dash.thisWeek")} value={stats.thisWeek} icon="date-range" tone="emerald" />
               </View>
             </>
           )}
@@ -230,12 +253,12 @@ export default function DashboardScreen() {
               <View className="flex-row items-center gap-2">
                 <MaterialIcons name="checklist" size={18} color={iconMuted} />
                 <Text className="font-headline text-on-surface text-title-lg">
-                  To Do
+                  {t("dash.todo")}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => router.push("/(app)/tasks" as never)}>
                 <Text className="text-on-surface-variant font-headline text-sm">
-                  View All
+                  {t("dash.viewAll")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -246,17 +269,17 @@ export default function DashboardScreen() {
                   <MaterialIcons name="check-circle" size={26} color="#10B981" />
                 </View>
                 <Text className="text-on-surface font-headline text-body-md">
-                  All clear
+                  {t("dash.allClear")}
                 </Text>
                 <Text className="text-on-surface-variant font-body text-xs text-center px-6">
-                  No open tasks. Plan your day with AI.
+                  {t("dash.allClearDesc")}
                 </Text>
                 <TouchableOpacity
                   onPress={() => router.push("/(app)/ai-task" as never)}
                   className="mt-1 bg-action px-4 py-2 rounded-lg"
                 >
                   <Text className="text-on-action font-headline text-xs">
-                    Plan with AI
+                    {t("dash.planWithAi")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -300,12 +323,12 @@ export default function DashboardScreen() {
               <View className="flex-row items-center gap-2">
                 <MaterialIcons name="event" size={18} color="#dc2c4f" />
                 <Text className="font-headline text-on-surface text-title-lg">
-                  Schedule
+                  {t("dash.schedule")}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => router.push("/(app)/calendar" as never)}>
                 <Text className="text-on-surface-variant font-headline text-sm">
-                  Calendar
+                  {t("dash.calendar")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -317,14 +340,14 @@ export default function DashboardScreen() {
                     <MaterialIcons name="event-available" size={26} color="#cccccc" />
                   </View>
                   <Text className="text-on-surface-variant font-body text-sm text-center">
-                    No upcoming events
+                    {t("dash.noUpcomingEvents")}
                   </Text>
                   <TouchableOpacity
-                    onPress={() => router.push("/(app)/calendar" as never)}
+                    onPress={() => router.push("/(app)/calendar?create=1" as never)}
                     className="mt-1"
                   >
                     <Text className="text-on-surface-variant font-headline text-xs">
-                      Add event
+                      {t("dash.addEvent")}
                     </Text>
                   </TouchableOpacity>
                 </View>

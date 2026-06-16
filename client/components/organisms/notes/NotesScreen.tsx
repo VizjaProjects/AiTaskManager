@@ -79,7 +79,7 @@ export function NotesScreen() {
   const enqueueAiPlanningRequest = useAiPlanningRequestStore((s) => s.enqueue);
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const router = useRouter();
-  const params = useLocalSearchParams<{ noteId?: string }>();
+  const params = useLocalSearchParams<{ noteId?: string; create?: string }>();
 
   // Larger, device-aware base font so notes read comfortably on phones.
   const editorFontSize = Platform.OS !== "web" ? 19 : width < 768 ? 18.5 : 17.5;
@@ -261,6 +261,15 @@ export function NotesScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.noteId, notes]);
 
+  const handledCreateParamRef = useRef(false);
+  useEffect(() => {
+    if (params.create !== "1" || handledCreateParamRef.current) return;
+    handledCreateParamRef.current = true;
+    void handleCreateNote();
+    router.setParams({ create: undefined } as never);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.create]);
+
   useEffect(() => {
     return () => {
       if (contentTimer.current) clearTimeout(contentTimer.current);
@@ -275,7 +284,7 @@ export function NotesScreen() {
     setSelectedNoteId(null);
     setEditorOpen(false);
     setCurrentFolderId(null);
-    handledNoteParamRef.current = null;
+    handledCreateParamRef.current = false;
   }, [activeWorkspaceId]);
 
   useEffect(() => {

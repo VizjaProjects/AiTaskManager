@@ -1,6 +1,7 @@
 using Ordovita.Domain.Common;
 using Ordovita.Domain.Identity.Event;
 using Ordovita.Domain.Identity.Exception;
+using Ordovita.Domain.Plan;
 using Ordovita.Domain.Workspace;
 
 namespace Ordovita.Domain.Identity;
@@ -17,6 +18,8 @@ public sealed class DomainUser : AggregateRoot<UserId>
     public DateTime EmailVerificationAt { get; private set; }
     public string AspIdentityUserId { get; private set; }
     public WorkspaceId? DefaultWorkspaceId { get; private set; }
+
+    public PlanId PlanId { get; private set; }
 
     private DomainUser()
     {

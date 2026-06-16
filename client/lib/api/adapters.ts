@@ -12,6 +12,7 @@ import {
   type TaskStatus,
 } from "../types";
 import { parseApiDateTime, toLocalDateTimeString } from "../utils";
+import { DEFAULT_EVENT_COLOR } from "../utils/eventColors";
 
 const PRIORITY_BY_NUMBER: Record<number, TaskPriority> = {
   0: TaskPriority.LOW,
@@ -97,6 +98,7 @@ export function mapEventDto(raw: Record<string, unknown>): CalendarEvent {
     eventId: raw.eventId as string,
     title: raw.title as string,
     taskId: (raw.taskId as string) ?? null,
+    color: (raw.color as string) || DEFAULT_EVENT_COLOR,
     startDateTime: toLocalDateTimeString(
       parseApiDateTime(raw.startDateTime as string),
     ),
@@ -119,6 +121,7 @@ export function mapPendingEventDto(
     eventId: raw.eventId as string,
     title: raw.title as string,
     taskId: (raw.taskId as string) ?? null,
+    color: (raw.color as string) || DEFAULT_EVENT_COLOR,
     startDateTime: toLocalDateTimeString(
       parseApiDateTime(raw.startDateTime as string),
     ),

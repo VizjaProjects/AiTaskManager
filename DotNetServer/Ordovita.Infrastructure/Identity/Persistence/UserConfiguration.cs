@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Ordovita.Domain.Identity;
+using Ordovita.Domain.Plan;
 using Ordovita.Domain.Workspace;
 
 namespace Ordovita.Infrastructure.Identity.Persistence;
@@ -50,6 +51,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<DomainUser>
                     : null
             )
             .IsRequired(false);
+
+        builder.Property(u => u.PlanId).HasConversion(planId => planId.Value, value => PlanId.From(value)).IsRequired();
 
         builder.HasIndex(u => u.AspIdentityUserId).IsUnique();
 

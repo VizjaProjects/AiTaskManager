@@ -5,8 +5,11 @@ namespace Ordovita.Domain.Tasks;
 
 public sealed class CalendarEvent : Entity<EventId>
 {
+    public const string DefaultColor = "#4d41df";
+
     public TaskId? TaskId { get; private set; }
     public string Title { get; private set; } = null!;
+    public string Color { get; private set; } = DefaultColor;
     public DateTime StartDateTime { get; private set; }
     public DateTime EndDateTime { get; private set; }
     public bool AllDay { get; private set; }
@@ -40,6 +43,7 @@ public sealed class CalendarEvent : Entity<EventId>
             Id = EventId.New(),
             TaskId = taskId,
             Title = title,
+            Color = DefaultColor,
             StartDateTime = startDateTime,
             EndDateTime = endDateTime,
             AllDay = allDay,
@@ -56,12 +60,16 @@ public sealed class CalendarEvent : Entity<EventId>
         DateTime startDateTime,
         DateTime endDateTime,
         bool allDay,
-        EventStatus status)
+        EventStatus status,
+        string color)
     {
         if (string.IsNullOrWhiteSpace(title))
             return Result.Failure(EventExceptions.MissingTitle);
+        if (string.IsNullOrWhiteSpace(color))
+            return Result.Failure(EventExceptions.MissingColor);
 
         Title = title;
+        Color = color;
         StartDateTime = startDateTime;
         EndDateTime = endDateTime;
         AllDay = allDay;

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Ordovita.Infrastructure.Persistence;
 
@@ -11,9 +12,11 @@ using Ordovita.Infrastructure.Persistence;
 namespace Ordovita.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260616173434_AddEventColor")]
+    partial class AddEventColor
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -188,9 +191,6 @@ namespace Ordovita.Infrastructure.Migrations
                     b.Property<bool>("IsEnable")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<Guid>("PlanId")
-                        .HasColumnType("char(36)");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -362,36 +362,6 @@ namespace Ordovita.Infrastructure.Migrations
                     b.HasIndex("TaskId");
 
                     b.ToTable("Note.NoteTaskLinks", (string)null);
-                });
-
-            modelBuilder.Entity("Ordovita.Domain.Plan.Plan", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("char(36)");
-
-                    b.Property<int>("AiTaskLimit")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("tinyint(1)");
-
-                    b.Property<string>("PlanName")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("varchar(128)");
-
-                    b.Property<int>("PrivateWorkspaceLimit")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PublicWorkspaceLimit")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PlanName")
-                        .IsUnique();
-
-                    b.ToTable("Plan.Plan", (string)null);
                 });
 
             modelBuilder.Entity("Ordovita.Domain.Surveys.Questions.Question", b =>

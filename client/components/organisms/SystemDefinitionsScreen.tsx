@@ -20,8 +20,9 @@ import {
   useDeleteTaskStatus,
 } from "@/lib/hooks";
 import { DEFAULT_CATEGORY_COLORS, getCategoryDisplayColor } from "@/lib/utils";
+import { sortStatusesByDefaultOrder } from "@/lib/utils/taskStatusOrder";
 import { useThemeStore } from "@/lib/stores";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input, Button } from "../atoms";
 
 type DefinitionKind = "category" | "status";
@@ -135,6 +136,10 @@ export function SystemDefinitionsScreen() {
   const stacked = width < 768;
   const { data: categories = [] } = useCategories();
   const { data: statuses = [] } = useTaskStatuses();
+  const sortedStatuses = useMemo(
+    () => sortStatusesByDefaultOrder(statuses),
+    [statuses],
+  );
   const createCategory = useCreateCategory();
   const editCategory = useEditCategory();
   const deleteCategory = useDeleteCategory();
@@ -298,12 +303,12 @@ export function SystemDefinitionsScreen() {
               </TouchableOpacity>
             </View>
 
-            {statuses.length === 0 ? (
+            {sortedStatuses.length === 0 ? (
               <Text className="text-on-surface-variant font-body text-body-md py-4">
                 No statuses yet. Add workflow stages for your Kanban board.
               </Text>
             ) : (
-              statuses.map((status) => (
+              sortedStatuses.map((status) => (
                 <View
                   key={status.statusId}
                   className="flex-row items-center justify-between py-3 gap-2"

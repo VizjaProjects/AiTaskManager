@@ -16,7 +16,8 @@ public sealed record EditCalendarEventCommand(
     DateTime StartDateTime,
     DateTime EndDateTime,
     bool AllDay,
-    EventStatus Status) : ICommand<EditCalendarEventResult>;
+    EventStatus Status,
+    string Color) : ICommand<EditCalendarEventResult>;
 
 public sealed class EditCalendarEventHandler(
     WorkspaceAccessGuard accessGuard,
@@ -51,7 +52,7 @@ public sealed class EditCalendarEventHandler(
         }
 
         var editResult = calendarEvent.Edit(
-            command.Title, command.StartDateTime, command.EndDateTime, command.AllDay, command.Status);
+            command.Title, command.StartDateTime, command.EndDateTime, command.AllDay, command.Status, command.Color);
         if (editResult.IsFailure)
             return Result.Failure<EditCalendarEventResult>(editResult.Error);
 
@@ -67,6 +68,7 @@ public sealed class EditCalendarEventValidator : AbstractValidator<EditCalendarE
         RuleFor(x => x.WorkspaceId).NotEmpty();
         RuleFor(x => x.EventId).NotEmpty();
         RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Color).NotEmpty().MaximumLength(20);
         RuleFor(x => x.Status).IsInEnum();
     }
 }

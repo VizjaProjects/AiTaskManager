@@ -46,7 +46,8 @@ public sealed class AcceptAiEventHandler(
             command.StartDateTime,
             command.EndDateTime,
             command.AllDay,
-            EventStatus.ACCEPTED);
+            EventStatus.ACCEPTED,
+            calendarEvent.Color);
         if (editResult.IsFailure)
             return Result.Failure<AcceptAiEventResult>(editResult.Error);
 

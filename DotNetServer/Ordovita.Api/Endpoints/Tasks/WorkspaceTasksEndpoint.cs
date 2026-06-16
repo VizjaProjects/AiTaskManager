@@ -112,7 +112,7 @@ public static class WorkspaceTasksEndpoint
     {
         var result = await sender.Send(new EditCalendarEventCommand(
             workspaceId, request.EventId, request.Title, request.StartDateTime,
-            request.EndDateTime, request.AllDay, request.Status), ct);
+            request.EndDateTime, request.AllDay, request.Status, request.Color), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
@@ -225,7 +225,8 @@ public static class WorkspaceTasksEndpoint
         DateTime StartDateTime,
         DateTime EndDateTime,
         bool AllDay,
-        EventStatus Status);
+        EventStatus Status,
+        string Color);
 
     private sealed record CategoryRequest(string Name, string Color);
 

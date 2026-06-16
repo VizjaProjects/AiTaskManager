@@ -19,6 +19,7 @@ public sealed class CalendarEventConfiguration : IEntityTypeConfiguration<Calend
                 value => value.HasValue ? TaskId.From(value.Value) : null);
 
         builder.Property(e => e.Title).HasMaxLength(200).IsRequired();
+        builder.Property(e => e.Color).HasMaxLength(20).HasDefaultValue("#4d41df").IsRequired();
         builder.Property(e => e.StartDateTime).IsRequired();
         builder.Property(e => e.EndDateTime).IsRequired();
         builder.Property(e => e.AllDay).IsRequired();

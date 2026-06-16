@@ -131,7 +131,7 @@ public static class WorkspaceEndpoint
 
     private static WorkspaceVisibility ParseVisibility(string? value)
     {
-        return Enum.TryParse<WorkspaceVisibility>(value, ignoreCase: true, out var parsed)
+        return Enum.TryParse<WorkspaceVisibility>(value, true, out var parsed)
             ? parsed
             : WorkspaceVisibility.Private;
     }
