@@ -55,13 +55,13 @@ const PROVIDER_VISUALS: Record<string, ProviderVisual> = {
   },
   Custom: {
     icon: "settings-ethernet",
-    color: "#6B7280",
+    color: "#6b6965",
     bgColor: "#F3F4F6",
     label: "Custom",
   },
   Unknown: {
     icon: "help-outline",
-    color: "#9CA3AF",
+    color: "#9b9791",
     bgColor: "#F3F4F6",
     label: "Unknown",
   },

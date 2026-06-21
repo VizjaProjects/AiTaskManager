@@ -165,7 +165,7 @@ function EditEventModal({
               Edytuj propozycję wydarzenia
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#777587" />
+              <MaterialIcons name="close" size={24} color="#6b6965" />
             </TouchableOpacity>
           </View>
           <Input label="Tytuł" value={title} onChangeText={setTitle} />
@@ -188,7 +188,7 @@ function EditEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
                   style={NO_OUTLINE}
                 />
@@ -200,7 +200,7 @@ function EditEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
                   style={NO_OUTLINE}
                 />
@@ -218,7 +218,7 @@ function EditEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
                   style={NO_OUTLINE}
                 />
@@ -230,7 +230,7 @@ function EditEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-lowest rounded-xl h-12 w-16 text-center text-on-surface font-body text-base border border-outline-variant"
                   style={NO_OUTLINE}
                 />
@@ -244,7 +244,7 @@ function EditEventModal({
             <MaterialIcons
               name={allDay ? "check-box" : "check-box-outline-blank"}
               size={22}
-              color="#9ca3af"
+              color="#9b9791"
             />
             <Text className="text-on-surface font-body text-sm">
               Cały dzień
@@ -529,13 +529,13 @@ export default function AiTaskScreen() {
                   minHeight: 120,
                   padding: 16,
                   lineHeight: 22,
-                  borderColor: isListening ? "#ef4444" : undefined,
+                  borderColor: isListening ? "#C0392B" : undefined,
                   opacity: generatePlan.isPending ? 0.5 : 1,
                 },
                 NO_OUTLINE,
               ]}
               placeholder="e.g. Schedule a team sync tomorrow at 2 PM, prepare the Q3 report by Friday, and remind me to call Sarah."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#9b9791"
               multiline
               textAlignVertical="top"
               value={text}
@@ -560,13 +560,13 @@ export default function AiTaskScreen() {
                     style={{
                       opacity: generatePlan.isPending ? 0.4 : 1,
                       borderWidth: 1,
-                      borderColor: isListening ? "#ef4444" : UI.borderHover,
+                      borderColor: isListening ? "#C0392B" : UI.borderHover,
                     }}
                   >
                     <MaterialIcons
                       name={isListening ? "stop" : "mic"}
                       size={18}
-                      color={isListening ? "#ef4444" : "#6b7280"}
+                      color={isListening ? "#C0392B" : "#6b6965"}
                     />
                   </TouchableOpacity>
                 )}

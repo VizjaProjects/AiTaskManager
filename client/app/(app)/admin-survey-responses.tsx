@@ -156,7 +156,7 @@ export default function AdminSurveyResponsesPage() {
                   label="Status"
                   value={survey.isVisible ? "Active" : "Draft"}
                   icon={survey.isVisible ? "visibility" : "visibility-off"}
-                  iconColor={survey.isVisible ? "#006b58" : "#777587"}
+                  iconColor={survey.isVisible ? "#006b58" : "#6b6965"}
                 />
               </View>
             </View>

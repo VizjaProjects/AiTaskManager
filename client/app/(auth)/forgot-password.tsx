@@ -68,7 +68,7 @@ export default function ForgotPasswordScreen() {
                 <MaterialIcons
                   name={sent ? "mark-email-read" : "lock-reset"}
                   size={32}
-                  color="#4d41df"
+                  color="#5b4ee0"
                 />
               </View>
             </View>

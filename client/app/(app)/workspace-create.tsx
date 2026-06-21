@@ -109,7 +109,7 @@ export default function WorkspaceCreateScreen() {
                 <MaterialIcons
                   name={opt.icon}
                   size={20}
-                  color={selected ? "#4d41df" : "#777587"}
+                  color={selected ? "#5b4ee0" : "#6b6965"}
                 />
                 <View className="flex-1">
                   <Text className="text-on-surface font-body text-body-md">
@@ -124,7 +124,7 @@ export default function WorkspaceCreateScreen() {
                     selected ? "radio-button-checked" : "radio-button-unchecked"
                   }
                   size={20}
-                  color={selected ? "#4d41df" : "#9ca3af"}
+                  color={selected ? "#5b4ee0" : "#9b9791"}
                 />
               </TouchableOpacity>
             );

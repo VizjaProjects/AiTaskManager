@@ -113,7 +113,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
               />
             </View>
             <TouchableOpacity className="p-2 rounded-full" onPress={onClose}>
-              <MaterialIcons name="close" size={22} color="#777587" />
+              <MaterialIcons name="close" size={22} color="#6b6965" />
             </TouchableOpacity>
           </View>
 
@@ -167,7 +167,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
                     className="bg-surface-container-lowest rounded-2xl p-4 flex-row items-center gap-3 shadow-card"
                   >
                     <View className="w-9 h-9 rounded-full bg-primary/10 items-center justify-center">
-                      <MaterialIcons name="event" size={18} color="#4d41df" />
+                      <MaterialIcons name="event" size={18} color="#5b4ee0" />
                     </View>
                     <View className="flex-1 gap-0.5">
                       <Text className="text-on-surface font-headline text-sm">
@@ -180,7 +180,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
                     <MaterialIcons
                       name="chevron-right"
                       size={20}
-                      color="#777587"
+                      color="#6b6965"
                     />
                   </TouchableOpacity>
                 ))}

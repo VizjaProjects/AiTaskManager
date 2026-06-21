@@ -27,15 +27,15 @@ export interface EditorBridgeState {
 
 const EDITOR_THEMES = {
   light: {
-    "--editor-fg": "#1A1A1A",
-    "--editor-muted": "#6B7280",
-    "--editor-accent": "#4D41DF",
+    "--editor-fg": "#1a1a18",
+    "--editor-muted": "#6b6965",
+    "--editor-accent": "#5b4ee0",
     "--editor-highlight": "#FDE68A",
     "--editor-code-bg": "rgba(0,0,0,0.06)",
     "--editor-line": "rgba(0,0,0,0.15)",
     "--editor-table-border": "rgba(0,0,0,0.25)",
-    "--editor-selection": "rgba(77,65,223,0.24)",
-    "--schedule-bg": "#1A1A1A",
+    "--editor-selection": "rgba(91, 78, 224,0.24)",
+    "--schedule-bg": "#1a1a18",
     "--schedule-bg-hover": "#353535",
     "--schedule-fg": "#FFFFFF",
   },
@@ -50,7 +50,7 @@ const EDITOR_THEMES = {
     "--editor-selection": "rgba(184,173,255,0.34)",
     "--schedule-bg": "#F4F4F5",
     "--schedule-bg-hover": "#FFFFFF",
-    "--schedule-fg": "#1A1A1A",
+    "--schedule-fg": "#1a1a18",
   },
 } as const;
 
@@ -134,11 +134,11 @@ export function buildEditorHtml(options: {
   html[data-theme="dark"] #editor [style*="color: rgb(26, 26, 26)"],
   html[data-theme="dark"] #editor [style*="color: #000000"],
   html[data-theme="dark"] #editor [style*="color: #000"],
-  html[data-theme="dark"] #editor [style*="color: #1a1a1a"],
+  html[data-theme="dark"] #editor [style*="color: #1a1a18"],
   html[data-theme="dark"] #editor [style*="color: black"],
   html[data-theme="dark"] #editor font[color="#000000"],
   html[data-theme="dark"] #editor font[color="#000"],
-  html[data-theme="dark"] #editor font[color="#1a1a1a"],
+  html[data-theme="dark"] #editor font[color="#1a1a18"],
   html[data-theme="dark"] #editor font[color="black"] {
     color: var(--editor-fg) !important;
   }

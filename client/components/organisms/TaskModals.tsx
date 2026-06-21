@@ -404,7 +404,7 @@ export function TaskDetailModal({
                   }}
                   className="p-1"
                 >
-                  <MaterialIcons name="close" size={24} color="#777587" />
+                  <MaterialIcons name="close" size={24} color="#6b6965" />
                 </TouchableOpacity>
               </View>
             </View>
@@ -453,7 +453,7 @@ export function TaskDetailModal({
                 )}
                 {task.estimatedDuration > 0 && (
                   <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
-                    <MaterialIcons name="schedule" size={12} color="#9ca3af" />
+                    <MaterialIcons name="schedule" size={12} color="#9b9791" />
                     <Text className="text-on-surface-variant font-label text-xs">
                       {formatDuration(task.estimatedDuration)}
                     </Text>
@@ -464,7 +464,7 @@ export function TaskDetailModal({
                     <MaterialIcons
                       name="calendar-today"
                       size={12}
-                      color="#9ca3af"
+                      color="#9b9791"
                     />
                     <Text
                       className={`font-label text-xs ${
@@ -498,7 +498,7 @@ export function TaskDetailModal({
                       textAlignVertical="top"
                       value={description}
                       onChangeText={setDescription}
-                      placeholderTextColor="#777587"
+                      placeholderTextColor="#6b6965"
                       placeholder={t("taskModal.descPlaceholder")}
                     />
                   ) : (
@@ -739,7 +739,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name="schedule"
                         size={16}
-                        color="#777587"
+                        color="#6b6965"
                       />
                       <Text className="text-on-surface font-body text-sm">
                         {task.estimatedDuration > 0
@@ -778,7 +778,7 @@ export function TaskDetailModal({
                             showDuePicker ? "expand-less" : "calendar-today"
                           }
                           size={18}
-                          color="#777587"
+                          color="#6b6965"
                         />
                       </TouchableOpacity>
                       {showDuePicker && (
@@ -801,7 +801,7 @@ export function TaskDetailModal({
                               }
                               maxLength={2}
                               placeholder="HH"
-                              placeholderTextColor="#777587"
+                              placeholderTextColor="#6b6965"
                               keyboardType="numeric"
                               className="bg-surface-container-lowest rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm border border-outline-variant"
                               style={NO_OUTLINE}
@@ -816,7 +816,7 @@ export function TaskDetailModal({
                               }
                               maxLength={2}
                               placeholder="MM"
-                              placeholderTextColor="#777587"
+                              placeholderTextColor="#6b6965"
                               keyboardType="numeric"
                               className="bg-surface-container-lowest rounded-xl h-10 w-14 text-center text-on-surface font-body text-sm border border-outline-variant"
                               style={NO_OUTLINE}
@@ -841,7 +841,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name="calendar-today"
                         size={16}
-                        color="#777587"
+                        color="#6b6965"
                       />
                       <Text
                         className={`font-body text-sm ${
@@ -934,7 +934,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name="access-time"
                         size={16}
-                        color="#777587"
+                        color="#6b6965"
                       />
                       <Text className="text-on-surface font-body text-sm">
                         {formatDateTime(task.createdAt)}
@@ -971,7 +971,7 @@ export function TaskDetailModal({
                           <MaterialIcons
                             name="event"
                             size={20}
-                            color={isDark ? "#9b8cff" : "#4d41df"}
+                            color={isDark ? "#9b8cff" : "#5b4ee0"}
                           />
                         </View>
                         <View className="flex-1">
@@ -1062,7 +1062,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name="delete-outline"
                         size={18}
-                        color="#ef4444"
+                        color="#C0392B"
                       />
                       <Text className="text-error font-headline text-sm">
                         {t("common.delete")}
@@ -1094,7 +1094,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name="delete-outline"
                         size={18}
-                        color="#ef4444"
+                        color="#C0392B"
                       />
                       <Text className="text-error font-headline text-sm">
                         {t("common.delete")}
@@ -1109,7 +1109,7 @@ export function TaskDetailModal({
                       onPress={rejectAction.onPress}
                       className="flex-row items-center gap-1.5 mr-auto"
                     >
-                      <MaterialIcons name="close" size={18} color="#ef4444" />
+                      <MaterialIcons name="close" size={18} color="#C0392B" />
                       <Text className="text-error font-headline text-sm">
                         {rejectAction.label}
                       </Text>
@@ -1134,7 +1134,7 @@ export function TaskDetailModal({
                       onPress={rejectAction.onPress}
                       className="flex-row items-center justify-center gap-1.5 py-2"
                     >
-                      <MaterialIcons name="close" size={18} color="#ef4444" />
+                      <MaterialIcons name="close" size={18} color="#C0392B" />
                       <Text className="text-error font-headline text-sm">
                         {rejectAction.label}
                       </Text>
@@ -1164,7 +1164,7 @@ export function TaskDetailModal({
                     <MaterialIcons
                       name="delete-outline"
                       size={18}
-                      color="#ef4444"
+                      color="#C0392B"
                     />
                     <Text className="text-error font-headline text-sm">
                       {t("common.delete")}

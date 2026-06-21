@@ -2,7 +2,8 @@ import { useMemo } from "react";
 import { View, Text } from "react-native";
 import { MinimalSelectDropdown } from "./MinimalSelectDropdown";
 import { getShortModelName } from "@/lib/utils/llmSettings";
-import { UI } from "@/lib/utils/uiTokens";
+import { getUiTokens } from "@/lib/utils/uiTokens";
+import { useThemeStore } from "@/lib/stores";
 
 interface ModelSelectListProps {
   provider: string;
@@ -18,6 +19,8 @@ export function ModelSelectList({
   onChange,
   disabled = false,
 }: ModelSelectListProps) {
+  const isDark = useThemeStore((s) => s.mode === "dark");
+  const ui = getUiTokens(isDark);
   const options = useMemo(
     () =>
       models.map((model) => ({
@@ -32,15 +35,15 @@ export function ModelSelectList({
       <View className="gap-2.5">
         <Text
           className="font-label text-[10px] uppercase tracking-[0.14em]"
-          style={{ color: UI.textMuted }}
+          style={{ color: ui.textMuted }}
         >
           Model
         </Text>
         <View
           className="rounded-xl px-4 py-6 items-center"
-          style={{ borderWidth: 1, borderColor: UI.border, borderStyle: "dashed" }}
+          style={{ borderWidth: 1, borderColor: ui.border, borderStyle: "dashed" }}
         >
-          <Text className="font-body text-sm" style={{ color: UI.textMuted }}>
+          <Text className="font-body text-sm" style={{ color: ui.textMuted }}>
             No models for this provider.
           </Text>
         </View>

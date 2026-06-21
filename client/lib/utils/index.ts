@@ -50,31 +50,31 @@ export const PRIORITY_LABEL_SOFT: Record<TaskPriority, string> = {
 };
 
 export const DEFAULT_CATEGORY_COLORS = [
-  "#dc2626",
+  "#C0392B",
   "#f43f5e",
   "#a855f7",
-  "#4d41df",
+  "#5b4ee0",
   "#3b82f6",
   "#06b6d4",
   "#006b58",
-  "#10b981",
+  "#2E7D52",
   "#84cc16",
-  "#f59e0b",
+  "#B7770D",
   "#f97316",
   "#78716c",
 ];
 
 const CATEGORY_COLOR_DARK_MAP: Record<string, string> = {
-  "#dc2626": "#f87171",
+  "#C0392B": "#f87171",
   "#f43f5e": "#fb7185",
   "#a855f7": "#c084fc",
-  "#4d41df": "#818cf8",
+  "#5b4ee0": "#818cf8",
   "#3b82f6": "#60a5fa",
   "#06b6d4": "#22d3ee",
   "#006b58": "#34d399",
-  "#10b981": "#34d399",
+  "#2E7D52": "#34d399",
   "#84cc16": "#a3e635",
-  "#f59e0b": "#fbbf24",
+  "#B7770D": "#fbbf24",
   "#f97316": "#fb923c",
   "#78716c": "#a8a29e",
 };

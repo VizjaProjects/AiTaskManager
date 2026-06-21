@@ -18,7 +18,7 @@ export default function VerifyEmailScreen() {
       <AuthCard showIllustration={false}>
         <View className="items-center mb-6">
           <View className="w-16 h-16 rounded-full bg-primary-fixed items-center justify-center">
-            <MaterialIcons name="email" size={32} color="#4d41df" />
+            <MaterialIcons name="email" size={32} color="#5b4ee0" />
           </View>
         </View>
 

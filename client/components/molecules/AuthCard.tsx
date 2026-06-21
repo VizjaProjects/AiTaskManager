@@ -21,7 +21,7 @@ function AuthIllustration() {
         ].map((item) => (
           <View key={item.text} className="flex-row items-center gap-3">
             <View className="w-8 h-8 rounded-lg bg-surface-container-lowest items-center justify-center">
-              <MaterialIcons name={item.icon} size={16} color="#888888" />
+              <MaterialIcons name={item.icon} size={16} color="#9b9791" />
             </View>
             <Text className="text-on-surface-variant font-body text-body-md flex-1">
               {t(item.text)}

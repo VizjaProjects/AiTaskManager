@@ -269,7 +269,7 @@ function KanbanTaskCard({
           >
             {assignees.length === 0 ? (
               <View className="w-6 h-6 rounded-full items-center justify-center border border-dashed border-outline">
-                <MaterialIcons name="person-add" size={13} color="#9ca3af" />
+                <MaterialIcons name="person-add" size={13} color="#9b9791" />
               </View>
             ) : (
               <>

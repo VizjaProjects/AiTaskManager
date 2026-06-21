@@ -14,12 +14,12 @@ export default function TermsOfServiceScreen() {
             onPress={() => router.back()}
             className="flex-row items-center gap-1 mb-2"
           >
-            <MaterialIcons name="arrow-back" size={20} color="#4d41df" />
+            <MaterialIcons name="arrow-back" size={20} color="#5b4ee0" />
             <Text className="text-primary font-headline text-sm">Wróć</Text>
           </TouchableOpacity>
 
           <View className="items-center gap-2 mb-4">
-            <MaterialIcons name="gavel" size={40} color="#4d41df" />
+            <MaterialIcons name="gavel" size={40} color="#5b4ee0" />
             <Text className="text-on-surface font-headline text-2xl text-center">
               Regulamin
             </Text>

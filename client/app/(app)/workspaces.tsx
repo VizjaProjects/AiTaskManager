@@ -80,7 +80,7 @@ export default function WorkspacesScreen() {
                     }
                     className="flex-row items-center gap-1 mt-3 pt-3 border-t border-outline-variant/20"
                   >
-                    <MaterialIcons name="settings" size={16} color="#777587" />
+                    <MaterialIcons name="settings" size={16} color="#6b6965" />
                     <Text className="text-on-surface-variant font-body text-sm">
                       {t("menu.settings")}
                     </Text>

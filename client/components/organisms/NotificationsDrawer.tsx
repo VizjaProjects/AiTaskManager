@@ -49,7 +49,7 @@ export function useNotificationItems(): Notification[] {
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "warning",
-          color: "#dc2626",
+          color: "#C0392B",
         });
       } else if (isDueToday(t.dueDateTime)) {
         notifs.push({
@@ -59,7 +59,7 @@ export function useNotificationItems(): Notification[] {
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "schedule",
-          color: "#f59e0b",
+          color: "#B7770D",
         });
       }
     });
@@ -76,7 +76,7 @@ export function useNotificationItems(): Notification[] {
           description: e.title,
           timestamp: e.startDateTime,
           icon: "event",
-          color: "#4d41df",
+          color: "#5b4ee0",
         });
       }
     });
@@ -130,7 +130,7 @@ export function NotificationsDrawer({
               Powiadomienia
             </Text>
             <TouchableOpacity className="p-2 rounded-full" onPress={onClose}>
-              <MaterialIcons name="close" size={22} color="#777587" />
+              <MaterialIcons name="close" size={22} color="#6b6965" />
             </TouchableOpacity>
           </View>
 

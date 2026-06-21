@@ -37,10 +37,10 @@ export type EditorCommand =
 
 const HIGHLIGHTS = ["#fef9c3", "#bbf7d0", "#bfdbfe", "#fbcfe8", "#fed7aa"];
 const COLORS = [
-  "#1a1a1a",
-  "#ef4444",
-  "#f59e0b",
-  "#10b981",
+  "#1a1a18",
+  "#C0392B",
+  "#B7770D",
+  "#2E7D52",
   "#3b82f6",
   "#8b5cf6",
 ];
@@ -76,7 +76,7 @@ function ToolButton({
         <MaterialIcons
           name={icon}
           size={20}
-          color={active ? "#4d41df" : "#777587"}
+          color={active ? "#5b4ee0" : "#6b6965"}
         />
       ) : (
         <Text

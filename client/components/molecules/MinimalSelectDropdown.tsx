@@ -11,7 +11,8 @@ import {
   type TextStyle,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { UI } from "@/lib/utils/uiTokens";
+import { getUiTokens } from "@/lib/utils/uiTokens";
+import { useThemeStore } from "@/lib/stores";
 
 const NO_OUTLINE: TextStyle | undefined =
   Platform.OS === "web"
@@ -57,6 +58,9 @@ export function MinimalSelectDropdown({
   disabled = false,
   pinSelected = true,
 }: MinimalSelectDropdownProps) {
+  const isDark = useThemeStore((s) => s.mode === "dark");
+  const ui = getUiTokens(isDark);
+  const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -83,7 +87,7 @@ export function MinimalSelectDropdown({
     <View className="gap-2.5">
       <Text
         className="font-label text-[10px] uppercase tracking-[0.14em]"
-        style={{ color: UI.textMuted }}
+        style={{ color: ui.textMuted }}
       >
         {label}
       </Text>
@@ -100,17 +104,17 @@ export function MinimalSelectDropdown({
         {selected?.icon ?? (
           <View
             className="rounded-full"
-            style={{ width: 20, height: 20, backgroundColor: UI.divider }}
+            style={{ width: 20, height: 20, backgroundColor: ui.divider }}
           />
         )}
         <Text
           className="flex-1 font-body text-sm"
-          style={{ color: selected ? "#374151" : UI.textMuted }}
+          style={{ color: selected ? inkColor : ui.textMuted }}
           numberOfLines={1}
         >
           {selected?.label ?? placeholder}
         </Text>
-        <MaterialIcons name="expand-more" size={18} color={UI.textMuted} />
+        <MaterialIcons name="expand-more" size={18} color={ui.textMuted} />
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade">
@@ -128,7 +132,7 @@ export function MinimalSelectDropdown({
               className="w-full max-w-md rounded-2xl overflow-hidden bg-surface-container-lowest border border-outline-variant"
               style={{
                 maxHeight: "72%",
-                ...UI.shadow,
+                ...ui.shadow,
               }}
             >
               <View className="flex-row items-center justify-between px-5 py-4">
@@ -142,13 +146,13 @@ export function MinimalSelectDropdown({
                   }}
                   hitSlop={8}
                 >
-                  <MaterialIcons name="close" size={22} color={UI.textMuted} />
+                  <MaterialIcons name="close" size={22} color={ui.textMuted} />
                 </TouchableOpacity>
               </View>
               <View
                 style={{
                   height: 1,
-                  backgroundColor: UI.divider,
+                  backgroundColor: ui.divider,
                   marginHorizontal: 20,
                 }}
               />
@@ -159,20 +163,20 @@ export function MinimalSelectDropdown({
                     className="flex-row items-center px-4 rounded-full"
                     style={{
                       borderWidth: 1,
-                      borderColor: UI.border,
+                      borderColor: ui.border,
                       height: 40,
                     }}
                   >
                     <MaterialIcons
                       name="search"
                       size={16}
-                      color={UI.textMuted}
+                      color={ui.textMuted}
                     />
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
                       placeholder="Search..."
-                      placeholderTextColor={UI.textMuted}
+                      placeholderTextColor={ui.textMuted}
                       className="flex-1 px-2 text-on-surface font-body text-sm"
                       style={[NO_OUTLINE, { borderWidth: 0 }]}
                       autoFocus={Platform.OS === "web"}
@@ -190,7 +194,7 @@ export function MinimalSelectDropdown({
                   <View className="px-5 py-8 items-center">
                     <Text
                       className="font-body text-sm"
-                      style={{ color: UI.textMuted }}
+                      style={{ color: ui.textMuted }}
                     >
                       No options found
                     </Text>
@@ -206,9 +210,9 @@ export function MinimalSelectDropdown({
                         style={
                           active
                             ? {
-                                backgroundColor: UI.selectedBg,
+                                backgroundColor: ui.selectedBg,
                                 borderWidth: 1,
-                                borderColor: UI.selectedBorder,
+                                borderColor: ui.selectedBorder,
                               }
                             : undefined
                         }
@@ -219,14 +223,14 @@ export function MinimalSelectDropdown({
                             style={{
                               width: 20,
                               height: 20,
-                              backgroundColor: UI.divider,
+                              backgroundColor: ui.divider,
                             }}
                           />
                         )}
                         <Text
                           className="flex-1 font-body text-sm"
                           style={{
-                            color: active ? "#374151" : UI.textSecondary,
+                            color: active ? inkColor : ui.textSecondary,
                             fontFamily: active
                               ? "Inter_600SemiBold"
                               : undefined,
@@ -239,7 +243,7 @@ export function MinimalSelectDropdown({
                           <MaterialIcons
                             name="check"
                             size={15}
-                            color={UI.textSecondary}
+                            color={ui.textSecondary}
                           />
                         ) : null}
                       </TouchableOpacity>

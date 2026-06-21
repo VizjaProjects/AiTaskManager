@@ -32,7 +32,8 @@ import {
   getShortModelName,
   inferConnectionMode,
 } from "@/lib/utils/llmSettings";
-import { UI } from "@/lib/utils/uiTokens";
+import { getUiTokens } from "@/lib/utils/uiTokens";
+import { useThemeStore } from "@/lib/stores";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
@@ -56,10 +57,11 @@ const EMPTY_FORM: FormState = {
 };
 
 function SectionLabel({ children }: { children: string }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   return (
     <Text
       className="font-label text-[10px] uppercase tracking-[0.14em] mb-2"
-      style={{ color: UI.textMuted }}
+      style={{ color: ui.textMuted }}
     >
       {children}
     </Text>
@@ -75,6 +77,7 @@ function ApiKeyField({
   onChangeText: (v: string) => void;
   placeholder: string;
 }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const [hidden, setHidden] = useState(true);
 
   return (
@@ -90,7 +93,7 @@ function ApiKeyField({
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={UI.textMuted}
+          placeholderTextColor={ui.textMuted}
           secureTextEntry={hidden}
           autoCapitalize="none"
           className="flex-1 text-on-surface font-body text-sm"
@@ -100,11 +103,11 @@ function ApiKeyField({
           <MaterialIcons
             name={hidden ? "visibility" : "visibility-off"}
             size={18}
-            color={UI.textMuted}
+            color={ui.textMuted}
           />
         </TouchableOpacity>
       </View>
-      <Text className="font-body text-xs" style={{ color: UI.textMuted }}>
+      <Text className="font-body text-xs" style={{ color: ui.textMuted }}>
         Stored securely. Never shown again after saving.
       </Text>
     </View>
@@ -120,6 +123,7 @@ function ConfigFormModal({
   editing: LlmSettings | null;
   onClose: () => void;
 }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: providers = [] } = useLlmProviders();
   const { data: models = [] } = useLlmModels();
   const createSettings = useCreateLlmSettings();
@@ -244,20 +248,20 @@ function ConfigFormModal({
       >
         <View
           className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[88%] overflow-hidden"
-          style={{ borderWidth: 1, borderColor: UI.border, ...UI.shadow }}
+          style={{ borderWidth: 1, borderColor: ui.border, ...ui.shadow }}
         >
           <View className="flex-row items-center justify-between px-5 py-4">
             <Text className="text-on-surface font-headline text-title-lg">
               {editing ? "Edit model" : "Add model"}
             </Text>
             <TouchableOpacity onPress={onClose} hitSlop={8}>
-              <MaterialIcons name="close" size={22} color={UI.textMuted} />
+              <MaterialIcons name="close" size={22} color={ui.textMuted} />
             </TouchableOpacity>
           </View>
           <View
             style={{
               height: 1,
-              backgroundColor: UI.divider,
+              backgroundColor: ui.divider,
               marginHorizontal: 20,
             }}
           />
@@ -341,6 +345,7 @@ function ConfigRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const visual = getProviderVisual(item.provider);
 
   return (
@@ -360,7 +365,7 @@ function ConfigRow({
           </Text>
           <Text
             className="font-body text-xs mt-0.5"
-            style={{ color: UI.textSecondary }}
+            style={{ color: ui.textSecondary }}
             numberOfLines={1}
           >
             {item.customUrl
@@ -368,7 +373,7 @@ function ConfigRow({
               : getShortModelName(item.model, 40)}
           </Text>
         </View>
-        <MaterialIcons name="chevron-right" size={18} color={UI.textMuted} />
+        <MaterialIcons name="chevron-right" size={18} color={ui.textMuted} />
       </TouchableOpacity>
       <TouchableOpacity onPress={onDelete} hitSlop={8} className="p-1.5">
         <MaterialIcons name="delete-outline" size={17} color="#ba1a1a" />
@@ -378,6 +383,7 @@ function ConfigRow({
 }
 
 export function LlmSettingsPanel() {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: settings = [], isLoading } = useLlmSettings();
   const deleteSettings = useDeleteLlmSettings();
   const [modalOpen, setModalOpen] = useState(false);
@@ -421,7 +427,7 @@ export function LlmSettingsPanel() {
         </Text>
         <Text
           className="font-body text-body-md mt-1"
-          style={{ color: UI.textSecondary }}
+          style={{ color: ui.textSecondary }}
         >
           Add an API key for the provider you want to use in AI Task.
         </Text>
@@ -439,18 +445,18 @@ export function LlmSettingsPanel() {
         {isLoading ? (
           <Text
             className="font-body text-sm py-6 text-center"
-            style={{ color: UI.textMuted }}
+            style={{ color: ui.textMuted }}
           >
             Loading...
           </Text>
         ) : settings.length === 0 ? (
           <View className="py-8 items-center gap-3">
             <View className="w-12 h-12 rounded-xl items-center justify-center bg-surface-container-low border border-outline-variant">
-              <MaterialIcons name="psychology" size={22} color={UI.textMuted} />
+              <MaterialIcons name="psychology" size={22} color={ui.textMuted} />
             </View>
             <Text
               className="font-body text-sm text-center"
-              style={{ color: UI.textSecondary }}
+              style={{ color: ui.textSecondary }}
             >
               No models configured yet.
             </Text>
@@ -474,14 +480,14 @@ export function LlmSettingsPanel() {
             className="flex-row items-center justify-center gap-2 py-3 rounded-full bg-surface-container-low"
             style={{
               borderWidth: 1,
-              borderColor: UI.border,
+              borderColor: ui.border,
               borderStyle: "dashed",
             }}
           >
-            <MaterialIcons name="add" size={18} color={UI.textSecondary} />
+            <MaterialIcons name="add" size={18} color={ui.textSecondary} />
             <Text
               className="font-body text-sm"
-              style={{ color: UI.textSecondary }}
+              style={{ color: ui.textSecondary }}
             >
               Add model
             </Text>

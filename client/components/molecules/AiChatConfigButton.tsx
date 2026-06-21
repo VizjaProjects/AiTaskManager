@@ -18,7 +18,8 @@ import {
   isOrdovitaAiSelection,
   ORDOVITA_AI_ID,
 } from "@/lib/utils/llmSettings";
-import { UI } from "@/lib/utils/uiTokens";
+import { getUiTokens } from "@/lib/utils/uiTokens";
+import { useThemeStore } from "@/lib/stores";
 
 interface AiChatConfigButtonProps {
   disabled?: boolean;
@@ -31,6 +32,7 @@ const PANEL_MAX_WIDTH = 320;
 const GAP = 6;
 
 function OrdovitaBrandIcon({ size = 28 }: { size?: number }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   return (
     <View
       className="rounded-lg items-center justify-center"
@@ -39,7 +41,7 @@ function OrdovitaBrandIcon({ size = 28 }: { size?: number }) {
         height: size,
         backgroundColor: "#1F2937",
         borderWidth: 1,
-        borderColor: UI.border,
+        borderColor: ui.border,
       }}
     >
       <MaterialIcons name="auto-awesome" size={size * 0.45} color="#F9FAFB" />
@@ -48,10 +50,11 @@ function OrdovitaBrandIcon({ size = 28 }: { size?: number }) {
 }
 
 function SectionHeader({ label }: { label: string }) {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   return (
     <Text
       className="font-label text-[10px] uppercase tracking-[0.14em] px-3 pt-2 pb-1"
-      style={{ color: UI.textMuted }}
+      style={{ color: ui.textMuted }}
     >
       {label}
     </Text>
@@ -69,6 +72,9 @@ function DropdownItem({
   icon: ReactNode;
   label: string;
 }) {
+  const isDark = useThemeStore((s) => s.mode === "dark");
+  const ui = getUiTokens(isDark);
+  const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
   return (
     <TouchableOpacity
       onPress={onSelect}
@@ -77,9 +83,9 @@ function DropdownItem({
       style={
         active
           ? {
-              backgroundColor: UI.selectedBg,
+              backgroundColor: ui.selectedBg,
               borderWidth: 1,
-              borderColor: UI.selectedBorder,
+              borderColor: ui.selectedBorder,
             }
           : undefined
       }
@@ -88,7 +94,7 @@ function DropdownItem({
       <Text
         className="flex-1 font-body text-[13px]"
         style={{
-          color: active ? "#374151" : UI.textSecondary,
+          color: active ? inkColor : ui.textSecondary,
           fontFamily: active ? "Inter_600SemiBold" : undefined,
         }}
         numberOfLines={1}
@@ -96,20 +102,22 @@ function DropdownItem({
         {label}
       </Text>
       {active ? (
-        <MaterialIcons name="check" size={14} color={UI.textSecondary} />
+        <MaterialIcons name="check" size={14} color={ui.textSecondary} />
       ) : null}
     </TouchableOpacity>
   );
 }
 
-const triggerStyle = {
-  borderWidth: 1,
-  borderColor: UI.borderHover,
-};
-
 export function AiChatConfigButton({
   disabled = false,
 }: AiChatConfigButtonProps) {
+  const isDark = useThemeStore((s) => s.mode === "dark");
+  const ui = getUiTokens(isDark);
+  const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
+  const triggerStyle = {
+    borderWidth: 1,
+    borderColor: ui.borderHover,
+  };
   const router = useRouter();
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const triggerRef = useRef<View>(null);
@@ -179,7 +187,7 @@ export function AiChatConfigButton({
         className="h-9 px-3 rounded-lg items-center justify-center bg-surface-container-lowest"
         style={triggerStyle}
       >
-        <MaterialIcons name="memory" size={15} color={UI.textMuted} />
+        <MaterialIcons name="memory" size={15} color={ui.textMuted} />
       </View>
     );
   }
@@ -189,7 +197,7 @@ export function AiChatConfigButton({
       className="rounded-xl py-2 bg-surface-container-lowest border border-outline-variant"
       style={{
         width: panelWidth,
-        ...UI.shadow,
+        ...ui.shadow,
       }}
     >
       <ScrollView
@@ -227,10 +235,10 @@ export function AiChatConfigButton({
             }}
             className="flex-row items-center gap-2 mx-3 mt-1 mb-2 px-3 py-2.5 rounded-lg bg-surface-container-low"
           >
-            <MaterialIcons name="add" size={16} color={UI.textSecondary} />
+            <MaterialIcons name="add" size={16} color={ui.textSecondary} />
             <Text
               className="font-body text-xs"
-              style={{ color: UI.textSecondary }}
+              style={{ color: ui.textSecondary }}
             >
               Add your own model
             </Text>
@@ -260,13 +268,13 @@ export function AiChatConfigButton({
           ) : active ? (
             <ProviderBrandIcon provider={active.provider} size="sm" />
           ) : (
-            <MaterialIcons name="memory" size={15} color={UI.textSecondary} />
+            <MaterialIcons name="memory" size={15} color={ui.textSecondary} />
           )}
           {!isCompact && (
             <>
               <Text
                 className="font-body text-[13px] flex-shrink"
-                style={{ color: "#374151" }}
+                style={{ color: inkColor }}
                 numberOfLines={1}
               >
                 {isOrdovita
@@ -278,7 +286,7 @@ export function AiChatConfigButton({
               <MaterialIcons
                 name="expand-more"
                 size={16}
-                color={UI.textMuted}
+                color={ui.textMuted}
               />
             </>
           )}

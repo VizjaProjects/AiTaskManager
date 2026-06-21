@@ -207,7 +207,7 @@ function CreateEventModal({
               Nowe wydarzenie
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#777587" />
+              <MaterialIcons name="close" size={24} color="#6b6965" />
             </TouchableOpacity>
           </View>
           <Input
@@ -232,7 +232,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
@@ -243,7 +243,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
               </View>
@@ -260,7 +260,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
@@ -271,7 +271,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#777587"
+                  placeholderTextColor="#6b6965"
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
               </View>
@@ -284,7 +284,7 @@ function CreateEventModal({
             <MaterialIcons
               name={allDay ? "check-box" : "check-box-outline-blank"}
               size={22}
-              color="#4d41df"
+              color="#5b4ee0"
             />
             <Text className="text-on-surface font-body text-sm">
               Cały dzień
@@ -447,7 +447,7 @@ function EditCalendarEventModal({
                 Edytuj wydarzenie
               </Text>
               <TouchableOpacity onPress={onClose}>
-                <MaterialIcons name="close" size={24} color="#777587" />
+                <MaterialIcons name="close" size={24} color="#6b6965" />
               </TouchableOpacity>
             </View>
 
@@ -481,7 +481,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="HH"
-                      placeholderTextColor="#777587"
+                      placeholderTextColor="#6b6965"
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                     <Text className="text-on-surface font-headline text-lg">
@@ -494,7 +494,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="MM"
-                      placeholderTextColor="#777587"
+                      placeholderTextColor="#6b6965"
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                   </View>
@@ -511,7 +511,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="HH"
-                      placeholderTextColor="#777587"
+                      placeholderTextColor="#6b6965"
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                     <Text className="text-on-surface font-headline text-lg">
@@ -524,7 +524,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="MM"
-                      placeholderTextColor="#777587"
+                      placeholderTextColor="#6b6965"
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                   </View>
@@ -537,7 +537,7 @@ function EditCalendarEventModal({
                 <MaterialIcons
                   name={allDay ? "check-box" : "check-box-outline-blank"}
                   size={22}
-                  color="#4d41df"
+                  color="#5b4ee0"
                 />
                 <Text className="text-on-surface font-body text-sm">
                   Cały dzień
@@ -981,7 +981,7 @@ export default function CalendarScreen() {
       return {
         id: readDataAttr(eventEl, "event-id") ?? "",
         title: readDataAttr(eventEl, "event-title") ?? "",
-        color: readDataAttr(eventEl, "event-color") ?? "#4d41df",
+        color: readDataAttr(eventEl, "event-color") ?? "#5b4ee0",
         duration: parseFloat(readDataAttr(eventEl, "event-duration") ?? "1"),
       };
     }
@@ -1287,7 +1287,7 @@ export default function CalendarScreen() {
     setSelectedDate(d);
   }, [selectedDate, viewType, isMobile]);
 
-  const accentColor = isDark ? "#9b8cff" : "#4d41df";
+  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
   const cellBorder = isDark ? "#2a2a2a" : "#e5e7eb";
 
   const monthGrid = (
@@ -1420,7 +1420,7 @@ export default function CalendarScreen() {
               setSelectedDate(d);
             }}
           >
-            <MaterialIcons name="chevron-left" size={20} color="#777587" />
+            <MaterialIcons name="chevron-left" size={20} color="#6b6965" />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1429,7 +1429,7 @@ export default function CalendarScreen() {
               setSelectedDate(d);
             }}
           >
-            <MaterialIcons name="chevron-right" size={20} color="#777587" />
+            <MaterialIcons name="chevron-right" size={20} color="#6b6965" />
           </TouchableOpacity>
         </View>
       </View>
@@ -1484,10 +1484,10 @@ export default function CalendarScreen() {
         Priorities
       </Text>
       {[
-        { label: "Critical Tasks", color: "#dc2626" },
-        { label: "High Focus", color: "#f59e0b" },
+        { label: "Critical Tasks", color: "#C0392B" },
+        { label: "High Focus", color: "#B7770D" },
         { label: "Standard", color: "#3b82f6" },
-        { label: "Low Priority", color: "#10b981" },
+        { label: "Low Priority", color: "#2E7D52" },
       ].map((p) => (
         <View key={p.label} className="flex-row items-center gap-2 py-1.5">
           <View
@@ -1497,7 +1497,7 @@ export default function CalendarScreen() {
           <Text className="text-on-surface font-body text-xs flex-1">
             {p.label}
           </Text>
-          <MaterialIcons name="check-box" size={18} color="#4d41df" />
+          <MaterialIcons name="check-box" size={18} color="#5b4ee0" />
         </View>
       ))}
     </View>
@@ -1951,9 +1951,9 @@ export default function CalendarScreen() {
                   width: `${100 / displayDays.length}%`,
                   top: hourToTop(dragSel.startHour),
                   height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
-                  backgroundColor: "rgba(77, 65, 223, 0.12)",
+                  backgroundColor: "rgba(91, 78, 224, 0.12)",
                   borderWidth: 1,
-                  borderColor: "#4d41df",
+                  borderColor: "#5b4ee0",
                   borderRadius: 4,
                   borderStyle: "dashed",
                   zIndex: 1,
@@ -1988,7 +1988,7 @@ export default function CalendarScreen() {
                   <MaterialIcons
                     name="chevron-left"
                     size={22}
-                    color="#9ca3af"
+                    color="#9b9791"
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1998,7 +1998,7 @@ export default function CalendarScreen() {
                   <MaterialIcons
                     name="chevron-right"
                     size={22}
-                    color="#9ca3af"
+                    color="#9b9791"
                   />
                 </TouchableOpacity>
               </View>
@@ -2064,13 +2064,13 @@ export default function CalendarScreen() {
                 onPress={prevPeriod}
                 className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
-                <MaterialIcons name="chevron-left" size={22} color="#9ca3af" />
+                <MaterialIcons name="chevron-left" size={22} color="#9b9791" />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={nextPeriod}
                 className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
-                <MaterialIcons name="chevron-right" size={22} color="#9ca3af" />
+                <MaterialIcons name="chevron-right" size={22} color="#9b9791" />
               </TouchableOpacity>
               <Text className="text-on-surface font-headline text-title-lg ml-1">
                 {headerTitle}

@@ -153,7 +153,7 @@ export default function WorkspaceSettingsScreen() {
         <Card className="p-5 gap-4">
           <View className="flex-row items-center gap-3">
             <View className="w-12 h-12 rounded-2xl bg-primary-fixed items-center justify-center">
-              <MaterialIcons name="workspaces" size={24} color="#4d41df" />
+              <MaterialIcons name="workspaces" size={24} color="#5b4ee0" />
             </View>
             <View className="flex-1 min-w-0">
               <Text
@@ -170,7 +170,7 @@ export default function WorkspaceSettingsScreen() {
 
           <View className="flex-row gap-3">
             <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
-              <MaterialIcons name="group" size={18} color="#777587" />
+              <MaterialIcons name="group" size={18} color="#6b6965" />
               <View>
                 <Text className="text-on-surface font-headline text-sm">
                   {workspace.assignedUsers.length}
@@ -183,7 +183,7 @@ export default function WorkspaceSettingsScreen() {
               </View>
             </View>
             <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
-              <MaterialIcons name="event" size={18} color="#777587" />
+              <MaterialIcons name="event" size={18} color="#6b6965" />
               <View className="flex-1 min-w-0">
                 <Text className="text-on-surface font-headline text-sm">
                   {new Date(workspace.createdAt).toLocaleDateString("pl-PL")}
@@ -206,7 +206,7 @@ export default function WorkspaceSettingsScreen() {
               <MaterialIcons
                 name={isPublic ? "group" : "lock"}
                 size={18}
-                color="#777587"
+                color="#6b6965"
               />
             </View>
             <View className="flex-1 min-w-0">
@@ -248,7 +248,7 @@ export default function WorkspaceSettingsScreen() {
             <MaterialIcons
               name={isDefault ? "star" : "star-outline"}
               size={20}
-              color={isDefault ? "#4d41df" : "#777587"}
+              color={isDefault ? "#5b4ee0" : "#6b6965"}
             />
             <View className="flex-1">
               <Text className="text-on-surface font-body text-sm">
@@ -309,7 +309,7 @@ export default function WorkspaceSettingsScreen() {
                       <MaterialIcons
                         name="person-remove"
                         size={18}
-                        color="#ef4444"
+                        color="#C0392B"
                       />
                     </TouchableOpacity>
                   ) : null}
@@ -357,7 +357,7 @@ export default function WorkspaceSettingsScreen() {
                       {email}
                     </Text>
                     <TouchableOpacity onPress={() => removePendingEmail(email)}>
-                      <MaterialIcons name="close" size={14} color="#9ca3af" />
+                      <MaterialIcons name="close" size={14} color="#9b9791" />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -385,7 +385,7 @@ export default function WorkspaceSettingsScreen() {
         {isOwner ? (
           <Card className="p-4 gap-3">
             <View className="flex-row items-center gap-2">
-              <MaterialIcons name="warning-amber" size={18} color="#ef4444" />
+              <MaterialIcons name="warning-amber" size={18} color="#C0392B" />
               <Text className="text-on-surface font-headline text-sm">
                 Strefa zagrożenia
               </Text>
@@ -400,7 +400,7 @@ export default function WorkspaceSettingsScreen() {
               className="flex-row items-center justify-center gap-2 py-3 rounded-xl border border-error/40 bg-error-container"
               style={{ opacity: deleteWorkspace.isPending ? 0.6 : 1 }}
             >
-              <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+              <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
               <Text className="text-error font-headline text-sm">
                 Usuń workspace
               </Text>

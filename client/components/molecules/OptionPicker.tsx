@@ -66,7 +66,7 @@ export function OptionPicker({
         >
           {selected?.label ?? placeholder}
         </Text>
-        <MaterialIcons name="expand-more" size={22} color="#777587" />
+        <MaterialIcons name="expand-more" size={22} color="#6b6965" />
       </TouchableOpacity>
       {error ? (
         <Text className="text-error font-body text-xs mt-1">{error}</Text>
@@ -80,7 +80,7 @@ export function OptionPicker({
                 {label}
               </Text>
               <TouchableOpacity onPress={() => setOpen(false)}>
-                <MaterialIcons name="close" size={22} color="#777587" />
+                <MaterialIcons name="close" size={22} color="#6b6965" />
               </TouchableOpacity>
             </View>
 
@@ -90,7 +90,7 @@ export function OptionPicker({
                   value={query}
                   onChangeText={setQuery}
                   placeholder="Search..."
-                  placeholderTextColor="#9ca3af"
+                  placeholderTextColor="#9b9791"
                   className="rounded-xl h-11 px-4 border border-outline-variant bg-surface-container-low text-on-surface font-body text-sm"
                   style={NO_OUTLINE}
                 />

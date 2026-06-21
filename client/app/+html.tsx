@@ -32,7 +32,7 @@ export default function Root({ children }: RootProps) {
             gap: 16px;
             flex-wrap: wrap;
             padding: 8px 16px;
-            border-top: 1px solid rgba(77, 65, 223, 0.16);
+            border-top: 1px solid rgba(91, 78, 224, 0.16);
             background: #ffffff;
             font-family: Arial, sans-serif;
           }

@@ -77,7 +77,7 @@ function SurveyCard({
           onPress={() => setMenuOpen(!menuOpen)}
           className="p-1"
         >
-          <MaterialIcons name="more-vert" size={20} color="#777587" />
+          <MaterialIcons name="more-vert" size={20} color="#6b6965" />
         </TouchableOpacity>
       </View>
 
@@ -158,7 +158,7 @@ function SurveyCard({
           onPress={onEdit}
           className="flex-row items-center gap-1"
         >
-          <MaterialIcons name="edit" size={16} color="#4d41df" />
+          <MaterialIcons name="edit" size={16} color="#5b4ee0" />
           <Text className="text-primary font-label text-sm font-bold uppercase tracking-wider">
             Edit
           </Text>
@@ -179,7 +179,7 @@ function CreateSurveyCard({ onPress }: { onPress: () => void }) {
     <TouchableOpacity onPress={onPress}>
       <View className="rounded-2xl border-2 border-dashed border-outline-variant/30 p-6 items-center justify-center min-h-[280px]">
         <View className="w-14 h-14 rounded-full bg-primary-fixed/30 items-center justify-center mb-4">
-          <MaterialIcons name="add-circle-outline" size={28} color="#4d41df" />
+          <MaterialIcons name="add-circle-outline" size={28} color="#5b4ee0" />
         </View>
         <Text className="text-on-surface font-headline text-lg font-bold mb-1">
           Create New Survey
@@ -349,12 +349,12 @@ export default function AdminSurveysPage() {
               ))}
             </View>
             <View className="flex-row items-center bg-surface-container-lowest rounded-xl px-4 py-2 min-w-[240px]">
-              <MaterialIcons name="search" size={20} color="#777587" />
+              <MaterialIcons name="search" size={20} color="#6b6965" />
               <TextInput
                 value={search}
                 onChangeText={setSearch}
                 placeholder="Search surveys..."
-                placeholderTextColor="#777587"
+                placeholderTextColor="#6b6965"
                 className="flex-1 ml-2 text-on-surface font-body text-sm outline-none"
               />
             </View>
@@ -427,7 +427,7 @@ export default function AdminSurveysPage() {
                       )
                     }
                   >
-                    <MaterialIcons name="edit" size={20} color="#4d41df" />
+                    <MaterialIcons name="edit" size={20} color="#5b4ee0" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() =>
@@ -436,7 +436,7 @@ export default function AdminSurveysPage() {
                       )
                     }
                   >
-                    <MaterialIcons name="bar-chart" size={20} color="#4d41df" />
+                    <MaterialIcons name="bar-chart" size={20} color="#5b4ee0" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => deleteSurvey.mutate(survey.surveyId)}

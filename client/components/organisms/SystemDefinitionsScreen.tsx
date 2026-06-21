@@ -78,7 +78,7 @@ function DefinitionFormModal({
               {title}
             </Text>
             <TouchableOpacity onPress={onClose} className="p-1">
-              <MaterialIcons name="close" size={22} color="#888888" />
+              <MaterialIcons name="close" size={22} color="#9b9791" />
             </TouchableOpacity>
           </View>
 
@@ -268,13 +268,13 @@ export function SystemDefinitionsScreen() {
                       }
                       className="p-1"
                     >
-                      <MaterialIcons name="edit" size={18} color="#777587" />
+                      <MaterialIcons name="edit" size={18} color="#6b6965" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       onPress={() => deleteCategory.mutate(cat.categoryId)}
                       className="p-1"
                     >
-                      <MaterialIcons name="close" size={18} color="#777587" />
+                      <MaterialIcons name="close" size={18} color="#6b6965" />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -342,18 +342,18 @@ export function SystemDefinitionsScreen() {
                       }
                       className="p-1"
                     >
-                      <MaterialIcons name="edit" size={18} color="#777587" />
+                      <MaterialIcons name="edit" size={18} color="#6b6965" />
                     </TouchableOpacity>
                     {status.isDefault ? (
                       <View className="p-1">
-                        <MaterialIcons name="lock" size={16} color="#9ca3af" />
+                        <MaterialIcons name="lock" size={16} color="#9b9791" />
                       </View>
                     ) : (
                       <TouchableOpacity
                         onPress={() => deleteStatus.mutate(status.statusId)}
                         className="p-1"
                       >
-                        <MaterialIcons name="close" size={18} color="#777587" />
+                        <MaterialIcons name="close" size={18} color="#6b6965" />
                       </TouchableOpacity>
                     )}
                   </View>

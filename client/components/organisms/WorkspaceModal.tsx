@@ -122,7 +122,7 @@ export function WorkspaceModal({
                     setError(null);
                   }}
                 >
-                  <MaterialIcons name="arrow-back" size={22} color="#888888" />
+                  <MaterialIcons name="arrow-back" size={22} color="#9b9791" />
                 </TouchableOpacity>
               )}
               <Text className="text-on-surface font-headline text-title-lg">
@@ -130,7 +130,7 @@ export function WorkspaceModal({
               </Text>
             </View>
             <TouchableOpacity onPress={handleClose} className="p-1">
-              <MaterialIcons name="close" size={22} color="#888888" />
+              <MaterialIcons name="close" size={22} color="#9b9791" />
             </TouchableOpacity>
           </View>
 
@@ -150,7 +150,7 @@ export function WorkspaceModal({
                     <MaterialIcons
                       name="workspaces"
                       size={24}
-                      color="#888888"
+                      color="#9b9791"
                     />
                   </View>
                   <Text className="text-on-surface-variant font-body text-body-md text-center">
@@ -188,7 +188,7 @@ export function WorkspaceModal({
                               <MaterialIcons
                                 name="folder"
                                 size={18}
-                                color={isActive ? "#ffffff" : "#888888"}
+                                color={isActive ? "#ffffff" : "#9b9791"}
                               />
                             </View>
                             <View className="flex-1 min-w-0">
@@ -219,7 +219,7 @@ export function WorkspaceModal({
                             <MaterialIcons
                               name="group"
                               size={20}
-                              color="#888888"
+                              color="#9b9791"
                             />
                           </TouchableOpacity>
                         </View>

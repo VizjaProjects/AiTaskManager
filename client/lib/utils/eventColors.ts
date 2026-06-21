@@ -1,20 +1,20 @@
 import { EventStatus, type CalendarEvent } from "@/lib/types";
 
 /** Default color for newly created events (same for every event until changed). */
-export const DEFAULT_EVENT_COLOR = "#4d41df";
+export const DEFAULT_EVENT_COLOR = "#5b4ee0";
 
 export const EVENT_COLOR_OPTIONS = [
-  "#4d41df",
+  "#5b4ee0",
   "#3b82f6",
-  "#10b981",
-  "#f59e0b",
-  "#dc2626",
+  "#2E7D52",
+  "#B7770D",
+  "#C0392B",
   "#a855f7",
   "#006b58",
   "#e11d48",
 ] as const;
 
-const PROPOSED_EVENT_COLOR = "#f59e0b";
+const PROPOSED_EVENT_COLOR = "#B7770D";
 
 export function resolveEventColor(event: CalendarEvent): string {
   if (event.status === EventStatus.PROPOSED) return PROPOSED_EVENT_COLOR;

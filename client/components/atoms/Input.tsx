@@ -46,13 +46,13 @@ export function Input({
           <MaterialIcons
             name={icon}
             size={20}
-            color="#9ca3af"
+            color="#9b9791"
             style={{ marginRight: 10 }}
           />
         )}
         <TextInput
           className="flex-1 text-on-surface font-body text-body-lg"
-          placeholderTextColor="#9ca3af"
+          placeholderTextColor="#9b9791"
           secureTextEntry={hidden}
           style={[NO_OUTLINE, { borderWidth: 0 }, style]}
           {...props}
@@ -65,7 +65,7 @@ export function Input({
             <MaterialIcons
               name={hidden ? "visibility" : "visibility-off"}
               size={20}
-              color="#9ca3af"
+              color="#9b9791"
             />
           </TouchableOpacity>
         )}
@@ -94,7 +94,7 @@ export function PlainTextArea({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#9ca3af"
+      placeholderTextColor="#9b9791"
       {...props}
     />
   );

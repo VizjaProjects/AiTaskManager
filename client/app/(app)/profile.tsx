@@ -194,7 +194,7 @@ export default function ProfileScreen() {
                         ? mode === "dark"
                           ? "#121212"
                           : "#ffffff"
-                        : "#777587"
+                        : "#6b6965"
                     }
                   />
                   <Text
@@ -274,7 +274,7 @@ export default function ProfileScreen() {
                             <MaterialIcons
                               name="workspaces"
                               size={18}
-                              color={mode === "dark" ? "#a0a0a5" : "#777587"}
+                              color={mode === "dark" ? "#a0a0a5" : "#6b6965"}
                             />
                             <Text
                               className="text-on-surface font-body text-body-md flex-1"
@@ -292,10 +292,10 @@ export default function ProfileScreen() {
                             size={20}
                             color={
                               isDefault
-                                ? "#4d41df"
+                                ? "#5b4ee0"
                                 : mode === "dark"
                                   ? "#5c5c60"
-                                  : "#9ca3af"
+                                  : "#9b9791"
                             }
                           />
                         </TouchableOpacity>

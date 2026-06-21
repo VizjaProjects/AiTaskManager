@@ -638,7 +638,7 @@ export function NotesScreen() {
             ) : null}
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} className="p-1.5">
-            <MaterialIcons name="delete-outline" size={20} color="#ef4444" />
+            <MaterialIcons name="delete-outline" size={20} color="#C0392B" />
           </TouchableOpacity>
         </View>
       </View>
@@ -744,7 +744,7 @@ export function NotesScreen() {
             value={menuTitle}
             onChangeText={setMenuTitle}
             placeholder="Nazwa folderu"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor="#9b9791"
             className="bg-surface-container-low rounded-lg px-3 py-2.5 text-on-surface font-body text-sm border border-outline-variant"
             style={NO_OUTLINE}
           />
@@ -752,7 +752,7 @@ export function NotesScreen() {
             value={menuDesc}
             onChangeText={setMenuDesc}
             placeholder="Opis (opcjonalnie)"
-            placeholderTextColor="#9ca3af"
+            placeholderTextColor="#9b9791"
             multiline
             className="bg-surface-container-low rounded-lg px-3 py-2.5 text-on-surface font-body text-sm border border-outline-variant min-h-[64px]"
             style={NO_OUTLINE}
@@ -762,7 +762,7 @@ export function NotesScreen() {
               onPress={handleDeleteFolder}
               className="flex-row items-center gap-1.5 px-2 py-2"
             >
-              <MaterialIcons name="delete-outline" size={18} color="#ef4444" />
+              <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
               <Text className="text-error font-label text-sm">Usuń</Text>
             </TouchableOpacity>
             <View className="flex-row items-center gap-2">
@@ -816,7 +816,7 @@ export function NotesScreen() {
             }}
             className="flex-row items-center gap-3 px-2 py-3"
           >
-            <MaterialIcons name="inbox" size={20} color="#777587" />
+            <MaterialIcons name="inbox" size={20} color="#6b6965" />
             <Text className="text-on-surface font-body text-sm">
               Bez folderu
             </Text>
@@ -830,7 +830,7 @@ export function NotesScreen() {
               }}
               className="flex-row items-center gap-3 px-2 py-3"
             >
-              <MaterialIcons name="folder" size={20} color="#4d41df" />
+              <MaterialIcons name="folder" size={20} color="#5b4ee0" />
               <Text className="text-on-surface font-body text-sm">
                 {f.title}
               </Text>
@@ -945,20 +945,20 @@ export function NotesScreen() {
         value={folderName}
         onChangeText={setFolderName}
         placeholder="Nazwa folderu"
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor="#9b9791"
         autoFocus
         onSubmitEditing={handleCreateFolder}
         className="bg-surface-container-low rounded-lg px-3 py-2 text-on-surface font-body text-sm border border-outline-variant"
         style={NO_OUTLINE}
       />
       <TouchableOpacity onPress={handleCreateFolder} className="p-1">
-        <MaterialIcons name="check" size={20} color="#4d41df" />
+        <MaterialIcons name="check" size={20} color="#5b4ee0" />
       </TouchableOpacity>
       <TouchableOpacity
         onPress={() => setCreatingFolder(false)}
         className="p-1"
       >
-        <MaterialIcons name="close" size={20} color="#777587" />
+        <MaterialIcons name="close" size={20} color="#6b6965" />
       </TouchableOpacity>
     </View>
   ) : (
@@ -966,7 +966,7 @@ export function NotesScreen() {
       onPress={() => setCreatingFolder(true)}
       className="flex-row items-center gap-1.5 rounded-xl border border-outline-variant px-3 py-2"
     >
-      <MaterialIcons name="create-new-folder" size={16} color="#777587" />
+      <MaterialIcons name="create-new-folder" size={16} color="#6b6965" />
       <Text className="text-on-surface-variant font-label text-xs">
         Nowy folder
       </Text>
@@ -985,7 +985,7 @@ export function NotesScreen() {
           />
           {currentFolder && (
             <>
-              <MaterialIcons name="chevron-right" size={20} color="#9ca3af" />
+              <MaterialIcons name="chevron-right" size={20} color="#9b9791" />
               <Text className="text-on-surface font-headline text-headline-md">
                 {currentFolder.title}
               </Text>
@@ -993,7 +993,7 @@ export function NotesScreen() {
                 onPress={() => openFolderMenu(currentFolder)}
                 className="p-1"
               >
-                <MaterialIcons name="more-horiz" size={20} color="#777587" />
+                <MaterialIcons name="more-horiz" size={20} color="#6b6965" />
               </TouchableOpacity>
             </>
           )}
@@ -1072,7 +1072,7 @@ export function NotesScreen() {
                   <MaterialIcons
                     name="sticky-note-2"
                     size={28}
-                    color="#9ca3af"
+                    color="#9b9791"
                   />
                   <Text className="text-on-surface-variant font-body text-sm text-center">
                     {currentFolderId
@@ -1306,12 +1306,12 @@ function FolderTile({
       onPress={renaming ? undefined : onOpen}
       onLongPress={Platform.OS === "web" ? undefined : onMenu}
       className="items-center gap-1 w-[112px] py-2 rounded-xl"
-      style={over ? { backgroundColor: "rgba(77,65,223,0.12)" } : undefined}
+      style={over ? { backgroundColor: "rgba(91, 78, 224,0.12)" } : undefined}
     >
       <MaterialIcons
         name="folder"
         size={64}
-        color={over ? "#4d41df" : isDark ? "#9b8cff" : "#4d41df"}
+        color={over ? "#5b4ee0" : isDark ? "#9b8cff" : "#5b4ee0"}
       />
       {renaming ? (
         <InlineRename
@@ -1538,7 +1538,7 @@ function ContextMenuItem({
   onPress: () => void;
 }) {
   const ref = useRef<View>(null);
-  const color = destructive ? "#ef4444" : "#4b5563";
+  const color = destructive ? "#C0392B" : "#4b5563";
 
   useEffect(() => {
     if (Platform.OS !== "web" || !ref.current) return;

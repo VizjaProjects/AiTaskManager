@@ -70,7 +70,7 @@ export function getNoteThemeColors(
   if (isDark) {
     return {
       background:
-        DARK_NOTE_BACKGROUNDS[source] ?? mixHex(source, "#1A1A1A", 0.7),
+        DARK_NOTE_BACKGROUNDS[source] ?? mixHex(source, "#1a1a18", 0.7),
       text: "#F4F4F5",
       mutedText: "rgba(244,244,245,0.72)",
       border: "rgba(255,255,255,0.14)",
@@ -80,7 +80,7 @@ export function getNoteThemeColors(
   const lightBackground = isLightColor(source);
   return {
     background: source,
-    text: lightBackground ? "#1A1A1A" : "#FFFFFF",
+    text: lightBackground ? "#1a1a18" : "#FFFFFF",
     mutedText: lightBackground
       ? "rgba(26,26,26,0.72)"
       : "rgba(255,255,255,0.80)",

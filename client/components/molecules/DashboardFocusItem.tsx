@@ -123,7 +123,7 @@ export function DashboardAiProposalItem({
       <View className="p-3.5 gap-2">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center gap-1.5">
-            <MaterialIcons name="auto-awesome" size={13} color="#9ca3af" />
+            <MaterialIcons name="auto-awesome" size={13} color="#9b9791" />
             <AiSuggestedBadge />
           </View>
           {priority && <PriorityBadge priority={priority} variant="soft" />}
@@ -141,7 +141,7 @@ export function DashboardAiProposalItem({
           disabled={loading}
           className="flex-1 flex-row items-center justify-center gap-1 py-2 rounded-lg border border-outline-variant"
         >
-          <MaterialIcons name="close" size={14} color="#ef4444" />
+          <MaterialIcons name="close" size={14} color="#C0392B" />
           <Text className="text-on-surface font-headline text-xs">{t("common.reject")}</Text>
         </TouchableOpacity>
         <TouchableOpacity

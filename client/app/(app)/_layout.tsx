@@ -4,7 +4,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useThemeStore } from "@/lib/stores";
 
 const ACTIVE_COLOR = "#111111";
-const INACTIVE_COLOR = "#777587";
+const INACTIVE_COLOR = "#6b6965";
 
 export default function AppLayout() {
   const isDesktop = Platform.OS === "web";

@@ -88,7 +88,7 @@ export function LlmConfigSelector({ compact = false }: LlmConfigSelectorProps) {
     >
       <View className="flex-row items-center justify-between gap-3">
         <View className="flex-row items-center gap-2 flex-1">
-          <MaterialIcons name="tune" size={18} color="#9ca3af" />
+          <MaterialIcons name="tune" size={18} color="#9b9791" />
           <Text className="text-on-surface font-headline text-sm">
             Active AI configuration
           </Text>

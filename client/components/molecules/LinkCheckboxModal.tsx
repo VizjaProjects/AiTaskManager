@@ -136,7 +136,7 @@ export function LinkCheckboxModal({
                             checked ? "check-box" : "check-box-outline-blank"
                           }
                           size={20}
-                          color={checked ? "#4d41df" : "#9b9791"}
+                          color={checked ? "#5b4ee0" : "#9b9791"}
                         />
                         <View className="flex-1 min-w-0">
                           <Text

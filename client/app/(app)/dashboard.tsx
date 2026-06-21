@@ -180,7 +180,7 @@ export default function DashboardScreen() {
 
   const isLoading = tasksLoading || eventsLoading;
   const isDark = useThemeStore((s) => s.mode) === "dark";
-  const iconMuted = isDark ? "#a0a0a5" : "#6b7280";
+  const iconMuted = isDark ? "#a0a0a5" : "#6b6965";
   const firstName = user?.fullName?.split(" ")[0] ?? (lang === "pl" ? "użytkowniku" : "there");
   const dateLabel = new Date().toLocaleDateString(locale, {
     weekday: "long",
@@ -266,7 +266,7 @@ export default function DashboardScreen() {
             {!isLoading && todoTasks.length === 0 ? (
               <View className="items-center py-10 gap-3 rounded-2xl bg-surface-container-lowest border border-outline-variant">
                 <View className="w-12 h-12 rounded-xl bg-surface-container-low items-center justify-center">
-                  <MaterialIcons name="check-circle" size={26} color="#10B981" />
+                  <MaterialIcons name="check-circle" size={26} color="#2E7D52" />
                 </View>
                 <Text className="text-on-surface font-headline text-body-md">
                   {t("dash.allClear")}

@@ -34,8 +34,8 @@ export function DashboardQuickActions({
       label: t("dash.quickTask"),
       subtitle: t("dash.quickTaskDesc"),
       icon: "add-task",
-      accent: "#4d41df",
-      accentSoft: "rgba(77, 65, 223, 0.12)",
+      accent: "#5b4ee0",
+      accentSoft: "rgba(91, 78, 224, 0.12)",
       onPress: onAddTask,
     },
     {

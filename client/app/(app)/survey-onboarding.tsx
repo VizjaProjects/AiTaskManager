@@ -111,7 +111,7 @@ function ProgressSidebar({
       })}
 
       <View className="flex-row items-start gap-2 pt-4 border-t border-outline-variant">
-        <MaterialIcons name="verified-user" size={16} color="#9ca3af" />
+        <MaterialIcons name="verified-user" size={16} color="#9b9791" />
         <Text className="text-xs text-on-surface-variant flex-1 leading-4">
           Your answers are encrypted and used only to personalize your workspace.
         </Text>
@@ -140,7 +140,7 @@ function ErrorView({
 }) {
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
-      <MaterialIcons name="error-outline" size={48} color="#dc2626" />
+      <MaterialIcons name="error-outline" size={48} color="#C0392B" />
       <Text className="text-on-surface font-headline text-lg mt-4 text-center">
         {message}
       </Text>
@@ -477,7 +477,7 @@ export default function SurveyOnboardingScreen() {
 
       {currentQuestion.hint ? (
         <View className="flex-row items-start gap-2 mb-6">
-          <MaterialIcons name="lightbulb-outline" size={18} color="#9ca3af" />
+          <MaterialIcons name="lightbulb-outline" size={18} color="#9b9791" />
           <Text className="text-on-surface-variant text-sm flex-1 leading-5">
             {currentQuestion.hint}
           </Text>
@@ -487,7 +487,7 @@ export default function SurveyOnboardingScreen() {
       <TextInput
         className="rounded-xl p-4 min-h-[140px] text-base font-body text-on-surface border border-outline-variant bg-surface-container-lowest"
         placeholder="Type your answer..."
-        placeholderTextColor="#9ca3af"
+        placeholderTextColor="#9b9791"
         multiline
         textAlignVertical="top"
         value={currentAnswer}
@@ -509,7 +509,7 @@ export default function SurveyOnboardingScreen() {
           onPress={handleBack}
           className="flex-row items-center gap-2 px-4 py-3 rounded-xl border border-outline-variant bg-surface-container-lowest"
         >
-          <MaterialIcons name="arrow-back" size={18} color="#9ca3af" />
+          <MaterialIcons name="arrow-back" size={18} color="#9b9791" />
           <Text className="text-on-surface-variant font-headline text-sm">
             Back
           </Text>

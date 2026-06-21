@@ -40,7 +40,7 @@ export function AiProposedCard({
             <MaterialIcons
               name={isEvent ? "event" : "task-alt"}
               size={14}
-              color="#9ca3af"
+              color="#9b9791"
             />
             <Text className="text-[11px] font-label uppercase tracking-wide text-on-surface-variant">
               {isEvent ? "Proposed Event" : "Proposed Task"}
@@ -67,7 +67,7 @@ export function AiProposedCard({
           <View className="flex-row flex-wrap items-center gap-4">
             {duration && (
               <View className="flex-row items-center gap-1.5">
-                <MaterialIcons name="schedule" size={14} color="#9ca3af" />
+                <MaterialIcons name="schedule" size={14} color="#9b9791" />
                 <Text className="text-on-surface-variant font-body text-xs">
                   {duration}
                 </Text>
@@ -75,7 +75,7 @@ export function AiProposedCard({
             )}
             {dueDate && (
               <View className="flex-row items-center gap-1.5">
-                <MaterialIcons name="calendar-today" size={14} color="#9ca3af" />
+                <MaterialIcons name="calendar-today" size={14} color="#9b9791" />
                 <Text className="text-on-surface-variant font-body text-xs">
                   {dueDate}
                 </Text>
@@ -91,7 +91,7 @@ export function AiProposedCard({
           disabled={loading}
           className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest"
         >
-          <MaterialIcons name="close" size={16} color="#ef4444" />
+          <MaterialIcons name="close" size={16} color="#C0392B" />
           <Text className="text-on-surface font-headline text-sm">Reject</Text>
         </TouchableOpacity>
 
@@ -101,7 +101,7 @@ export function AiProposedCard({
             disabled={loading}
             className="w-11 h-11 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest"
           >
-            <MaterialIcons name="edit" size={18} color="#9ca3af" />
+            <MaterialIcons name="edit" size={18} color="#9b9791" />
           </TouchableOpacity>
         )}
 

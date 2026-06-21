@@ -144,7 +144,7 @@ export default function SetupPasswordScreen() {
                 <MaterialIcons
                   name={step === "password" ? "password" : "mark-email-read"}
                   size={32}
-                  color="#4d41df"
+                  color="#5b4ee0"
                 />
               </View>
             </View>

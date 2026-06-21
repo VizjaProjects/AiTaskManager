@@ -79,7 +79,7 @@ function BorderedInput({
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
-      placeholderTextColor="#9ca3af"
+      placeholderTextColor="#9b9791"
       multiline={multiline}
       textAlignVertical={multiline ? "top" : "center"}
       className="rounded-xl px-4 py-3.5 text-on-surface font-body text-sm border border-outline-variant bg-surface-container-lowest"
@@ -117,7 +117,7 @@ function QuestionCard({
             </Text>
           </View>
           <TouchableOpacity onPress={onDelete} className="p-1">
-            <MaterialIcons name="delete-outline" size={22} color="#9ca3af" />
+            <MaterialIcons name="delete-outline" size={22} color="#9b9791" />
           </TouchableOpacity>
         </View>
       </View>
@@ -164,7 +164,7 @@ function QuestionCard({
                   onUpdate({ ...question, options, saved: false });
                 }}
               >
-                <MaterialIcons name="close" size={18} color="#9ca3af" />
+                <MaterialIcons name="close" size={18} color="#9b9791" />
               </TouchableOpacity>
             </View>
           ))}
@@ -178,7 +178,7 @@ function QuestionCard({
             }
             className="flex-row items-center gap-1 self-start mt-1"
           >
-            <MaterialIcons name="add" size={16} color="#9ca3af" />
+            <MaterialIcons name="add" size={16} color="#9b9791" />
             <Text className="text-on-surface-variant font-label text-xs">
               Add option
             </Text>
@@ -207,7 +207,7 @@ function QuestionCard({
         <MaterialIcons
           name={question.isRequired ? "check-box" : "check-box-outline-blank"}
           size={22}
-          color={question.isRequired ? "#4d41df" : "#9ca3af"}
+          color={question.isRequired ? "#5b4ee0" : "#9b9791"}
         />
         <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
           Required
@@ -257,7 +257,7 @@ function AddQuestionPanel({
             className="flex-1 max-w-[140px] rounded-2xl border border-outline-variant bg-surface-container-lowest p-5 items-center gap-3"
             activeOpacity={0.85}
           >
-            <MaterialIcons name={t.icon} size={28} color="#9ca3af" />
+            <MaterialIcons name={t.icon} size={28} color="#9b9791" />
             <Text className="text-on-surface font-headline text-sm">
               {t.label}
             </Text>
@@ -546,7 +546,7 @@ export default function AdminSurveyBuilderPage() {
               onPress={() => router.back()}
               className="w-10 h-10 items-center justify-center rounded-full border border-outline-variant bg-surface-container-lowest"
             >
-              <MaterialIcons name="arrow-back" size={20} color="#6b7280" />
+              <MaterialIcons name="arrow-back" size={20} color="#6b6965" />
             </TouchableOpacity>
             <Text className="text-on-surface font-headline text-2xl font-bold">
               Survey Builder

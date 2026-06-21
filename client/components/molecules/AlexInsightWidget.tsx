@@ -25,7 +25,7 @@ export function AlexInsightWidget() {
       <View className="flex-row items-center gap-2 bg-surface-container-lowest rounded-xl px-3 py-2 border border-outline-variant/30 opacity-60">
         <TextInput
           placeholder="Ask Alex..."
-          placeholderTextColor="#777587"
+          placeholderTextColor="#6b6965"
           editable={false}
           className="flex-1 text-on-surface-variant font-body text-body-md"
         />

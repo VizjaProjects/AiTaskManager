@@ -86,14 +86,14 @@ function BrandLogo({ brand, size }: { brand: BrandKey; size: number }) {
         <Svg width={s} height={s} viewBox="0 0 24 24">
           <Path
             d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"
-            stroke="#6B7280"
+            stroke="#6b6965"
             strokeWidth={2}
             fill="none"
             strokeLinecap="round"
           />
           <Path
             d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"
-            stroke="#6B7280"
+            stroke="#6b6965"
             strokeWidth={2}
             fill="none"
             strokeLinecap="round"
@@ -103,8 +103,8 @@ function BrandLogo({ brand, size }: { brand: BrandKey; size: number }) {
     default:
       return (
         <Svg width={s} height={s} viewBox="0 0 24 24">
-          <Circle cx="12" cy="12" r="8" stroke="#9CA3AF" strokeWidth={2} fill="none" />
-          <Path d="M12 8v4M12 16h.01" stroke="#9CA3AF" strokeWidth={2} strokeLinecap="round" />
+          <Circle cx="12" cy="12" r="8" stroke="#9b9791" strokeWidth={2} fill="none" />
+          <Path d="M12 8v4M12 16h.01" stroke="#9b9791" strokeWidth={2} strokeLinecap="round" />
         </Svg>
       );
   }

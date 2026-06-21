@@ -30,7 +30,7 @@ const TONES: Record<
     dark: { iconColor: "#fbbf24", iconBg: "#3a3020" },
   },
   emerald: {
-    light: { iconColor: "#10b981", iconBg: "#ecfdf5" },
+    light: { iconColor: "#2E7D52", iconBg: "#ecfdf5" },
     dark: { iconColor: "#34d399", iconBg: "#1a3028" },
   },
 };

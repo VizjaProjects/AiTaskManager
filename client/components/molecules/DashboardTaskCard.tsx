@@ -59,7 +59,7 @@ export function DashboardTaskCard({
       <View className="flex-row items-center gap-3">
         {task.estimatedDuration > 0 && (
           <View className="flex-row items-center gap-1">
-            <MaterialIcons name="schedule" size={12} color="#9ca3af" />
+            <MaterialIcons name="schedule" size={12} color="#9b9791" />
             <Text className="text-on-surface-variant font-body text-[10px]">
               {formatDuration(task.estimatedDuration)}
             </Text>
@@ -67,7 +67,7 @@ export function DashboardTaskCard({
         )}
         {dueLabel && (
           <View className="flex-row items-center gap-1 flex-1">
-            <MaterialIcons name="calendar-today" size={12} color="#9ca3af" />
+            <MaterialIcons name="calendar-today" size={12} color="#9b9791" />
             <Text
               className="text-on-surface-variant font-body text-[10px] flex-1"
               numberOfLines={1}

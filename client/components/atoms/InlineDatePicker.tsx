@@ -80,7 +80,7 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
           className="p-1.5 rounded-lg"
           activeOpacity={0.6}
         >
-          <MaterialIcons name="chevron-left" size={22} color="#777587" />
+          <MaterialIcons name="chevron-left" size={22} color="#6b6965" />
         </TouchableOpacity>
         <Text className="text-on-surface font-headline text-sm capitalize">
           {monthLabel}
@@ -94,7 +94,7 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
           className="p-1.5 rounded-lg"
           activeOpacity={0.6}
         >
-          <MaterialIcons name="chevron-right" size={22} color="#777587" />
+          <MaterialIcons name="chevron-right" size={22} color="#6b6965" />
         </TouchableOpacity>
       </View>
 
@@ -131,9 +131,9 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
                   height: 32,
                   borderRadius: 16,
                   backgroundColor: isSelected
-                    ? "#4d41df"
+                    ? "#5b4ee0"
                     : isToday
-                      ? "rgba(77, 65, 223, 0.12)"
+                      ? "rgba(91, 78, 224, 0.12)"
                       : "transparent",
                 }}
                 activeOpacity={0.6}
@@ -145,9 +145,9 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
                     color: isSelected
                       ? "#ffffff"
                       : !d.currentMonth
-                        ? "#777587"
+                        ? "#6b6965"
                         : isToday
-                          ? "#4d41df"
+                          ? "#5b4ee0"
                           : undefined,
                   }}
                   className={

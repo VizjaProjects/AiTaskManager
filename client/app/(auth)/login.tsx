@@ -91,7 +91,7 @@ export default function LoginScreen() {
               onPress={() => router.push("/")}
               className="flex-row items-center gap-1.5 mb-6 self-start"
             >
-              <MaterialIcons name="arrow-back" size={18} color="#888888" />
+              <MaterialIcons name="arrow-back" size={18} color="#9b9791" />
               <Text className="text-on-surface-variant font-body text-sm">
                 {t("common.backToHome")}
               </Text>

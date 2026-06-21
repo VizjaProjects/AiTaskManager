@@ -52,7 +52,7 @@ export default function MyResponsesScreen() {
     return (
       <PageLayout>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#4d41df" />
+          <ActivityIndicator size="large" color="#5b4ee0" />
         </View>
       </PageLayout>
     );
@@ -86,7 +86,7 @@ export default function MyResponsesScreen() {
               label="Ankiety"
               value={surveyCount}
               icon="assignment-turned-in"
-              iconColor="#4d41df"
+              iconColor="#5b4ee0"
             />
           </View>
           <View className="flex-1">
@@ -114,7 +114,7 @@ export default function MyResponsesScreen() {
                       <MaterialIcons
                         name="description"
                         size={18}
-                        color="#4d41df"
+                        color="#5b4ee0"
                       />
                       <Text className="text-on-surface font-headline text-base">
                         {title}

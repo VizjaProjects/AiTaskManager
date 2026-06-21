@@ -97,7 +97,7 @@ function CompletedSurveyCard({
             <MaterialIcons
               name={expanded ? "expand-less" : "expand-more"}
               size={20}
-              color="#777587"
+              color="#6b6965"
             />
           </View>
         </View>
@@ -117,7 +117,7 @@ function CompletedSurveyCard({
       {expanded && responses.length > 0 && (
         <View className="mt-4 pt-4 border-t border-outline-variant/15">
           <View className="flex-row items-center gap-2 mb-3">
-            <MaterialIcons name="quiz" size={16} color="#4d41df" />
+            <MaterialIcons name="quiz" size={16} color="#5b4ee0" />
             <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest font-bold">
               Twoje odpowiedzi
             </Text>
@@ -146,7 +146,7 @@ function CompletedSurveyCard({
                         className="p-1"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <MaterialIcons name="edit" size={15} color="#777587" />
+                        <MaterialIcons name="edit" size={15} color="#6b6965" />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -169,7 +169,7 @@ function CompletedSurveyCard({
                           <MaterialIcons
                             name="check"
                             size={14}
-                            color="#4d41df"
+                            color="#5b4ee0"
                           />
                           <Text className="text-primary font-label text-[10px] font-bold uppercase">
                             Zapisz
@@ -182,7 +182,7 @@ function CompletedSurveyCard({
                           <MaterialIcons
                             name="close"
                             size={14}
-                            color="#777587"
+                            color="#6b6965"
                           />
                           <Text className="text-on-surface-variant font-label text-[10px] uppercase">
                             Anuluj
@@ -236,7 +236,7 @@ function InProgressSurveyCard({
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-row items-center gap-2.5 flex-1 mr-3">
             <View className="w-10 h-10 rounded-xl items-center justify-center bg-primary/10">
-              <MaterialIcons name="assignment" size={22} color="#4d41df" />
+              <MaterialIcons name="assignment" size={22} color="#5b4ee0" />
             </View>
             <View className="flex-1">
               <Text className="text-on-surface font-headline text-base">
@@ -284,7 +284,7 @@ function InProgressSurveyCard({
 
         {/* CTA */}
         <View className="flex-row items-center gap-1.5 mt-3">
-          <MaterialIcons name="arrow-forward" size={14} color="#4d41df" />
+          <MaterialIcons name="arrow-forward" size={14} color="#5b4ee0" />
           <Text className="text-primary font-label text-xs">
             {answered > 0 ? "Kontynuuj ankietę" : "Rozpocznij ankietę"}
           </Text>
@@ -380,7 +380,7 @@ export default function SurveysScreen() {
     return (
       <PageLayout>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#4d41df" />
+          <ActivityIndicator size="large" color="#5b4ee0" />
         </View>
       </PageLayout>
     );
@@ -414,7 +414,7 @@ export default function SurveysScreen() {
               label="Dostępne"
               value={surveys.length}
               icon="assignment"
-              iconColor="#4d41df"
+              iconColor="#5b4ee0"
             />
           </View>
           <View className="flex-1">
@@ -430,7 +430,7 @@ export default function SurveysScreen() {
               label="Odpowiedzi"
               value={allResponses.length}
               icon="question-answer"
-              iconColor="#f59e0b"
+              iconColor="#B7770D"
             />
           </View>
         </View>

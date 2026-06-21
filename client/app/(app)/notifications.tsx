@@ -36,7 +36,7 @@ export default function NotificationsScreen() {
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "warning",
-          color: "#dc2626",
+          color: "#C0392B",
         });
       } else if (isDueToday(t.dueDateTime)) {
         notifs.push({
@@ -46,7 +46,7 @@ export default function NotificationsScreen() {
           description: t.title,
           timestamp: t.dueDateTime!,
           icon: "schedule",
-          color: "#f59e0b",
+          color: "#B7770D",
         });
       }
     });
@@ -63,7 +63,7 @@ export default function NotificationsScreen() {
           description: e.title,
           timestamp: e.startDateTime,
           icon: "event",
-          color: "#4d41df",
+          color: "#5b4ee0",
         });
       }
     });

@@ -97,7 +97,7 @@ export default function RegisterScreen() {
               onPress={() => router.push("/")}
               className="flex-row items-center gap-1.5 mb-6 self-start"
             >
-              <MaterialIcons name="arrow-back" size={18} color="#888888" />
+              <MaterialIcons name="arrow-back" size={18} color="#9b9791" />
               <Text className="text-on-surface-variant font-body text-sm">{t("common.backToHome")}</Text>
             </TouchableOpacity>
             <View className="items-center gap-3 mb-8">
@@ -193,7 +193,7 @@ export default function RegisterScreen() {
               <MaterialIcons
                 name={termsAccepted ? "check-box" : "check-box-outline-blank"}
                 size={22}
-                color={termsAccepted ? "#4d41df" : "#777587"}
+                color={termsAccepted ? "#5b4ee0" : "#6b6965"}
               />
               <Text className="flex-1 text-on-surface-variant font-body text-body-md">
                 {t("auth.acceptPrefix")}{" "}
