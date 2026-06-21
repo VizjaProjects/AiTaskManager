@@ -1,3 +1,4 @@
+using Ordovita.Api.Endpoints.Admin;
 using Ordovita.Api.Endpoints.DomainUser;
 using Ordovita.Api.Endpoints.Identity;
 using Ordovita.Api.Endpoints.LlmSettings;
@@ -28,6 +29,7 @@ public static class ApiEndpointsExtensions
         api.MapLlmSettingsEndpoints();
         api.MapNoteEndpoints();
         api.MapPlanEndpoints();
+        api.MapAdminEndpoints();
         return app;
     }
 }

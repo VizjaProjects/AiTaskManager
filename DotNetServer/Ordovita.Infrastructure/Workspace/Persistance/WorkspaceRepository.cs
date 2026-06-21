@@ -45,4 +45,26 @@ public sealed class WorkspaceRepository(AppDbContext context) : IWorkspaceReposi
     {
         context.Workspaces.Remove(workspace);
     }
+
+    public async Task<int> GetPublicWorkspaceCountAsync(UserId userId, CancellationToken ct = default)
+    {
+        var result = await context.Database.SqlQuery<int>($"""
+                                                           SELECT COUNT(Id) AS Value 
+                                                           FROM Workspaces
+                                                           WHERE Visibility = 'Public' AND CreatedBy = {userId.Value}
+                                                           """).FirstOrDefaultAsync(ct);
+
+        return result;
+    }
+
+    public async Task<int> GetPrivateWorkspaceCountAsync(UserId userId, CancellationToken ct = default)
+    {
+        var result = await context.Database.SqlQuery<int>($"""
+                                                           SELECT COUNT(Id) AS Value 
+                                                           FROM Workspaces
+                                                           WHERE Visibility = 'Private' AND CreatedBy = {userId.Value}
+                                                           """).FirstOrDefaultAsync(ct);
+
+        return result;
+    }
 }

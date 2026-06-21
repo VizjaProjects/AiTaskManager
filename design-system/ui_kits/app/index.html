@@ -1,0 +1,71 @@
+<!-- @dsCard group="App" viewport="1280x720" subtitle="Interactive Ordovita app — dashboard, tasks, AI planning" name="Ordovita App" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="../../_ds_bundle.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+      }
+      #root {
+        height: 100vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { AppShell, DashboardScreen, TasksScreen, AiTaskScreen } =
+        window.Ordovita;
+      const TITLES = { dashboard: "Dashboard", tasks: "Tasks", ai: "AI Task" };
+
+      function App() {
+        const [active, setActive] = React.useState("dashboard");
+        const toggleTheme = () =>
+          document.documentElement.classList.toggle("dark");
+
+        function nav(key) {
+          // Only three screens are recreated; others fall back to the dashboard.
+          setActive(["dashboard", "tasks", "ai"].includes(key) ? key : active);
+        }
+
+        let screen = <DashboardScreen />;
+        if (active === "tasks") screen = <TasksScreen />;
+        else if (active === "ai") screen = <AiTaskScreen />;
+
+        return (
+          <AppShell
+            active={active}
+            onNavigate={nav}
+            title={TITLES[active]}
+            onToggleTheme={toggleTheme}
+          >
+            {screen}
+          </AppShell>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>

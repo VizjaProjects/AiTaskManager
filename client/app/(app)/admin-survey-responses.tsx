@@ -10,7 +10,11 @@ import { Skeleton } from "@/components/atoms/Skeleton";
 import { EmptyState } from "@/components/atoms/EmptyState";
 import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
-import { useSurveys, useSurveyQuestions, useSurveyResponses } from "@/lib/hooks";
+import {
+  useSurveys,
+  useSurveyQuestions,
+  useSurveyResponses,
+} from "@/lib/hooks";
 
 function TextResponseItem({
   answer,
@@ -65,7 +69,11 @@ export default function AdminSurveyResponsesPage() {
     return grouped;
   }, [responses]);
 
-  if (user?.role !== Role.ADMIN) {
+  if (!user) {
+    return null;
+  }
+
+  if (user.role !== Role.ADMIN) {
     return <Redirect href="/(app)/dashboard" />;
   }
 
@@ -74,7 +82,8 @@ export default function AdminSurveyResponsesPage() {
   }
 
   const isLoading = questionsLoading || responsesLoading;
-  const uniqueRespondents = new Set(responses.map((r) => r.userResponseId)).size;
+  const uniqueRespondents = new Set(responses.map((r) => r.userResponseId))
+    .size;
   const totalResponseEntries = responses.length;
 
   return (

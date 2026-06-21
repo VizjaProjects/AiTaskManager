@@ -10,7 +10,8 @@ public sealed record CreatePlanCommand(
     string PlanName,
     int AiTaskLimit,
     int PublicWorkspaceLimit,
-    int PrivateWorkspaceLimit) : ICommand<PlanDto>;
+    int PrivateWorkspaceLimit,
+    bool IsActive) : ICommand<PlanDto>;
 
 public class CreatePlanHandler(IPlanRepository planRepository, IUnitOfWork uow)
     : ICommandHandler<CreatePlanCommand, PlanDto>
@@ -18,7 +19,7 @@ public class CreatePlanHandler(IPlanRepository planRepository, IUnitOfWork uow)
     public async Task<Result<PlanDto>> Handle(CreatePlanCommand command, CancellationToken ct)
     {
         var plan = Domain.Plan.Plan.Create(command.PlanName, command.AiTaskLimit, command.PublicWorkspaceLimit,
-            command.PrivateWorkspaceLimit);
+            command.PrivateWorkspaceLimit, command.IsActive);
 
 
         if (plan.IsFailure || plan.Value == null)
@@ -30,6 +31,6 @@ public class CreatePlanHandler(IPlanRepository planRepository, IUnitOfWork uow)
 
 
         return Result.Success(new PlanDto(plan.Value.Id.Value, plan.Value.PlanName, plan.Value.AiTaskLimit,
-            plan.Value.PublicWorkspaceLimit, plan.Value.PrivateWorkspaceLimit));
+            plan.Value.PublicWorkspaceLimit, plan.Value.PrivateWorkspaceLimit, plan.Value.IsActive));
     }
 }

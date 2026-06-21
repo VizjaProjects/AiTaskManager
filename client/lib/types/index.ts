@@ -61,6 +61,55 @@ export interface Workspace {
 
 export type WorkspaceVisibility = "Public" | "Private";
 
+/* ───────── Plans & limits ───────── */
+
+export interface Plan {
+  planId: UUID;
+  planName: string;
+  aiTaskLimit: number;
+  publicWorkspaceLimit: number;
+  privateWorkspaceLimit: number;
+  isActive: boolean;
+}
+
+export interface CreatePlanRequest {
+  planName: string;
+  aiTaskLimit: number;
+  publicWorkspaceLimit: number;
+  privateWorkspaceLimit: number;
+  isActive: boolean;
+}
+
+/** Current user's plan limits plus their current usage of each resource. */
+export interface UserPlanUsage {
+  planId: UUID;
+  planName: string;
+  isActive: boolean;
+  aiTaskLimit: number;
+  aiTaskUsage: number;
+  publicWorkspaceLimit: number;
+  publicWorkspaceUsage: number;
+  privateWorkspaceLimit: number;
+  privateWorkspaceUsage: number;
+}
+
+export interface AdminUser {
+  userId: UUID;
+  fullName: string;
+  email: string;
+  role: string;
+  isEnable: boolean;
+  planId: UUID | null;
+  planName: string | null;
+  planIsActive: boolean;
+  aiTaskUsage: number;
+  aiTaskLimit: number;
+  publicWorkspaceUsage: number;
+  publicWorkspaceLimit: number;
+  privateWorkspaceUsage: number;
+  privateWorkspaceLimit: number;
+}
+
 export interface Task {
   taskId: UUID;
   workspaceId?: UUID;

@@ -1,0 +1,62 @@
+<!-- @dsCard group="Brand" viewport="700x180" subtitle="Flat in-app cards vs. shadowed floating layers" name="Elevation" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 24px;
+      }
+      .row {
+        display: flex;
+        gap: 24px;
+        align-items: center;
+      }
+      .cell {
+        flex: 1;
+      }
+      .flat {
+        background: var(--surface-card);
+        border: 1px solid var(--border-card);
+        border-radius: var(--radius-lg);
+        box-shadow: var(--shadow-card);
+        height: 70px;
+      }
+      .modal {
+        background: var(--surface-card);
+        border: 1px solid var(--border-card);
+        border-radius: var(--radius-xl);
+        box-shadow: var(--shadow-modal);
+        height: 70px;
+      }
+      .label {
+        font-size: 11px;
+        margin-top: 10px;
+        color: var(--text-secondary);
+      }
+      .sub {
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="cell">
+        <div class="flat"></div>
+        <div class="label">In-app card — FLAT</div>
+        <div class="sub">1px border · shadow none</div>
+      </div>
+      <div class="cell">
+        <div class="modal"></div>
+        <div class="label">Modal / menu — elevated</div>
+        <div class="sub">shadow reserved for floating layers</div>
+      </div>
+    </div>
+  </body>
+</html>

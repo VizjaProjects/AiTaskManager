@@ -102,7 +102,7 @@ export default function WorkspaceCreateScreen() {
                 onPress={() => setVisibility(opt.key)}
                 className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
                   selected
-                    ? "border-primary bg-surface-container-low"
+                    ? "border-accent bg-surface-container-low"
                     : "border-outline-variant"
                 }`}
               >

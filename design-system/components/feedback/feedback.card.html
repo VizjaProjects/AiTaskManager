@@ -1,0 +1,96 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Feedback — toast, tooltip, empty state" subtitle="Elevated notices & quiet placeholders" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="../../_ds_bundle.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .grid {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .h {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+      .panel {
+        background: var(--surface-card);
+        border: 1px solid var(--border-card);
+        border-radius: var(--radius-lg);
+        width: 300px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { Toast, Tooltip, EmptyState, IconButton, Button } =
+        window.Ordovita;
+      function Demo() {
+        return (
+          <div className="grid">
+            <div className="col">
+              <span className="h">Toasts</span>
+              <Toast
+                tone="success"
+                message="Task saved."
+                onDismiss={() => {}}
+              />
+              <Toast tone="error" message="Couldn't reach the server." />
+              <Toast tone="info" message="AI planned 4 tasks for today." />
+              <span className="h" style={{ marginTop: 8 }}>
+                Tooltip (hover)
+              </span>
+              <div>
+                <Tooltip label="Ask AI">
+                  <IconButton icon="auto_awesome" accent />
+                </Tooltip>
+              </div>
+            </div>
+            <div className="col">
+              <span className="h">Empty state</span>
+              <div className="panel">
+                <EmptyState
+                  icon="checklist"
+                  title="No tasks yet"
+                  description="Create your first task or ask AI to plan your day."
+                  action={<Button variant="ai" label="Plan my day" />}
+                />
+              </div>
+            </div>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    </script>
+  </body>
+</html>

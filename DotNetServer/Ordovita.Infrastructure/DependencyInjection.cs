@@ -14,6 +14,7 @@ using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Domain.Identity;
 using Ordovita.Domain.LlmSettings.Port;
+using Ordovita.Domain.LlmStatistic;
 using Ordovita.Domain.Note.Port;
 using Ordovita.Domain.Plan;
 using Ordovita.Infrastructure.AspIdentity;
@@ -31,6 +32,7 @@ using Ordovita.Infrastructure.Llm.Groq;
 using Ordovita.Infrastructure.Llm.LlmTornado;
 using Ordovita.Infrastructure.LlmSettings;
 using Ordovita.Infrastructure.LlmSettings.Persistance;
+using Ordovita.Infrastructure.LlmStatistic.Persistence;
 using Ordovita.Infrastructure.Note.Persistence;
 using Ordovita.Infrastructure.Plan.Persistence;
 using Ordovita.Infrastructure.Survey;
@@ -96,6 +98,8 @@ public static class DependencyInjection
         services.AddScoped<IExternalAuthService, ExternalAuthService>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPlanRepository, PlanRepository>();
+
+        services.AddScoped<ILlmStatisticRepository, LlmStatisticRepository>();
 
 
         return services;

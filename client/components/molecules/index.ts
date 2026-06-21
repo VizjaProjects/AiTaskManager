@@ -22,3 +22,5 @@ export { MinimalSelectDropdown } from "./MinimalSelectDropdown";
 export { ProviderSelectList } from "./ProviderSelectList";
 export { ModelSelectList } from "./ModelSelectList";
 export { AiChatConfigButton } from "./AiChatConfigButton";
+export { PlanUsageBar } from "./PlanUsageBar";
+export { AiLimitInfo } from "./AiLimitInfo";

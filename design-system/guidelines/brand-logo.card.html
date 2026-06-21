@@ -1,0 +1,66 @@
+<!-- @dsCard group="Brand" viewport="700x160" subtitle="Isometric mark + Playfair wordmark" name="Logo" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 24px;
+      }
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+      }
+      .lockup {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .mark {
+        width: 40px;
+        height: 40px;
+        border-radius: 9px;
+      }
+      .word {
+        font-family: var(--font-serif-display);
+        font-weight: 400;
+        font-size: 30px;
+      }
+      .tagline {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-top: 2px;
+      }
+      .meta {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-tertiary);
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="lockup">
+        <img
+          class="mark"
+          src="../assets/logo/ordovita-mark.png"
+          alt="Ordovita mark"
+        />
+        <div>
+          <div class="word">Ordovita</div>
+          <div class="tagline">Premium AI Workspace</div>
+        </div>
+      </div>
+      <div class="meta">
+        mark · isometric cube ink<br />wordmark · Playfair Display 400
+      </div>
+    </div>
+  </body>
+</html>

@@ -248,6 +248,46 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("LlmSettings.LlmSettings", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.LlmStatistic.LlmStatistic", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("InputTokenCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("OutputTokenCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Prompt")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("RequestType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTime>("RequestedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("RequestedBy")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("TotalTokenCount")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RequestType");
+
+                    b.HasIndex("RequestedAt");
+
+                    b.HasIndex("RequestedBy");
+
+                    b.ToTable("LlmStatistic.LlmStatistics", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Note.Note", b =>
                 {
                     b.Property<Guid>("Id")
@@ -736,10 +776,8 @@ namespace Ordovita.Infrastructure.Migrations
 
                     b.Property<string>("Visibility")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(20)
-                        .HasColumnType("varchar(20)")
-                        .HasDefaultValue("Public");
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("WorkspaceName")
                         .IsRequired()

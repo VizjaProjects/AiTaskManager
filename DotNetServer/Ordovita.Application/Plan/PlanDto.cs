@@ -5,4 +5,5 @@ public sealed record PlanDto(
     string PlanName,
     int AiTaskLimit,
     int PublicWorkspaceLimit,
-    int PrivateWorkspaceLimit);
+    int PrivateWorkspaceLimit,
+    bool IsActive);

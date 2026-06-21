@@ -1,0 +1,66 @@
+<!-- @dsCard group="Spacing" viewport="700x190" subtitle="Named rhythm tokens in a stacked card" name="Spacing in use" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 20px;
+      }
+      .card {
+        background: var(--surface-card);
+        border: 1px solid var(--border-card);
+        border-radius: var(--radius-lg);
+        padding: var(--gutter);
+      }
+      .section + .section {
+        margin-top: var(--section-gap);
+      }
+      .stack > * + * {
+        margin-top: var(--stack-gap);
+      }
+      .title {
+        font-weight: 500;
+        font-size: 15px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .tag {
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="section stack">
+        <div class="title">Today</div>
+        <div class="row">
+          <span>Draft Q3 roadmap</span><span class="tag">stack-gap 16px</span>
+        </div>
+        <div class="row">
+          <span>Review pull requests</span
+          ><span class="tag">stack-gap 16px</span>
+        </div>
+      </div>
+      <div class="section stack">
+        <div class="title">
+          Upcoming <span class="tag">↑ section-gap 32px</span>
+        </div>
+        <div class="row">
+          <span>Team sync · 14:00</span
+          ><span class="tag">gutter 24px padding</span>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

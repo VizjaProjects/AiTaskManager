@@ -31,6 +31,7 @@ import {
   useTaskStatuses,
 } from "@/lib/hooks";
 import { AiChatConfigButton } from "@/components/molecules/AiChatConfigButton";
+import { AiLimitInfo } from "@/components/molecules/AiLimitInfo";
 import {
   useAiPlanningRequestStore,
   useLlmSettingsSelectionStore,
@@ -550,7 +551,10 @@ export default function AiTaskScreen() {
               }}
             />
             <View className="flex-row items-center justify-between gap-2 flex-wrap">
-              <AiChatConfigButton disabled={generatePlan.isPending} />
+              <View className="flex-row items-center gap-2">
+                <AiChatConfigButton disabled={generatePlan.isPending} />
+                <AiLimitInfo />
+              </View>
               <View className="flex-row items-center gap-2">
                 {speechSupported && (
                   <TouchableOpacity

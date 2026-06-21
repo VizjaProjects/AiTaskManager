@@ -1,0 +1,46 @@
+/*
+ * Ordovita — typography tokens.
+ *
+ * Two families only:
+ *   - Playfair Display (serif)  → hero / page / modal titles, big stat numbers.
+ *   - Inter (sans, <=500)       → every piece of UI. Never heavier than medium.
+ *
+ * The biggest thing on a screen is always the serif display. A hero in Inter
+ * is a bug.
+ */
+
+:root {
+  /* ---- Families ---- */
+  --font-serif-display: "Playfair Display", Georgia, serif;
+  --font-sans:
+    "Inter", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+
+  /* Semantic family aliases (mirror Tailwind font-* classes) */
+  --font-display: var(--font-serif-display); /* font-display  — weight 400 */
+  --font-headline: var(--font-sans); /* font-headline — weight 500 */
+  --font-body: var(--font-sans); /* font-body     — weight 400 */
+  --font-label: var(--font-sans); /* font-label    — weight 500, uppercase */
+
+  /* ---- Weights (UI caps at 500) ---- */
+  --weight-regular: 400;
+  --weight-medium: 500;
+
+  /* ---- Type scale (size / line-height / tracking) ---- */
+  --type-display-lg-size: 48px;
+  --type-display-lg-line: 56px;
+  --type-display-lg-track: -0.02em;
+  --type-headline-lg-size: 32px;
+  --type-headline-lg-line: 40px;
+  --type-headline-lg-track: -0.01em;
+  --type-headline-md-size: 24px;
+  --type-headline-md-line: 32px;
+  --type-title-lg-size: 20px;
+  --type-title-lg-line: 28px;
+  --type-body-lg-size: 16px;
+  --type-body-lg-line: 24px;
+  --type-body-md-size: 14px;
+  --type-body-md-line: 20px;
+  --type-label-md-size: 12px;
+  --type-label-md-line: 16px;
+  --type-label-md-track: 0.05em;
+}

@@ -127,9 +127,8 @@ function KanbanTaskCard({
   onPress: () => void;
   isCompleted?: boolean;
 }) {
-  const members = useWorkspaceStore(
-    (s) => s.getActiveWorkspace()?.assignedUsers ?? [],
-  );
+  const activeWorkspace = useWorkspaceStore((s) => s.getActiveWorkspace());
+  const members = activeWorkspace?.assignedUsers ?? [];
   const setAssignees = useSetTaskAssignees();
   const t = useT();
   const { data: allNotes } = useNotes();

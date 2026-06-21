@@ -68,8 +68,22 @@ export function SideNavBar() {
   const mode = useThemeStore((s) => s.mode);
   const t = useT();
 
+  const isAdmin = user?.role === Role.ADMIN;
+
+  // Admins use the app purely for management, so the personal productivity
+  // sections (dashboard, AI task, calendar, tasks, …) are hidden. Notes stay.
+  const ADMIN_MAIN_PATHS = ["/(app)/notes"];
+  const mainNavItems = isAdmin
+    ? NAV_ITEMS.filter((item) => ADMIN_MAIN_PATHS.includes(item.path))
+    : NAV_ITEMS;
+
   function isActive(matches: string[]) {
     return matches.some((m) => pathname.startsWith(m) || pathname.includes(m));
+  }
+
+  async function handleLogout() {
+    await logout();
+    router.replace("/(auth)/login");
   }
 
   return (
@@ -77,7 +91,9 @@ export function SideNavBar() {
       <View className="flex-1">
         <TouchableOpacity
           className="px-2 mb-4"
-          onPress={() => router.push("/(app)/dashboard")}
+          onPress={() =>
+            router.push(isAdmin ? "/(app)/admin-surveys" : "/(app)/dashboard")
+          }
         >
           <OrdovitaLogo size="md" showTagline />
         </TouchableOpacity>
@@ -88,7 +104,7 @@ export function SideNavBar() {
 
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           <View className="gap-px px-1">
-            {NAV_ITEMS.map((item) => (
+            {mainNavItems.map((item) => (
               <NavItem
                 key={item.path}
                 icon={item.icon}
@@ -106,6 +122,22 @@ export function SideNavBar() {
                 label={t("nav.surveysAdmin")}
                 active={pathname.includes("admin-survey")}
                 onPress={() => router.push("/(app)/admin-surveys" as never)}
+              />
+            )}
+            {user?.role === Role.ADMIN && (
+              <NavItem
+                icon="workspaces"
+                label={t("nav.plansAdmin")}
+                active={pathname.includes("admin-plans")}
+                onPress={() => router.push("/(app)/admin-plans" as never)}
+              />
+            )}
+            {user?.role === Role.ADMIN && (
+              <NavItem
+                icon="group"
+                label={t("nav.usersAdmin")}
+                active={pathname.includes("admin-users")}
+                onPress={() => router.push("/(app)/admin-users" as never)}
               />
             )}
             {user?.role === Role.USER && (
@@ -126,7 +158,7 @@ export function SideNavBar() {
 
       <View className="gap-px px-1 pt-3 border-t border-border-subtle">
         <TouchableOpacity
-          onPress={() => logout()}
+          onPress={handleLogout}
           className="flex-row items-center gap-2.5 px-3.5 py-2 rounded-md"
         >
           <MaterialIcons

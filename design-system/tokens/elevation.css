@@ -1,0 +1,39 @@
+/*
+ * Ordovita — elevation tokens.
+ *
+ * In-app surfaces are FLAT. Cards are defined by a 1px border
+ * (--border-card), never a shadow (--shadow-card is intentionally none).
+ *
+ * Real shadow is reserved for layers that float above the page: modals,
+ * dropdowns/menus, kanban cards while dragging, and marketing/landing cards.
+ */
+
+:root {
+  /* Flat by design — in-app cards use a border instead */
+  --shadow-card: none;
+
+  /* Kanban board (rest / hover / drag) */
+  --shadow-kanban:
+    0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.07);
+  --shadow-kanban-hover:
+    0 6px 16px rgba(16, 24, 40, 0.1), 0 2px 6px rgba(16, 24, 40, 0.06);
+  --shadow-kanban-drag:
+    0 16px 32px rgba(16, 24, 40, 0.18), 0 4px 8px rgba(16, 24, 40, 0.1);
+
+  /* Floating layers */
+  --shadow-modal: 0 24px 60px -16px rgba(16, 24, 40, 0.3);
+  --shadow-menu:
+    0 4px 12px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
+
+  /* Marketing / landing cards (border + soft lift against cream paper) */
+  --shadow-landing:
+    0 1px 2px rgba(16, 24, 40, 0.04), 0 6px 16px rgba(16, 24, 40, 0.07);
+}
+
+.dark {
+  --shadow-card: none;
+  --shadow-modal: 0 24px 60px -16px rgba(0, 0, 0, 0.6);
+  --shadow-menu: 0 4px 12px rgba(0, 0, 0, 0.45), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-landing:
+    0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px rgba(0, 0, 0, 0.45);
+}

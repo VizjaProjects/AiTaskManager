@@ -43,6 +43,14 @@ public sealed class UserRepository(AppDbContext context) : IUserRepository
         return await context.DomainUser.AnyAsync(u => u.Email == email, ct);
     }
 
+    public async Task<IReadOnlyList<DomainUser>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await context.DomainUser
+            .AsNoTracking()
+            .OrderBy(u => u.CreatedAt)
+            .ToListAsync(ct);
+    }
+
     public async Task<DomainUser?> GetAsyncByAspId(string aspId, CancellationToken ct = default)
     {
         return await context.DomainUser.FirstOrDefaultAsync(u => u.AspIdentityUserId == aspId, ct);

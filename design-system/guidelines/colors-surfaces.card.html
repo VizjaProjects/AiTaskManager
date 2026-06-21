@@ -1,0 +1,68 @@
+<!-- @dsCard group="Colors" viewport="700x150" subtitle="Cream paper neutral surfaces (light)" name="Surfaces — neutrals" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+      .cell {
+        flex: 1;
+      }
+      .chip {
+        height: 56px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-card);
+      }
+      .label {
+        font-size: 11px;
+        margin-top: 6px;
+        color: var(--text-secondary);
+      }
+      .hex {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="cell">
+        <div class="chip" style="background: #f5f3ef"></div>
+        <div class="label">background</div>
+        <div class="hex">#f5f3ef</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #ffffff"></div>
+        <div class="label">surface / card</div>
+        <div class="hex">#ffffff</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #eeece8"></div>
+        <div class="label">surface-dim · sidebar</div>
+        <div class="hex">#eeece8</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #eceae6"></div>
+        <div class="label">hover</div>
+        <div class="hex">#eceae6</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #e8e5e0"></div>
+        <div class="label">active</div>
+        <div class="hex">#e8e5e0</div>
+      </div>
+    </div>
+  </body>
+</html>

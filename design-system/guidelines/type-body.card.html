@@ -1,0 +1,69 @@
+<!-- @dsCard group="Type" viewport="700x180" subtitle="Body copy, small label, and weights" name="Body & label" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .body-lg {
+        font-weight: 400;
+        font-size: 16px;
+        line-height: 24px;
+        color: var(--text-body);
+      }
+      .body-md {
+        font-weight: 400;
+        font-size: 14px;
+        line-height: 20px;
+        color: var(--text-secondary);
+      }
+      .label {
+        font-weight: 500;
+        font-size: 12px;
+        line-height: 16px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+      .meta {
+        font-size: 11px;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stack">
+      <div>
+        <div class="body-lg">
+          Minimalist task management. Reduce cognitive load and focus on what
+          matters.
+        </div>
+        <div class="meta">font-body · Inter 400 · body-lg 16/24</div>
+      </div>
+      <div>
+        <div class="body-md">
+          Plan your day with events and a clear month view.
+        </div>
+        <div class="meta">font-body · Inter 400 · body-md 14/20</div>
+      </div>
+      <div>
+        <div class="label">In progress</div>
+        <div class="meta">
+          font-label · Inter 500 · label-md 12/16 · +0.05em · uppercase
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

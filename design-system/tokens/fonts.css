@@ -1,0 +1,25 @@
+/*
+ * Ordovita — webfonts.
+ * Two families only: Playfair Display (serif display) + Inter (UI).
+ *
+ * Google now ships each family as a single VARIABLE woff2 (one binary covering
+ * the whole weight axis), so we declare each family once with a weight range.
+ * The system uses 400 (regular) and 500 (medium) instances only.
+ * Real binaries live in ../assets/fonts and ship to consumers.
+ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("../assets/fonts/Inter-Variable.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Playfair Display";
+  font-style: normal;
+  font-weight: 400 500;
+  font-display: swap;
+  src: url("../assets/fonts/PlayfairDisplay-Variable.woff2") format("woff2");
+}

@@ -1,0 +1,148 @@
+/*
+ * Ordovita — color tokens ("Arena" palette).
+ *
+ * Mirrors client/global.css exactly. Light (:root) is the priority — warm cream
+ * paper. Dark (.dark) is a quiet near-black. Toggle by adding `.dark` to <html>.
+ *
+ * Two layers:
+ *   1. Base values    — the raw palette (--color-*).
+ *   2. Semantic aliases — role-based names (--text-body, --surface-card, ...).
+ *      Build UI against the semantic layer; never hardcode a hex.
+ *
+ * Cardinal rule: exactly ONE value per role. One accent, one error, one
+ * success, one warning, one events color. A new hex is a bug, not a style.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---- Surfaces (cream paper) ---- */
+  --color-background: #f5f3ef; /* app bg */
+  --color-surface: #ffffff; /* cards, modals, dropdowns */
+  --color-surface-dim: #eeece8; /* sidebar */
+  --color-surface-bright: #ffffff;
+  --color-surface-container-lowest: #ffffff; /* card fill */
+  --color-surface-container-low: #eceae6; /* hover */
+  --color-surface-container: #e8e5e0; /* active */
+  --color-surface-container-high: #e2dfd9;
+  --color-surface-container-highest: #c8c4be;
+  --color-surface-variant: #eeece8;
+
+  /* ---- Text (ink) ---- */
+  --color-on-surface: #1a1a18; /* primary text */
+  --color-on-surface-variant: #6b6965; /* secondary text */
+  --color-on-background: #1a1a18;
+  --color-text-tertiary: #9b9791; /* tertiary / placeholder */
+  --color-text-muted: #b8b4af;
+  --color-inverse-surface: #1a1a18;
+  --color-inverse-on-surface: #ffffff;
+
+  /* ---- Borders ---- */
+  --color-outline: #c8c4be; /* strong border */
+  --color-outline-variant: #e2dfd9; /* default border — defines cards */
+  --color-border-subtle: #eceae6; /* subtle divider */
+
+  /* ---- Brand / action (ink) ---- */
+  --color-primary: #1a1a18;
+  --color-on-primary: #ffffff;
+  --color-action: #1a1a18;
+  --color-on-action: #ffffff;
+  --color-primary-fixed: #eceae6;
+  --color-primary-fixed-dim: #e8e5e0;
+  --color-surface-tint: #1a1a18;
+
+  /* ---- The single accent (Arena violet) ---- */
+  --color-accent: #5b4ee0; /* links, highlights, AI, selected */
+  --color-accent-tint-08: rgba(91, 78, 224, 0.08); /* pill / badge bg */
+  --color-accent-tint-06: rgba(91, 78, 224, 0.06); /* selected row bg */
+  --color-accent-edge: rgba(91, 78, 224, 0.28); /* selected row border */
+
+  /* ---- Semantic states (one value per role) ---- */
+  --color-error: #ba1a1a; /* delete / invalid */
+  --color-critical: #c0392b; /* critical / high priority */
+  --color-warning: #b7770d; /* warning / in-progress */
+  --color-success: #2e7d52; /* completed / positive */
+  --color-events: #dc2c4f; /* calendar events */
+  --color-notes: #006b58; /* note category accent (teal) */
+
+  /* ---- Arena convenience aliases ---- */
+  --color-sidebar: #eeece8;
+  --color-hover: #eceae6;
+  --color-active: #e8e5e0;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --color-background: #111111;
+  --color-surface: #1c1c1c;
+  --color-surface-dim: #141414;
+  --color-surface-bright: #1f1f1f;
+  --color-surface-container-lowest: #1f1f1f;
+  --color-surface-container-low: rgba(255, 255, 255, 0.04);
+  --color-surface-container: rgba(255, 255, 255, 0.07);
+  --color-surface-container-high: rgba(255, 255, 255, 0.1);
+  --color-surface-container-highest: rgba(255, 255, 255, 0.15);
+  --color-surface-variant: #141414;
+
+  --color-on-surface: rgba(255, 255, 255, 0.88);
+  --color-on-surface-variant: rgba(255, 255, 255, 0.5);
+  --color-on-background: rgba(255, 255, 255, 0.88);
+  --color-text-tertiary: rgba(255, 255, 255, 0.28);
+  --color-text-muted: rgba(255, 255, 255, 0.22);
+  --color-inverse-surface: #f5f3ef;
+  --color-inverse-on-surface: #1a1a18;
+
+  --color-outline: rgba(255, 255, 255, 0.2);
+  --color-outline-variant: rgba(255, 255, 255, 0.11);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+
+  --color-primary: rgba(255, 255, 255, 0.88);
+  --color-on-primary: #111111;
+  --color-action: rgba(255, 255, 255, 0.92);
+  --color-on-action: #111111;
+  --color-primary-fixed: rgba(255, 255, 255, 0.07);
+  --color-primary-fixed-dim: rgba(255, 255, 255, 0.1);
+  --color-surface-tint: #ffffff;
+
+  /* Accent lifts to a brighter violet so it reads on near-black */
+  --color-accent: #9b8cff;
+  --color-accent-tint-08: rgba(155, 140, 255, 0.14);
+  --color-accent-tint-06: rgba(155, 140, 255, 0.12);
+  --color-accent-edge: rgba(155, 140, 255, 0.38);
+
+  /* Semantic states keep their hue across themes (single value per role) */
+  --color-error: #ba1a1a;
+  --color-critical: #c0392b;
+  --color-warning: #b7770d;
+  --color-success: #2e7d52;
+  --color-events: #dc2c4f;
+  --color-notes: #006b58;
+
+  --color-sidebar: #141414;
+  --color-hover: rgba(255, 255, 255, 0.04);
+  --color-active: rgba(255, 255, 255, 0.07);
+}
+
+/* ----------------------------------------------------------------------------
+ * Semantic aliases — the role layer. Prefer these in components.
+ * ------------------------------------------------------------------------- */
+:root {
+  --text-body: var(--color-on-surface);
+  --text-secondary: var(--color-on-surface-variant);
+  --text-tertiary: var(--color-text-tertiary);
+  --text-on-action: var(--color-on-action);
+  --text-accent: var(--color-accent);
+
+  --surface-page: var(--color-background);
+  --surface-card: var(--color-surface-container-lowest);
+  --surface-sidebar: var(--color-sidebar);
+  --surface-hover: var(--color-hover);
+  --surface-active: var(--color-active);
+
+  --border-card: var(--color-outline-variant);
+  --border-strong: var(--color-outline);
+  --border-divider: var(--color-border-subtle);
+
+  --action-fill: var(--color-action);
+}

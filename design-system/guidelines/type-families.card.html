@@ -1,0 +1,60 @@
+<!-- @dsCard group="Type" viewport="700x170" subtitle="Two families only — serif over sans" name="Families pairing" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .row {
+        display: flex;
+        gap: 28px;
+      }
+      .col {
+        flex: 1;
+      }
+      .big {
+        font-size: 40px;
+        line-height: 1.1;
+      }
+      .serif {
+        font-family: var(--font-serif-display);
+        font-weight: 400;
+      }
+      .sans {
+        font-family: var(--font-sans);
+        font-weight: 500;
+      }
+      .meta {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-top: 8px;
+      }
+      .glyphs {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="col">
+        <div class="big serif">Ag</div>
+        <div class="meta">Playfair Display · display</div>
+        <div class="glyphs serif">ABCabc 0123 — &amp; ?</div>
+      </div>
+      <div class="col">
+        <div class="big sans">Ag</div>
+        <div class="meta">Inter · all UI (≤500)</div>
+        <div class="glyphs sans">ABCabc 0123 — &amp; ?</div>
+      </div>
+    </div>
+  </body>
+</html>

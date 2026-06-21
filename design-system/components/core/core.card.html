@@ -1,0 +1,113 @@
+<!-- @dsCard group="Components" viewport="700x300" name="Core — buttons, badges, card, avatar" subtitle="Action & identity primitives" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="../../_ds_bundle.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .group {
+        margin-bottom: 18px;
+      }
+      .h {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin-bottom: 10px;
+      }
+      .rowflex {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { Button, IconButton, Badge, Avatar, Card } = window.Ordovita;
+      function Demo() {
+        return (
+          <div>
+            <div className="group">
+              <div className="h">Buttons</div>
+              <div className="rowflex">
+                <Button
+                  variant="primary"
+                  label="Sign Up"
+                  icon="arrow_forward"
+                />
+                <Button variant="secondary" label="Log In" />
+                <Button variant="ai" label="Plan my day" />
+                <Button variant="error" label="Delete" icon="delete" />
+                <Button variant="text" label="Cancel" />
+                <Button variant="primary" label="Disabled" disabled />
+              </div>
+            </div>
+            <div className="group">
+              <div className="h">Icon buttons · Badges · Avatars</div>
+              <div className="rowflex">
+                <IconButton icon="search" title="Search" />
+                <IconButton icon="auto_awesome" accent title="AI" />
+                <IconButton icon="more_horiz" title="More" />
+                <Badge ai />
+                <Badge tone="critical" label="High" />
+                <Badge tone="warning" label="In progress" />
+                <Badge tone="success" label="Done" icon="check" />
+                <Badge tone="events" label="Event" />
+                <Avatar name="Mateusz Barlik" size="sm" />
+                <Avatar name="Alex Rivera" />
+              </div>
+            </div>
+            <div className="group">
+              <div className="h">Card (flat)</div>
+              <Card style={{ maxWidth: 320 }}>
+                <div
+                  style={{
+                    fontFamily: "var(--font-headline)",
+                    fontWeight: 500,
+                    fontSize: 15,
+                  }}
+                >
+                  Draft Q3 roadmap
+                </div>
+                <div
+                  style={{
+                    color: "var(--text-secondary)",
+                    fontSize: 13,
+                    marginTop: 4,
+                  }}
+                >
+                  Due today · 45 min
+                </div>
+              </Card>
+            </div>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    </script>
+  </body>
+</html>

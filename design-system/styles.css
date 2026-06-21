@@ -1,0 +1,14 @@
+/*
+ * Ordovita Design System — global CSS entry point.
+ *
+ * Consumers link THIS file only. It is a manifest of @import lines; every token
+ * and @font-face in the system is reachable from here. Keep it imports-only —
+ * never inline a rule in this file.
+ */
+
+@import "./tokens/fonts.css";
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+@import "./tokens/radius.css";
+@import "./tokens/elevation.css";

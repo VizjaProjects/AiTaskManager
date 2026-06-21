@@ -1,0 +1,85 @@
+<!-- @dsCard group="Brand" viewport="700x170" subtitle="MaterialIcons only — AI is auto-awesome in accent" name="Iconography" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .row {
+        display: flex;
+        gap: 26px;
+        align-items: flex-start;
+      }
+      .icon {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        width: 64px;
+      }
+      .material-icons {
+        font-size: 24px;
+        color: var(--text-body);
+      }
+      .ai .material-icons {
+        color: var(--text-accent);
+      }
+      .cap {
+        font-size: 10px;
+        color: var(--text-tertiary);
+      }
+      .meta {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        margin-top: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="icon ai">
+        <span class="material-icons">auto_awesome</span
+        ><span class="cap">AI · accent</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">dashboard</span
+        ><span class="cap">dashboard</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">calendar_today</span
+        ><span class="cap">calendar</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">checklist</span
+        ><span class="cap">tasks</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">sticky_note_2</span
+        ><span class="cap">notes</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">tune</span
+        ><span class="cap">settings</span>
+      </div>
+      <div class="icon">
+        <span class="material-icons">search</span
+        ><span class="cap">search</span>
+      </div>
+    </div>
+    <div class="meta">
+      One set: MaterialIcons (@expo/vector-icons). Never emoji, never mixed
+      families. Icon color comes from a token.
+    </div>
+  </body>
+</html>

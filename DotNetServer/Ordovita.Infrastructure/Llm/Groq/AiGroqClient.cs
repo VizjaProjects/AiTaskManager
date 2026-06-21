@@ -39,7 +39,7 @@ public class AiGroqClient(HttpClient client, GroqConfiguration configuration, IL
             var promptTokens = response!.Usage?.PromptTokens ?? 0;
             var completionTokens = response.Usage?.CompletionTokens ?? 0;
 
-            return Result.Success(new AiResponse(content, promptTokens + completionTokens, request.Prompt));
+            return Result.Success(new AiResponse(content,completionTokens ,promptTokens,promptTokens + completionTokens, request.Prompt, RequestType.Standard));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {

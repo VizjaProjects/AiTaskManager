@@ -1,0 +1,90 @@
+<!-- @dsCard group="Colors" viewport="700x170" subtitle="The one and only highlight color" name="Accent — Arena violet" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 16px;
+        align-items: stretch;
+      }
+      .swatch {
+        flex: 1;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border-card);
+        overflow: hidden;
+      }
+      .fill {
+        height: 70px;
+      }
+      .meta {
+        padding: 8px 10px;
+        font-size: 12px;
+        line-height: 1.4;
+      }
+      .name {
+        font-weight: 500;
+      }
+      .hex {
+        color: var(--text-secondary);
+        font-variant-numeric: tabular-nums;
+      }
+      .tints {
+        display: flex;
+        gap: 8px;
+        margin-top: 6px;
+      }
+      .tint {
+        flex: 1;
+        height: 24px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border-card);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="swatch">
+        <div class="fill" style="background: #5b4ee0"></div>
+        <div class="meta">
+          <div class="name">accent · light</div>
+          <div class="hex">#5b4ee0</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="fill" style="background: #9b8cff"></div>
+        <div class="meta">
+          <div class="name">accent · dark</div>
+          <div class="hex">#9b8cff</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="fill" style="background: var(--surface-card)">
+          <div class="tints" style="padding: 12px">
+            <div
+              class="tint"
+              style="background: var(--color-accent-tint-08)"
+            ></div>
+            <div
+              class="tint"
+              style="background: var(--color-accent-edge)"
+            ></div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="name">accent tints</div>
+          <div class="hex">badge 8% · edge 28%</div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

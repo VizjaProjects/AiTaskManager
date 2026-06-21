@@ -1,0 +1,30 @@
+/*
+ * Ordovita — spacing & layout rhythm tokens.
+ * Low density by design: generous air, consistent rhythm.
+ */
+
+:root {
+  /* ---- Base spacing scale (4px base) ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Named rhythm tokens (mirror tailwind.config.js) ---- */
+  --stack-gap: 1rem; /* gap between stacked items */
+  --gutter: 1.5rem; /* inner gutter */
+  --section-gap: 2rem; /* gap between page sections */
+  --margin-mobile: 1rem;
+  --margin-desktop: 2.5rem;
+
+  /* ---- Layout ---- */
+  --sidebar-width: 256px;
+  --content-max-width: 64rem; /* max-w-5xl — every page section aligns to this */
+  --gutter-page: 24px; /* px-6 mobile page gutter */
+  --gutter-page-desktop: 48px; /* md:px-12 */
+}

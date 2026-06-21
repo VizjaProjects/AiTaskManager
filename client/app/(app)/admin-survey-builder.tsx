@@ -326,10 +326,6 @@ export default function AdminSurveyBuilderPage() {
     }
   }, [isEditMode, existingQuestions, initialized, questions.length]);
 
-  if (user?.role !== Role.ADMIN) {
-    return <Redirect href="/(app)/dashboard" />;
-  }
-
   const addQuestion = (kind: BuilderQuestionKind) => {
     setQuestions([
       ...questions,
@@ -471,6 +467,14 @@ export default function AdminSurveyBuilderPage() {
       router,
     ],
   );
+
+  if (!user) {
+    return null;
+  }
+
+  if (user.role !== Role.ADMIN) {
+    return <Redirect href="/(app)/dashboard" />;
+  }
 
   const isLoadingEdit = isEditMode && (!initialized || questionsLoading);
 

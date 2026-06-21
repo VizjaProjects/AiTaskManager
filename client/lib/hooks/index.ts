@@ -23,6 +23,7 @@ import {
   workspaceApi,
 } from "../api";
 import { noteApi } from "../api/notes";
+import { planApi, adminApi } from "../api";
 import { buildNoteContentJson, parseNoteContent } from "../api/adapters";
 import { useWorkspaceStore } from "../stores/workspace";
 import type {
@@ -44,6 +45,7 @@ import type {
   QuestionType,
 } from "../types";
 import type { WorkspaceVisibility } from "../types";
+import type { CreatePlanRequest } from "../types";
 
 function useWorkspaceId() {
   return useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -482,8 +484,11 @@ export function useGenerateAiPlan() {
   return useMutation({
     mutationFn: (data: GenerateAiPlanRequest) =>
       aiApi.generatePlan(requireWorkspaceId(workspaceId), data),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] });
+      // Each generation consumes an AI call, so refresh the plan usage counter.
+      qc.invalidateQueries({ queryKey: ["userPlan"] });
+    },
   });
 }
 
@@ -629,6 +634,49 @@ export function useDeleteAiStatistic() {
   return useMutation({
     mutationFn: (id: string) => aiStatisticApi.delete(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["aiStatistics"] }),
+  });
+}
+
+/* ───────── Plans & limits ───────── */
+
+/** Current user's plan limits + live usage (AI calls, workspaces). */
+export function useUserPlan() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  return useQuery({
+    queryKey: ["userPlan"],
+    queryFn: () => planApi.getUserPlan(),
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+/** Admin: all plans in the system. */
+export function useAdminPlans() {
+  const role = useAuthStore((s) => s.user?.role);
+  return useQuery({
+    queryKey: ["adminPlans"],
+    queryFn: () => adminApi.getPlans(),
+    enabled: role === Role.ADMIN,
+  });
+}
+
+/** Admin: create a new plan. */
+export function useCreatePlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreatePlanRequest) => adminApi.createPlan(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminPlans"] }),
+  });
+}
+
+/** Admin: all users with their plan and current usage. */
+export function useAdminUsers() {
+  const role = useAuthStore((s) => s.user?.role);
+  return useQuery({
+    queryKey: ["adminUsers"],
+    queryFn: () => adminApi.getUsers(),
+    enabled: role === Role.ADMIN,
   });
 }
 
@@ -1353,9 +1401,7 @@ export function useSyncEntityNoteLinks() {
               : note.linkedEventIds.filter((id) => id !== entityId)
             : note.linkedEventIds;
 
-        updates.push(
-          noteApi.setLinks(wsId, note.id, { taskIds, eventIds }),
-        );
+        updates.push(noteApi.setLinks(wsId, note.id, { taskIds, eventIds }));
       }
 
       await Promise.all(updates);

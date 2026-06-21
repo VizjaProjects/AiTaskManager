@@ -1,0 +1,108 @@
+<!-- @dsCard group="Components" viewport="700x320" name="Forms — input, select, checkbox, switch" subtitle="Bordered fields, no focus ring" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../../styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+    />
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="../../_ds_bundle.js"></script>
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .grid {
+        display: flex;
+        gap: 28px;
+        align-items: flex-start;
+      }
+      .col {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .h {
+        font-size: 11px;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="text/babel">
+      const { Input, Select, Checkbox, Switch } = window.Ordovita;
+      function Demo() {
+        const [email, setEmail] = React.useState("");
+        const [status, setStatus] = React.useState("doing");
+        const [c1, setC1] = React.useState(true);
+        const [c2, setC2] = React.useState(false);
+        const [dark, setDark] = React.useState(false);
+        return (
+          <div className="grid">
+            <div className="col" style={{ width: 280 }}>
+              <Input
+                label="Email"
+                icon="mail"
+                placeholder="you@ordovita.pl"
+                value={email}
+                onChange={setEmail}
+              />
+              <Input placeholder="Search tasks" icon="search" />
+              <Input
+                label="Workspace"
+                error="Name is required"
+                placeholder="Untitled"
+              />
+            </div>
+            <div className="col">
+              <span className="h">Select</span>
+              <Select
+                value={status}
+                onChange={setStatus}
+                icon="tune"
+                options={[
+                  { value: "todo", label: "To do" },
+                  { value: "doing", label: "In progress" },
+                  { value: "done", label: "Done" },
+                ]}
+              />
+              <span className="h" style={{ marginTop: 8 }}>
+                Checkbox · Switch
+              </span>
+              <Checkbox checked={c1} onChange={setC1} label="Notify me" />
+              <Checkbox
+                checked={c2}
+                onChange={setC2}
+                label="Public workspace"
+              />
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <Switch checked={dark} onChange={setDark} />
+                <span style={{ fontSize: 14, color: "var(--text-secondary)" }}>
+                  Dark mode
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      }
+      ReactDOM.createRoot(document.getElementById("root")).render(<Demo />);
+    </script>
+  </body>
+</html>

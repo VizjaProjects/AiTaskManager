@@ -19,12 +19,93 @@ import {
   useSetActiveWorkspace,
 } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores";
+import type { Workspace, WorkspaceVisibility } from "@/lib/types";
 
 const createSchema = z.object({
   workspaceName: z.string().min(2, "Name must be at least 2 characters"),
 });
 
 type CreateForm = z.infer<typeof createSchema>;
+
+function SectionLabel({
+  icon,
+  label,
+  count,
+}: {
+  icon: keyof typeof MaterialIcons.glyphMap;
+  label: string;
+  count: number;
+}) {
+  return (
+    <View className="flex-row items-center gap-1.5 px-1">
+      <MaterialIcons name={icon} size={13} color="#9b9791" />
+      <Text className="text-text-tertiary font-label text-[10px] uppercase tracking-widest">
+        {label}
+      </Text>
+      <Text className="text-text-tertiary font-body text-[10px]">· {count}</Text>
+    </View>
+  );
+}
+
+function WorkspaceRow({
+  ws,
+  isActive,
+  onSelect,
+  onManage,
+}: {
+  ws: Workspace;
+  isActive: boolean;
+  onSelect: () => void;
+  onManage: () => void;
+}) {
+  const isPublic = ws.visibility === "Public";
+  return (
+    <View
+      className={`flex-row items-center gap-2 p-2 pl-4 rounded-xl border border-outline-variant ${
+        isActive ? "bg-surface-container-low" : "bg-surface-container-lowest"
+      }`}
+    >
+      <TouchableOpacity
+        onPress={onSelect}
+        className="flex-row items-center gap-3 flex-1 min-w-0 py-2"
+      >
+        <View
+          className={`w-9 h-9 rounded-lg items-center justify-center ${
+            isActive ? "bg-inverse-surface" : "bg-surface-container-low"
+          }`}
+        >
+          <MaterialIcons
+            name={isPublic ? "group" : "lock"}
+            size={18}
+            color={isActive ? "#ffffff" : "#9b9791"}
+          />
+        </View>
+        <View className="flex-1 min-w-0">
+          <Text
+            className="text-on-surface font-headline text-body-md"
+            numberOfLines={1}
+          >
+            {ws.workspaceName}
+          </Text>
+          <Text className="text-on-surface-variant font-body text-xs mt-0.5">
+            {ws.assignedUsers.length} member
+            {ws.assignedUsers.length !== 1 ? "s" : ""}
+          </Text>
+        </View>
+        {isActive && (
+          <MaterialIcons name="check-circle" size={20} color="#111111" />
+        )}
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onManage}
+        className="w-9 h-9 items-center justify-center rounded-lg"
+        accessibilityLabel="Workspace settings"
+      >
+        <MaterialIcons name="settings" size={20} color="#9b9791" />
+      </TouchableOpacity>
+    </View>
+  );
+}
 
 interface WorkspaceModalProps {
   visible: boolean;
@@ -44,6 +125,7 @@ export function WorkspaceModal({
   const createWorkspace = useCreateWorkspace();
   const [mode, setMode] = useState<"list" | "create">("list");
   const [error, setError] = useState<string | null>(null);
+  const [visibility, setVisibility] = useState<WorkspaceVisibility>("Private");
 
   const {
     control,
@@ -58,6 +140,7 @@ export function WorkspaceModal({
   function handleClose() {
     setMode("list");
     setError(null);
+    setVisibility("Private");
     reset();
     onClose();
   }
@@ -82,8 +165,12 @@ export function WorkspaceModal({
   async function onCreate(data: CreateForm) {
     setError(null);
     try {
-      await createWorkspace.mutateAsync({ name: data.workspaceName });
+      await createWorkspace.mutateAsync({
+        name: data.workspaceName,
+        visibility,
+      });
       reset();
+      setVisibility("Private");
       setMode("list");
     } catch (e: unknown) {
       const err = e as {
@@ -159,72 +246,56 @@ export function WorkspaceModal({
                 </View>
               ) : (
                 <ScrollView
-                  style={{ maxHeight: 280 }}
+                  style={{ maxHeight: 320 }}
                   showsVerticalScrollIndicator={false}
                 >
-                  <View className="gap-2">
-                    {workspaces.map((ws) => {
-                      const isActive = ws.workspaceId === activeWorkspaceId;
-                      return (
-                        <View
-                          key={ws.workspaceId}
-                          className={`flex-row items-center gap-2 p-2 pl-4 rounded-xl ${
-                            isActive
-                              ? "bg-surface-container-low border border-outline-variant"
-                              : "bg-surface-container-lowest border border-outline-variant"
-                          }`}
-                        >
-                          <TouchableOpacity
-                            onPress={() => selectWorkspace(ws.workspaceId)}
-                            className="flex-row items-center gap-3 flex-1 min-w-0 py-2"
-                          >
-                            <View
-                              className={`w-9 h-9 rounded-lg items-center justify-center ${
-                                isActive
-                                  ? "bg-inverse-surface"
-                                  : "bg-surface-container-low"
-                              }`}
-                            >
-                              <MaterialIcons
-                                name="folder"
-                                size={18}
-                                color={isActive ? "#ffffff" : "#9b9791"}
-                              />
-                            </View>
-                            <View className="flex-1 min-w-0">
-                              <Text
-                                className="text-on-surface font-headline text-body-md"
-                                numberOfLines={1}
-                              >
-                                {ws.workspaceName}
-                              </Text>
-                              <Text className="text-on-surface-variant font-body text-xs mt-0.5">
-                                {ws.assignedUsers.length} member
-                                {ws.assignedUsers.length !== 1 ? "s" : ""}
-                              </Text>
-                            </View>
-                            {isActive && (
-                              <MaterialIcons
-                                name="check-circle"
-                                size={20}
-                                color="#111111"
-                              />
-                            )}
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            onPress={() => manageMembers(ws.workspaceId)}
-                            className="w-9 h-9 items-center justify-center rounded-lg"
-                            accessibilityLabel="Manage members"
-                          >
-                            <MaterialIcons
-                              name="group"
-                              size={20}
-                              color="#9b9791"
+                  <View className="gap-4">
+                    {workspaces.some((w) => w.visibility === "Public") && (
+                      <View className="gap-2">
+                        <SectionLabel
+                          icon="group"
+                          label="Public"
+                          count={
+                            workspaces.filter((w) => w.visibility === "Public")
+                              .length
+                          }
+                        />
+                        {workspaces
+                          .filter((w) => w.visibility === "Public")
+                          .map((ws) => (
+                            <WorkspaceRow
+                              key={ws.workspaceId}
+                              ws={ws}
+                              isActive={ws.workspaceId === activeWorkspaceId}
+                              onSelect={() => selectWorkspace(ws.workspaceId)}
+                              onManage={() => manageMembers(ws.workspaceId)}
                             />
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })}
+                          ))}
+                      </View>
+                    )}
+                    {workspaces.some((w) => w.visibility !== "Public") && (
+                      <View className="gap-2">
+                        <SectionLabel
+                          icon="lock"
+                          label="Private"
+                          count={
+                            workspaces.filter((w) => w.visibility !== "Public")
+                              .length
+                          }
+                        />
+                        {workspaces
+                          .filter((w) => w.visibility !== "Public")
+                          .map((ws) => (
+                            <WorkspaceRow
+                              key={ws.workspaceId}
+                              ws={ws}
+                              isActive={ws.workspaceId === activeWorkspaceId}
+                              onSelect={() => selectWorkspace(ws.workspaceId)}
+                              onManage={() => manageMembers(ws.workspaceId)}
+                            />
+                          ))}
+                      </View>
+                    )}
                   </View>
                 </ScrollView>
               )}
@@ -265,6 +336,70 @@ export function WorkspaceModal({
                   />
                 )}
               />
+
+              <View className="gap-2">
+                <Text className="text-on-surface font-label text-body-md">
+                  Visibility
+                </Text>
+                {(
+                  [
+                    {
+                      key: "Private",
+                      icon: "lock",
+                      title: "Private",
+                      desc: "Only you. Members can't be added.",
+                    },
+                    {
+                      key: "Public",
+                      icon: "group",
+                      title: "Public",
+                      desc: "Invite and assign members.",
+                    },
+                  ] as {
+                    key: WorkspaceVisibility;
+                    icon: keyof typeof MaterialIcons.glyphMap;
+                    title: string;
+                    desc: string;
+                  }[]
+                ).map((opt) => {
+                  const selected = visibility === opt.key;
+                  return (
+                    <TouchableOpacity
+                      key={opt.key}
+                      onPress={() => setVisibility(opt.key)}
+                      className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
+                        selected
+                          ? "border-accent bg-surface-container-low"
+                          : "border-outline-variant"
+                      }`}
+                    >
+                      <MaterialIcons
+                        name={opt.icon}
+                        size={20}
+                        color={selected ? "#5b4ee0" : "#6b6965"}
+                      />
+                      <View className="flex-1 min-w-0">
+                        <Text className="text-on-surface font-body text-body-md">
+                          {opt.title}
+                        </Text>
+                        <Text className="text-on-surface-variant font-body text-xs">
+                          {opt.desc}
+                        </Text>
+                      </View>
+                      <MaterialIcons
+                        name={
+                          selected
+                            ? "radio-button-checked"
+                            : "radio-button-unchecked"
+                        }
+                        size={20}
+                        color={selected ? "#5b4ee0" : "#9b9791"}
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
               <Button
                 label="Create Workspace"
                 fullWidth

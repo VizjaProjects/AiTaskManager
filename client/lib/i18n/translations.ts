@@ -26,6 +26,8 @@ export const translations: Record<Lang, Dict> = {
     "nav.statistics": "Statystyki",
     "nav.surveys": "Ankiety",
     "nav.surveysAdmin": "Ankiety",
+    "nav.plansAdmin": "Plany",
+    "nav.usersAdmin": "Użytkownicy",
 
     // search
     "search.placeholder": "Szukaj zadań, wydarzeń…",
@@ -59,16 +61,19 @@ export const translations: Record<Lang, Dict> = {
     "auth.googleLoginFailed": "Nie udało się rozpocząć logowania Google.",
 
     // auth — register
-    "auth.registerSubtitle": "Dołącz do swojej inteligentnej przestrzeni pracy.",
+    "auth.registerSubtitle":
+      "Dołącz do swojej inteligentnej przestrzeni pracy.",
     "auth.acceptPrefix": "Akceptuję",
     "auth.terms": "Regulamin",
     "auth.and": "i",
     "auth.privacy": "Politykę prywatności",
-    "auth.googleAutoCreate": "Pierwsze logowanie Google tworzy konto automatycznie.",
+    "auth.googleAutoCreate":
+      "Pierwsze logowanie Google tworzy konto automatycznie.",
     "auth.haveAccount": "Masz już konto?",
     "auth.registerError": "Błąd rejestracji",
     "auth.googleRegisterFailed": "Nie udało się rozpocząć rejestracji Google.",
-    "auth.acceptTermsFirst": "Zaakceptuj regulamin i politykę prywatności, aby kontynuować.",
+    "auth.acceptTermsFirst":
+      "Zaakceptuj regulamin i politykę prywatności, aby kontynuować.",
 
     // auth — illustration
     "auth.illTasks": "Organizuj zadania i priorytety",
@@ -78,13 +83,16 @@ export const translations: Record<Lang, Dict> = {
     "auth.fp.title": "Resetuj hasło",
     "auth.fp.sentTitle": "Link wysłany!",
     "auth.fp.subtitle": "Podaj email, a wyślemy Ci link do resetowania hasła",
-    "auth.fp.sentSubtitle": "Sprawdź swoją skrzynkę email i kliknij w link resetujący",
+    "auth.fp.sentSubtitle":
+      "Sprawdź swoją skrzynkę email i kliknij w link resetujący",
     "auth.fp.sendError": "Nie udało się wysłać linku",
     "auth.fp.send": "Wyślij link",
     "auth.sp.titlePassword": "Ustaw hasło",
     "auth.sp.titleConfirm": "Potwierdź adres e-mail",
-    "auth.sp.subtitlePassword": "Konto {email} zostało utworzone przez Google. Ustaw hasło, aby móc logować się także adresem e-mail.",
-    "auth.sp.subtitleConfirm": "Wysłaliśmy kod potwierdzający na {email}. Wpisz go poniżej, aby zapisać hasło.",
+    "auth.sp.subtitlePassword":
+      "Konto {email} zostało utworzone przez Google. Ustaw hasło, aby móc logować się także adresem e-mail.",
+    "auth.sp.subtitleConfirm":
+      "Wysłaliśmy kod potwierdzający na {email}. Wpisz go poniżej, aby zapisać hasło.",
     "auth.sp.sendError": "Nie udało się wysłać wiadomości potwierdzającej.",
     "auth.sp.enterCode": "Wpisz kod otrzymany w wiadomości e-mail.",
     "auth.sp.codeInvalid": "Kod jest nieprawidłowy lub wygasł.",
@@ -97,28 +105,33 @@ export const translations: Record<Lang, Dict> = {
     "auth.ve.title": "Potwierdź email",
     "auth.ve.sentPrefix": "Wysłaliśmy link aktywacyjny na adres",
     "auth.ve.sentSuffix": ". Kliknij link w wiadomości, aby aktywować konto.",
-    "auth.ve.banner": "Weryfikacja 6-cyfrowym kodem nie jest dostępna w backendzie .NET. Użyj linku z wiadomości email.",
+    "auth.ve.banner":
+      "Weryfikacja 6-cyfrowym kodem nie jest dostępna w backendzie .NET. Użyj linku z wiadomości email.",
     "auth.ve.resend": "Wyślij ponownie link",
     "auth.ve.goLogin": "Przejdź do logowania",
     "common.cancel": "Anuluj",
     "common.delete": "Usuń",
     "profile.title": "Ustawienia",
-    "profile.subtitle": "Zarządzaj profilem, wyglądem i osobistą konfiguracją AI.",
+    "profile.subtitle":
+      "Zarządzaj profilem, wyglądem i osobistą konfiguracją AI.",
     "profile.tabAccount": "Konto",
     "profile.tabAi": "Personalizacja AI",
     "profile.fullName": "Imię i nazwisko",
     "profile.saveChanges": "Zapisz zmiany",
     "profile.defaultWorkspace": "Domyślny workspace",
-    "profile.defaultWorkspaceDesc": "Wybierz workspace, który otworzy się po uruchomieniu aplikacji.",
+    "profile.defaultWorkspaceDesc":
+      "Wybierz workspace, który otworzy się po uruchomieniu aplikacji.",
     "profile.changePassword": "Zmień hasło",
-    "profile.changePasswordDesc": "Zaktualizuj hasło, aby Twoje konto pozostało bezpieczne.",
+    "profile.changePasswordDesc":
+      "Zaktualizuj hasło, aby Twoje konto pozostało bezpieczne.",
     "profile.currentPassword": "Obecne hasło",
     "profile.newPassword": "Nowe hasło",
     "profile.confirmNewPassword": "Potwierdź nowe hasło",
     "profile.updatePassword": "Zaktualizuj hasło",
     "profile.deleteAccount": "Usuń konto",
     "profile.deleting": "Usuwanie konta…",
-    "profile.deleteConfirm": "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna.",
+    "profile.deleteConfirm":
+      "Czy na pewno chcesz usunąć konto? Ta operacja jest nieodwracalna.",
     "profile.errSetDefaultWs": "Nie udało się ustawić domyślnego workspace",
     "profile.errNameChange": "Nie udało się zmienić imienia i nazwiska",
     "profile.errPassChange": "Nie udało się zmienić hasła",
@@ -134,16 +147,21 @@ export const translations: Record<Lang, Dict> = {
     "notif.aiProposal": "Propozycja AI",
     "notif.aiProposalDesc": "Nowa propozycja zadania od AI",
     "notif.empty": "Brak powiadomień",
-    "notif.emptyDesc": "Jesteś na bieżąco — nie masz żadnych nowych powiadomień",
+    "notif.emptyDesc":
+      "Jesteś na bieżąco — nie masz żadnych nowych powiadomień",
     "stats.title": "Statystyki AI",
     "stats.bannerTitle": "Statystyki AI — w przygotowaniu",
-    "stats.bannerMsg": "Moduł AiStatistic nie jest jeszcze zaimplementowany w backendzie .NET. Po dodaniu endpointów GET /ai-statistic/my i DELETE /ai-statistic/{id} ten ekran zostanie aktywowany.",
+    "stats.bannerMsg":
+      "Moduł AiStatistic nie jest jeszcze zaimplementowany w backendzie .NET. Po dodaniu endpointów GET /ai-statistic/my i DELETE /ai-statistic/{id} ten ekran zostanie aktywowany.",
     "ws.manage": "Zarządzaj przestrzeniami roboczymi",
     "ws.new": "Nowy workspace",
     "ws.empty": "Brak workspace",
-    "ws.emptyDesc": "Utwórz pierwszy workspace, aby zacząć zarządzać zadaniami.",
+    "ws.emptyDesc":
+      "Utwórz pierwszy workspace, aby zacząć zarządzać zadaniami.",
     "ws.create": "Utwórz workspace",
     "ws.active": "Aktywny",
+    "ws.public": "Publiczny",
+    "ws.private": "Prywatny",
     "ws.membersWord": "użytkowników",
     "ws.createdWord": "utworzono",
     "common.user": "Użytkownik",
@@ -161,7 +179,8 @@ export const translations: Record<Lang, Dict> = {
     "tasks.completed": "Ukończone",
     "tasks.selectAll": "Zaznacz wszystko",
     "tasks.emptyTitle": "Brak zadań",
-    "tasks.emptyDesc": "Utwórz swoje pierwsze zadanie lub pozwól AI zaplanować Twój dzień",
+    "tasks.emptyDesc":
+      "Utwórz swoje pierwsze zadanie lub pozwól AI zaplanować Twój dzień",
     "tasks.createTask": "Utwórz zadanie",
     "tasks.dropHere": "Przeciągnij zadanie tutaj",
     "tasks.sortDefault": "Domyślne",
@@ -169,7 +188,8 @@ export const translations: Record<Lang, Dict> = {
     "tasks.sortPriority": "Priorytet",
     "tasks.sortCategory": "Kategoria",
     "tasks.assignPeople": "Przypisz osoby",
-    "tasks.noMembers": "Brak członków workspace. Dodaj ich w ustawieniach workspace.",
+    "tasks.noMembers":
+      "Brak członków workspace. Dodaj ich w ustawieniach workspace.",
     "common.save": "Zapisz",
     "taskModal.description": "Opis zadania",
     "taskModal.descPlaceholder": "Opis zadania…",
@@ -217,7 +237,8 @@ export const translations: Record<Lang, Dict> = {
     "dash.greetingMorning": "Dzień dobry, {name}.",
     "dash.greetingAfternoon": "Dzień dobry, {name}.",
     "dash.greetingEvening": "Dobry wieczór, {name}.",
-    "dash.summary": "Masz {tasks} zadań na dziś i {events} nadchodzących wydarzeń.",
+    "dash.summary":
+      "Masz {tasks} zadań na dziś i {events} nadchodzących wydarzeń.",
     "dash.tasksToday": "Zadania dziś",
     "dash.upcomingEvents": "Nadchodzące wydarzenia",
     "dash.pendingAi": "Oczekujące AI",
@@ -232,7 +253,8 @@ export const translations: Record<Lang, Dict> = {
     "dash.noUpcomingEvents": "Brak nadchodzących wydarzeń",
     "dash.addEvent": "Dodaj wydarzenie",
     "dash.surveyTitle": "Tygodniowa konfiguracja AI",
-    "dash.surveyDesc": "Wypełnij krótką ankietę (2 min), aby zoptymalizować zadania na tydzień.",
+    "dash.surveyDesc":
+      "Wypełnij krótką ankietę (2 min), aby zoptymalizować zadania na tydzień.",
     "dash.startSurvey": "Rozpocznij ankietę",
   },
 
@@ -254,6 +276,8 @@ export const translations: Record<Lang, Dict> = {
     "nav.statistics": "Statistics",
     "nav.surveys": "Surveys",
     "nav.surveysAdmin": "Surveys",
+    "nav.plansAdmin": "Plans",
+    "nav.usersAdmin": "Users",
 
     // search
     "search.placeholder": "Search tasks, events…",
@@ -292,11 +316,13 @@ export const translations: Record<Lang, Dict> = {
     "auth.terms": "Terms of Service",
     "auth.and": "and",
     "auth.privacy": "Privacy Policy",
-    "auth.googleAutoCreate": "Your first Google sign-in creates an account automatically.",
+    "auth.googleAutoCreate":
+      "Your first Google sign-in creates an account automatically.",
     "auth.haveAccount": "Already have an account?",
     "auth.registerError": "Registration failed",
     "auth.googleRegisterFailed": "Could not start Google sign-up.",
-    "auth.acceptTermsFirst": "Please accept the Terms of Service and Privacy Policy to continue.",
+    "auth.acceptTermsFirst":
+      "Please accept the Terms of Service and Privacy Policy to continue.",
 
     // auth — illustration
     "auth.illTasks": "Organize tasks & priorities",
@@ -305,14 +331,17 @@ export const translations: Record<Lang, Dict> = {
     "auth.backToLogin": "Back to login",
     "auth.fp.title": "Reset password",
     "auth.fp.sentTitle": "Link sent!",
-    "auth.fp.subtitle": "Enter your email and we'll send you a password reset link",
+    "auth.fp.subtitle":
+      "Enter your email and we'll send you a password reset link",
     "auth.fp.sentSubtitle": "Check your inbox and click the reset link",
     "auth.fp.sendError": "Could not send the link",
     "auth.fp.send": "Send link",
     "auth.sp.titlePassword": "Set password",
     "auth.sp.titleConfirm": "Confirm email address",
-    "auth.sp.subtitlePassword": "The {email} account was created with Google. Set a password so you can also sign in with your email address.",
-    "auth.sp.subtitleConfirm": "We sent a confirmation code to {email}. Enter it below to save your password.",
+    "auth.sp.subtitlePassword":
+      "The {email} account was created with Google. Set a password so you can also sign in with your email address.",
+    "auth.sp.subtitleConfirm":
+      "We sent a confirmation code to {email}. Enter it below to save your password.",
     "auth.sp.sendError": "Could not send the confirmation message.",
     "auth.sp.enterCode": "Enter the code you received by email.",
     "auth.sp.codeInvalid": "The code is invalid or has expired.",
@@ -324,36 +353,42 @@ export const translations: Record<Lang, Dict> = {
     "auth.sp.resendCode": "Resend code",
     "auth.ve.title": "Confirm email",
     "auth.ve.sentPrefix": "We sent an activation link to",
-    "auth.ve.sentSuffix": ". Click the link in the message to activate your account.",
-    "auth.ve.banner": "Verification with a 6-digit code is not available in the .NET backend. Use the link from the email.",
+    "auth.ve.sentSuffix":
+      ". Click the link in the message to activate your account.",
+    "auth.ve.banner":
+      "Verification with a 6-digit code is not available in the .NET backend. Use the link from the email.",
     "auth.ve.resend": "Resend link",
     "auth.ve.goLogin": "Go to login",
     "common.cancel": "Cancel",
     "common.delete": "Delete",
     "profile.title": "Settings",
-    "profile.subtitle": "Manage your profile, appearance, and personal AI configurations.",
+    "profile.subtitle":
+      "Manage your profile, appearance, and personal AI configurations.",
     "profile.tabAccount": "Account",
     "profile.tabAi": "AI Personal",
     "profile.fullName": "Full name",
     "profile.saveChanges": "Save changes",
     "profile.defaultWorkspace": "Default workspace",
-    "profile.defaultWorkspaceDesc": "Choose the workspace you land on when you open the app.",
+    "profile.defaultWorkspaceDesc":
+      "Choose the workspace you land on when you open the app.",
     "profile.changePassword": "Change password",
-    "profile.changePasswordDesc": "Update your password to keep your account secure.",
+    "profile.changePasswordDesc":
+      "Update your password to keep your account secure.",
     "profile.currentPassword": "Current password",
     "profile.newPassword": "New password",
     "profile.confirmNewPassword": "Confirm new password",
     "profile.updatePassword": "Update password",
     "profile.deleteAccount": "Delete account",
     "profile.deleting": "Deleting account…",
-    "profile.deleteConfirm": "Are you sure you want to delete your account? This action is irreversible.",
+    "profile.deleteConfirm":
+      "Are you sure you want to delete your account? This action is irreversible.",
     "profile.errSetDefaultWs": "Could not set the default workspace",
     "profile.errNameChange": "Could not change your name",
     "profile.errPassChange": "Could not change your password",
     "profile.errDelete": "Could not delete your account",
     "common.loading": "Loading…",
     "search.noResults": "No results",
-    "search.noResultsFor": "No results found for \"{query}\"",
+    "search.noResultsFor": 'No results found for "{query}"',
     "search.events": "Events",
     "search.categories": "Categories",
     "notif.overdue": "Overdue task",
@@ -365,13 +400,16 @@ export const translations: Record<Lang, Dict> = {
     "notif.emptyDesc": "You're all caught up — no new notifications",
     "stats.title": "AI Statistics",
     "stats.bannerTitle": "AI statistics — coming soon",
-    "stats.bannerMsg": "The AiStatistic module is not implemented in the .NET backend yet. Once the GET /ai-statistic/my and DELETE /ai-statistic/{id} endpoints are added, this screen will be enabled.",
+    "stats.bannerMsg":
+      "The AiStatistic module is not implemented in the .NET backend yet. Once the GET /ai-statistic/my and DELETE /ai-statistic/{id} endpoints are added, this screen will be enabled.",
     "ws.manage": "Manage your workspaces",
     "ws.new": "New workspace",
     "ws.empty": "No workspaces",
     "ws.emptyDesc": "Create your first workspace to start managing tasks.",
     "ws.create": "Create workspace",
     "ws.active": "Active",
+    "ws.public": "Public",
+    "ws.private": "Private",
     "ws.membersWord": "members",
     "ws.createdWord": "created",
     "common.user": "User",
@@ -445,7 +483,8 @@ export const translations: Record<Lang, Dict> = {
     "dash.greetingMorning": "Good morning, {name}.",
     "dash.greetingAfternoon": "Good afternoon, {name}.",
     "dash.greetingEvening": "Good evening, {name}.",
-    "dash.summary": "You have {tasks} tasks to complete today and {events} upcoming events.",
+    "dash.summary":
+      "You have {tasks} tasks to complete today and {events} upcoming events.",
     "dash.tasksToday": "Tasks Today",
     "dash.upcomingEvents": "Upcoming Events",
     "dash.pendingAi": "Pending AI",
@@ -460,7 +499,8 @@ export const translations: Record<Lang, Dict> = {
     "dash.noUpcomingEvents": "No upcoming events",
     "dash.addEvent": "Add event",
     "dash.surveyTitle": "Weekly AI Setup Needed",
-    "dash.surveyDesc": "Take a quick 2-minute survey to optimize your tasks for the week.",
+    "dash.surveyDesc":
+      "Take a quick 2-minute survey to optimize your tasks for the week.",
     "dash.startSurvey": "Start Survey",
   },
 };

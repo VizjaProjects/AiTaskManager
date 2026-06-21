@@ -27,7 +27,7 @@ public sealed class WorkspaceConfiguration : IEntityTypeConfiguration<Domain.Wor
         builder.Property(w => w.Visibility)
             .HasConversion<string>()
             .HasMaxLength(20)
-            .HasDefaultValue(WorkspaceVisibility.Public)
+            .ValueGeneratedNever()
             .IsRequired();
 
         builder.Property(w => w.CreatedAt).IsRequired();

@@ -31,6 +31,10 @@ using Ordovita.Application.Note.UpdateNoteFolder;
 using Ordovita.Application.Note.UpdateNoteMetadata;
 using Ordovita.Application.Plan;
 using Ordovita.Application.Plan.CreatePlan;
+using Ordovita.Application.Plan.GetAllPlans;
+using Ordovita.Application.Plan.GetUserPlanLimits;
+using Ordovita.Application.Admin;
+using Ordovita.Application.Admin.GetAllUsersForAdmin;
 using Ordovita.Application.Surveys;
 using Ordovita.Application.Surveys.ChangeSurveyVisibility;
 using Ordovita.Application.Surveys.CreateSurvey;
@@ -225,6 +229,13 @@ public static class DependencyInjection
         services.AddScoped<IQueryHandler<GetWorkspaceNotesQuery, IReadOnlyList<NoteDto>>, GetWorkspaceNotesHandler>();
 
         services.AddScoped<ICommandHandler<CreatePlanCommand, PlanDto>, CreatePlanHandler>();
+        services.AddScoped<IQueryHandler<GetAllPlansQuery, IReadOnlyList<PlanDto>>, GetAllPlansHandler>();
+        services.AddScoped<IQueryHandler<GetUserPlanLimitsQuery, UserPlanUsageDto>, GetUserPlanLimitsHandler>();
+        services
+            .AddScoped<IQueryHandler<GetAllUsersForAdminQuery, IReadOnlyList<AdminUserDto>>,
+                GetAllUsersForAdminHandler>();
+
+        services.AddScoped<PlanLimitChecker>();
 
         return services;
     }

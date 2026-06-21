@@ -35,13 +35,13 @@ type FilterTab = "all" | "published" | "drafts";
 function StatusBadge({ isVisible }: { isVisible: boolean }) {
   return (
     <View
-      className={`px-3 py-1 rounded-full ${
-        isVisible ? "bg-secondary/15" : "bg-outline/15"
+      className={`self-start px-2.5 py-1 rounded-full ${
+        isVisible ? "bg-success/10" : "bg-surface-container"
       }`}
     >
       <Text
-        className={`font-label text-[10px] uppercase tracking-widest font-bold ${
-          isVisible ? "text-secondary" : "text-outline"
+        className={`font-label text-[10px] uppercase tracking-widest ${
+          isVisible ? "text-[#2E7D52]" : "text-text-tertiary"
         }`}
       >
         {isVisible ? "Published" : "Draft"}
@@ -228,10 +228,6 @@ export default function AdminSurveysPage() {
   const [filter, setFilter] = useState<FilterTab>("all");
   const [search, setSearch] = useState("");
 
-  if (user?.role !== Role.ADMIN) {
-    return <Redirect href="/(app)/dashboard" />;
-  }
-
   const filtered = useMemo(() => {
     if (!surveys) return [];
     let list = [...surveys];
@@ -259,6 +255,14 @@ export default function AdminSurveysPage() {
     return map;
   }, [allResponses]);
 
+  if (!user) {
+    return null;
+  }
+
+  if (user.role !== Role.ADMIN) {
+    return <Redirect href="/(app)/dashboard" />;
+  }
+
   const totalResponses = allResponses?.length ?? 0;
   const activeSurveys = surveys?.filter((s) => s.isVisible).length ?? 0;
   const totalSurveys = surveys?.length ?? 0;
@@ -281,10 +285,10 @@ export default function AdminSurveysPage() {
         {/* Header */}
         <View className="flex-row items-start justify-between mb-8">
           <View>
-            <Text className="text-on-surface font-headline text-3xl font-black mb-1">
+            <Text className="text-on-surface font-display text-headline-lg mb-1">
               Survey Management
             </Text>
-            <Text className="text-on-surface-variant font-body text-sm">
+            <Text className="text-on-surface-variant font-body text-body-md">
               Manage and analyze your feedback campaigns
             </Text>
           </View>
@@ -337,7 +341,7 @@ export default function AdminSurveysPage() {
                   }`}
                 >
                   <Text
-                    className={`font-label text-xs uppercase tracking-widest font-bold ${
+                    className={`font-label text-xs uppercase tracking-widest ${
                       filter === t.key
                         ? "text-white"
                         : "text-on-surface-variant"
@@ -441,7 +445,11 @@ export default function AdminSurveysPage() {
                   <TouchableOpacity
                     onPress={() => deleteSurvey.mutate(survey.surveyId)}
                   >
-                    <MaterialIcons name="delete-outline" size={20} color="#b90538" />
+                    <MaterialIcons
+                      name="delete-outline"
+                      size={20}
+                      color="#C0392B"
+                    />
                   </TouchableOpacity>
                 </View>
               </View>

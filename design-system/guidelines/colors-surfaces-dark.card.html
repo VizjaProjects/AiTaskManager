@@ -1,0 +1,68 @@
+<!-- @dsCard group="Colors" viewport="700x150" subtitle="Near-black surfaces (dark mode)" name="Surfaces — dark" -->
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-page);
+        color: var(--text-body);
+        padding: 20px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+      }
+      .cell {
+        flex: 1;
+      }
+      .chip {
+        height: 56px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-card);
+      }
+      .label {
+        font-size: 11px;
+        margin-top: 6px;
+        color: var(--text-secondary);
+      }
+      .hex {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="row">
+      <div class="cell">
+        <div class="chip" style="background: #111111"></div>
+        <div class="label">background</div>
+        <div class="hex">#111111</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #1c1c1c"></div>
+        <div class="label">surface / card</div>
+        <div class="hex">#1c1c1c</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #141414"></div>
+        <div class="label">sidebar</div>
+        <div class="hex">#141414</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #1f1f1f"></div>
+        <div class="label">elevated</div>
+        <div class="hex">#1f1f1f</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: rgba(255, 255, 255, 0.07)"></div>
+        <div class="label">active</div>
+        <div class="hex">white 7%</div>
+      </div>
+    </div>
+  </body>
+</html>

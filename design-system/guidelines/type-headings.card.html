@@ -1,0 +1,64 @@
+<!-- @dsCard group="Type" viewport="700x200" subtitle="Inter medium — section & card titles" name="Headings — sans" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .line {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+      }
+      .meta {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-tertiary);
+      }
+      .h1 {
+        font-weight: 500;
+        font-size: 32px;
+        line-height: 40px;
+        letter-spacing: -0.01em;
+      }
+      .h2 {
+        font-weight: 500;
+        font-size: 24px;
+        line-height: 32px;
+      }
+      .h3 {
+        font-weight: 500;
+        font-size: 20px;
+        line-height: 28px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stack">
+      <div class="line">
+        <span class="h1">Designed for Focus</span
+        ><span class="meta">headline-lg 32/40</span>
+      </div>
+      <div class="line">
+        <span class="h2">Your day, organized</span
+        ><span class="meta">headline-md 24/32</span>
+      </div>
+      <div class="line">
+        <span class="h3">Task Management</span
+        ><span class="meta">title-lg 20/28</span>
+      </div>
+    </div>
+  </body>
+</html>

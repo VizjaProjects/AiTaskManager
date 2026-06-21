@@ -10,6 +10,7 @@ public interface IUserRepository
 
     Task<DomainUser?> GetAsyncById(UserId id, CancellationToken ct = default);
     Task<IReadOnlyList<DomainUser>> GetAsyncByIds(IReadOnlyCollection<UserId> ids, CancellationToken ct = default);
+    Task<IReadOnlyList<DomainUser>> GetAllAsync(CancellationToken ct = default);
     Task<bool> ExistsByEmail(Email email, CancellationToken ct = default);
 
     Task<DomainUser?> GetAsyncByAspId(string aspId, CancellationToken ct = default);

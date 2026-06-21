@@ -79,6 +79,8 @@ using (var scope = app.Services.CreateScope())
 
     await SurveyDataSeeder.EnsureQuestionOptionsTableAsync(db);
     await SurveyDataSeeder.PublishLegacySurveysAsync(db);
+
+    await Ordovita.Infrastructure.Plan.PlanSeeder.SeedAsync(db);
 }
 
 if (app.Environment.IsDevelopment())

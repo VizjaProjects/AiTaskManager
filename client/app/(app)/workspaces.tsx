@@ -65,6 +65,32 @@ export default function WorkspacesScreen() {
                         </View>
                       )}
                     </View>
+                    <View className="flex-row items-center gap-2">
+                      <View
+                        className={`flex-row items-center gap-1 px-2 py-0.5 rounded-full ${
+                          ws.visibility === "Public"
+                            ? "bg-accent/10"
+                            : "bg-surface-container"
+                        }`}
+                      >
+                        <MaterialIcons
+                          name={ws.visibility === "Public" ? "group" : "lock"}
+                          size={11}
+                          color={ws.visibility === "Public" ? "#5b4ee0" : "#9b9791"}
+                        />
+                        <Text
+                          className={`font-label text-[10px] uppercase tracking-wider ${
+                            ws.visibility === "Public"
+                              ? "text-accent"
+                              : "text-text-tertiary"
+                          }`}
+                        >
+                          {ws.visibility === "Public"
+                            ? t("ws.public")
+                            : t("ws.private")}
+                        </Text>
+                      </View>
+                    </View>
                     <Text className="text-on-surface-variant font-body text-xs">
                       {ws.assignedUsers.length} {t("ws.membersWord")} ·{" "}
                       {t("ws.createdWord")}{" "}

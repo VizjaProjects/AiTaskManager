@@ -111,7 +111,7 @@ function AuthGate() {
       } else if (workspaces.length === 0) {
         target = "/(app)/workspace-create";
       } else {
-        target = "/(app)/dashboard";
+        target = isUser ? "/(app)/dashboard" : "/(app)/admin-surveys";
       }
     } else if (
       isAuthenticated &&

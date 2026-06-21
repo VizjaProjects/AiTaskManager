@@ -1,3 +1,9 @@
 namespace Ordovita.Application.Abstraction.Llm;
 
-public sealed record AiResponse(string Content, int TokenCount, string Prompt);
+public enum RequestType
+{
+    Custom,
+    Standard
+}
+
+public sealed record AiResponse(string Content,int InputTokenCount, int OutputTokenCount, int TokenCount, string Prompt,  RequestType RequestType);

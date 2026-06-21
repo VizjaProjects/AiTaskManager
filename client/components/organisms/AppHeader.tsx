@@ -45,6 +45,8 @@ const DRAWER_NAV_ITEMS: Array<{
   },
   { icon: "assignment", label: "nav.surveys", path: "/(app)/surveys" },
   { icon: "poll", label: "nav.surveysAdmin", path: "/(app)/admin-surveys" },
+  { icon: "workspaces", label: "nav.plansAdmin", path: "/(app)/admin-plans" },
+  { icon: "group", label: "nav.usersAdmin", path: "/(app)/admin-users" },
 ];
 
 interface AppHeaderProps {
@@ -71,15 +73,24 @@ export function AppHeader({
   const hasNotifications = useNotificationItems().length > 0;
 
   const drawerItems = DRAWER_NAV_ITEMS.filter((item) => {
-    if (item.path.includes("admin-surveys") && user?.role !== Role.ADMIN)
-      return false;
+    const isAdminItem = item.path.includes("admin");
+    // Admin-only items hidden from non-admins.
+    if (isAdminItem && user?.role !== Role.ADMIN) return false;
+    // User-only surveys hidden from non-users.
     if (
       item.path.includes("surveys") &&
-      !item.path.includes("admin") &&
+      !isAdminItem &&
       user?.role !== Role.USER
     )
       return false;
-    if (item.path.includes("admin") && user?.role !== Role.ADMIN) return false;
+    // Admins use the app only for management: keep notes + admin items, hide the
+    // personal productivity sections (dashboard, AI task, calendar, tasks, …).
+    if (
+      user?.role === Role.ADMIN &&
+      !isAdminItem &&
+      item.path !== "/(app)/notes"
+    )
+      return false;
     return true;
   });
 
@@ -201,9 +212,10 @@ export function AppHeader({
 
               <View className="gap-0.5 pt-4 border-t border-border-subtle">
                 <TouchableOpacity
-                  onPress={() => {
+                  onPress={async () => {
                     setDrawerOpen(false);
-                    logout();
+                    await logout();
+                    router.replace("/(auth)/login");
                   }}
                   className="flex-row items-center gap-3 px-4 py-2.5"
                 >

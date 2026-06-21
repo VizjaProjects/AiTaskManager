@@ -1,4 +1,12 @@
-import { View, Text, Alert, Platform, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Alert,
+  Platform,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+} from "react-native";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -12,8 +20,153 @@ import {
   useSetWorkspaceVisibility,
 } from "@/lib/hooks";
 import { useWorkspaceStore, useAuthStore } from "@/lib/stores";
+import type { WorkspaceVisibility } from "@/lib/types";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const NO_OUTLINE =
+  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+
+/**
+ * A deliberately heavy, type-to-confirm modal for the irreversible workspace
+ * deletion. Lists exactly what is destroyed and requires the user to retype the
+ * workspace name before the destructive button unlocks.
+ */
+function DeleteWorkspaceModal({
+  visible,
+  workspaceName,
+  memberCount,
+  loading,
+  onClose,
+  onConfirm,
+}: {
+  visible: boolean;
+  workspaceName: string;
+  memberCount: number;
+  loading: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState("");
+  const matches = confirmText.trim() === workspaceName.trim();
+
+  const consequences: { icon: keyof typeof MaterialIcons.glyphMap; label: string }[] = [
+    { icon: "checklist", label: "Wszystkie zadania i tablica Kanban" },
+    { icon: "event", label: "Wszystkie wydarzenia w kalendarzu" },
+    { icon: "sticky-note-2", label: "Wszystkie notatki" },
+    { icon: "tune", label: "Kategorie i statusy" },
+    { icon: "group", label: `Dostęp ${memberCount} ${memberCount === 1 ? "członka" : "członków"}` },
+  ];
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 bg-black/50 items-center justify-center p-6">
+        <View
+          className="bg-surface-container-lowest rounded-2xl w-full max-w-md border border-outline-variant overflow-hidden"
+          style={{
+            shadowColor: "#101828",
+            shadowOffset: { width: 0, height: 24 },
+            shadowOpacity: 0.3,
+            shadowRadius: 60,
+            elevation: 12,
+          }}
+        >
+          <View className="px-5 pt-5 pb-4 gap-3">
+            <View className="flex-row items-center gap-3">
+              <View className="w-11 h-11 rounded-xl items-center justify-center bg-error-container">
+                <MaterialIcons name="warning-amber" size={22} color="#C0392B" />
+              </View>
+              <View className="flex-1 min-w-0">
+                <Text className="text-on-surface font-display text-title-lg">
+                  Usuń workspace
+                </Text>
+                <Text
+                  className="text-on-surface-variant font-body text-xs"
+                  numberOfLines={1}
+                >
+                  „{workspaceName}"
+                </Text>
+              </View>
+            </View>
+
+            <View className="rounded-xl border border-[rgba(192,57,43,0.35)] bg-error-container/60 px-3.5 py-3 gap-1">
+              <Text className="text-[#C0392B] font-headline text-sm">
+                Tej operacji nie można cofnąć.
+              </Text>
+              <Text className="text-on-surface-variant font-body text-xs leading-4">
+                Workspace zostanie usunięty na stałe wraz ze wszystkimi danymi.
+                Tego nie da się odzyskać.
+              </Text>
+            </View>
+
+            <View className="gap-2 mt-1">
+              <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
+                Co zostanie trwale usunięte
+              </Text>
+              {consequences.map((c) => (
+                <View key={c.label} className="flex-row items-center gap-2.5">
+                  <MaterialIcons name={c.icon} size={16} color="#9b9791" />
+                  <Text className="text-on-surface font-body text-sm flex-1">
+                    {c.label}
+                  </Text>
+                </View>
+              ))}
+            </View>
+
+            <View className="gap-1.5 mt-1">
+              <Text className="text-on-surface-variant font-body text-xs">
+                Aby potwierdzić, wpisz nazwę workspace:{" "}
+                <Text className="text-on-surface font-headline">
+                  {workspaceName}
+                </Text>
+              </Text>
+              <TextInput
+                value={confirmText}
+                onChangeText={setConfirmText}
+                placeholder={workspaceName}
+                placeholderTextColor="#9b9791"
+                autoCapitalize="none"
+                autoCorrect={false}
+                className="rounded-md border border-outline-variant bg-surface px-3.5 py-3 text-on-surface font-body text-body-md"
+                style={[NO_OUTLINE, { borderWidth: 1 }]}
+              />
+            </View>
+          </View>
+
+          <View className="flex-row gap-3 px-5 pb-5 pt-1">
+            <TouchableOpacity
+              onPress={onClose}
+              className="flex-1 items-center justify-center py-3 rounded-md border border-outline-variant bg-surface"
+            >
+              <Text className="text-on-surface font-headline text-sm">
+                Anuluj
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={onConfirm}
+              disabled={!matches || loading}
+              className="flex-1 flex-row items-center justify-center gap-2 py-3 rounded-md"
+              style={{
+                backgroundColor: "#C0392B",
+                opacity: !matches || loading ? 0.4 : 1,
+              }}
+            >
+              <MaterialIcons name="delete-outline" size={18} color="#ffffff" />
+              <Text className="text-white font-headline text-sm">
+                Usuń trwale
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 function confirmAction(
   title: string,
@@ -56,6 +209,8 @@ export default function WorkspaceSettingsScreen() {
   const [emailInput, setEmailInput] = useState("");
   const [emailError, setEmailError] = useState<string | null>(null);
   const [resultMsg, setResultMsg] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
 
   const isOwner = !!workspace && workspace.createdBy === currentUser?.userId;
 
@@ -121,18 +276,38 @@ export default function WorkspaceSettingsScreen() {
   }
 
   function handleDelete() {
-    confirmAction(
-      "Usuń workspace",
-      "Czy na pewno chcesz usunąć ten workspace? Wszystkie dane zostaną utracone.",
-      "Usuń",
-      async () => {
-        await deleteWorkspace.mutateAsync(workspaceId!);
-        const remaining = useWorkspaceStore.getState().workspaces;
-        if (remaining.length === 0) {
-          router.replace("/(app)/workspace-create" as never);
-        } else {
-          router.replace("/(app)/workspaces" as never);
-        }
+    setDeleteModalOpen(true);
+  }
+
+  async function performDelete() {
+    if (!workspaceId) return;
+    await deleteWorkspace.mutateAsync(workspaceId);
+    setDeleteModalOpen(false);
+    const remaining = useWorkspaceStore.getState().workspaces;
+    if (remaining.length === 0) {
+      router.replace("/(app)/workspace-create" as never);
+    } else {
+      router.replace("/(app)/workspaces" as never);
+    }
+  }
+
+  function changeVisibility(next: WorkspaceVisibility) {
+    if (!workspace || next === workspace.visibility) return;
+    setVisibilityError(null);
+    setVisibility.mutate(
+      { workspaceId: workspace.workspaceId, visibility: next },
+      {
+        onError: (e: unknown) => {
+          const err = e as {
+            response?: { data?: { title?: string } };
+            message?: string;
+          };
+          setVisibilityError(
+            err.response?.data?.title ??
+              err.message ??
+              "Nie udało się zmienić widoczności",
+          );
+        },
       },
     );
   }
@@ -162,9 +337,29 @@ export default function WorkspaceSettingsScreen() {
               >
                 {workspace.workspaceName}
               </Text>
-              <Text className="text-on-surface-variant font-body text-xs mt-0.5">
-                {isOwner ? "Twój workspace" : "Należysz do tego workspace"}
-              </Text>
+              <View className="flex-row items-center gap-2 mt-1">
+                <View
+                  className={`flex-row items-center gap-1 px-2 py-0.5 rounded-full ${
+                    isPublic ? "bg-accent/10" : "bg-surface-container"
+                  }`}
+                >
+                  <MaterialIcons
+                    name={isPublic ? "group" : "lock"}
+                    size={11}
+                    color={isPublic ? "#5b4ee0" : "#9b9791"}
+                  />
+                  <Text
+                    className={`font-label text-[10px] uppercase tracking-wider ${
+                      isPublic ? "text-accent" : "text-text-tertiary"
+                    }`}
+                  >
+                    {isPublic ? "Publiczny" : "Prywatny"}
+                  </Text>
+                </View>
+                <Text className="text-on-surface-variant font-body text-xs">
+                  {isOwner ? "Twój workspace" : "Należysz do tego workspace"}
+                </Text>
+              </View>
             </View>
           </View>
 
@@ -198,45 +393,90 @@ export default function WorkspaceSettingsScreen() {
 
         <Card className="p-4 gap-3">
           <Text className="text-on-surface font-headline text-sm">
-            Widoczność i domyślny workspace
+            Widoczność
+          </Text>
+          <Text className="text-on-surface-variant font-body text-xs -mt-1">
+            Decyduje, czy do workspace można zapraszać inne osoby.
           </Text>
 
-          <View className="flex-row items-center gap-3">
-            <View className="w-9 h-9 rounded-lg bg-surface-container-low items-center justify-center">
-              <MaterialIcons
-                name={isPublic ? "group" : "lock"}
-                size={18}
-                color="#6b6965"
-              />
-            </View>
-            <View className="flex-1 min-w-0">
-              <Text className="text-on-surface font-body text-sm">
-                {isPublic ? "Publiczny" : "Prywatny"}
-              </Text>
-              <Text className="text-on-surface-variant font-body text-xs">
-                {isPublic
-                  ? "Możesz zapraszać i przypisywać członków."
-                  : "Tylko Ty. Aby dodać osoby, ustaw jako publiczny."}
+          {visibilityError ? (
+            <View className="bg-error-container rounded-xl px-3.5 py-2.5">
+              <Text className="text-on-error-container font-body text-xs">
+                {visibilityError}
               </Text>
             </View>
-            {isOwner ? (
+          ) : null}
+
+          {(
+            [
+              {
+                key: "Private" as const,
+                icon: "lock" as const,
+                title: "Prywatny",
+                desc: "Tylko Ty masz dostęp. Nie można dodawać członków.",
+              },
+              {
+                key: "Public" as const,
+                icon: "group" as const,
+                title: "Publiczny",
+                desc: "Możesz zapraszać i przypisywać członków.",
+              },
+            ]
+          ).map((opt) => {
+            const selected = workspace.visibility === opt.key;
+            const disabled = !isOwner || setVisibility.isPending;
+            return (
               <TouchableOpacity
-                disabled={setVisibility.isPending}
-                onPress={() =>
-                  setVisibility.mutate({
-                    workspaceId: workspace.workspaceId,
-                    visibility: isPublic ? "Private" : "Public",
-                  })
-                }
-                className="px-3 py-2 rounded-md border border-outline-variant"
-                style={{ opacity: setVisibility.isPending ? 0.6 : 1 }}
+                key={opt.key}
+                disabled={disabled || selected}
+                onPress={() => changeVisibility(opt.key)}
+                className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
+                  selected
+                    ? "border-accent bg-surface-container-low"
+                    : "border-outline-variant"
+                }`}
+                style={{ opacity: disabled && !selected ? 0.5 : 1 }}
               >
-                <Text className="text-on-surface font-label text-xs">
-                  {isPublic ? "Ustaw prywatny" : "Ustaw publiczny"}
-                </Text>
+                <MaterialIcons
+                  name={opt.icon}
+                  size={20}
+                  color={selected ? "#5b4ee0" : "#6b6965"}
+                />
+                <View className="flex-1 min-w-0">
+                  <Text className="text-on-surface font-body text-body-md">
+                    {opt.title}
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-xs">
+                    {opt.desc}
+                  </Text>
+                </View>
+                <MaterialIcons
+                  name={
+                    selected ? "radio-button-checked" : "radio-button-unchecked"
+                  }
+                  size={20}
+                  color={selected ? "#5b4ee0" : "#9b9791"}
+                />
               </TouchableOpacity>
-            ) : null}
+            );
+          })}
+
+          <View className="flex-row items-start gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5">
+            <MaterialIcons name="info-outline" size={15} color="#9b9791" />
+            <Text className="text-on-surface-variant font-body text-xs leading-4 flex-1">
+              {!isOwner
+                ? "Tylko właściciel workspace może zmienić jego widoczność."
+                : isPublic
+                  ? "Zmiana na prywatny zachowa obecnych członków, ale nie dodasz już nowych osób."
+                  : "Zmiana na publiczny pozwoli zapraszać i przypisywać członków po adresie email."}
+            </Text>
           </View>
+
+          <View className="h-px bg-border-subtle my-1" />
+
+          <Text className="text-on-surface font-headline text-sm">
+            Domyślny workspace
+          </Text>
 
           <TouchableOpacity
             disabled={isDefault}
@@ -408,6 +648,15 @@ export default function WorkspaceSettingsScreen() {
           </Card>
         ) : null}
       </View>
+
+      <DeleteWorkspaceModal
+        visible={deleteModalOpen}
+        workspaceName={workspace.workspaceName}
+        memberCount={workspace.assignedUsers.length}
+        loading={deleteWorkspace.isPending}
+        onClose={() => setDeleteModalOpen(false)}
+        onConfirm={performDelete}
+      />
     </PageLayout>
   );
 }

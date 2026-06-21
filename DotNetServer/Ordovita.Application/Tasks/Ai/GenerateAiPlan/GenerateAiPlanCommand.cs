@@ -1,7 +1,9 @@
 using FluentValidation;
 using Ordovita.Application.Abstraction.Llm;
 using Ordovita.Application.Common.Cqrs;
+using Ordovita.Application.Plan;
 using Ordovita.Domain.Common;
+using Action = Ordovita.Application.Plan.Action;
 
 namespace Ordovita.Application.Tasks.Ai.GenerateAiPlan;
 
@@ -13,6 +15,7 @@ public sealed record GenerateAiPlanCommand(
 
 public sealed class GenerateAiPlanHandler(
     WorkspaceAccessGuard accessGuard,
+    PlanLimitChecker planLimitChecker,
     ILlmPlanningService planningService)
     : ICommandHandler<GenerateAiPlanCommand, GeneratedLlmPlanResult>
 {
@@ -21,7 +24,14 @@ public sealed class GenerateAiPlanHandler(
         var access = await accessGuard.RequireAccessAsync(command.WorkspaceId, ct);
         if (access.IsFailure)
             return Result.Failure<GeneratedLlmPlanResult>(access.Error);
+        
+        var limitCheckResult = await planLimitChecker.Check(Action.PlanAiTask, ct);
 
+        if (limitCheckResult.IsFailure || !limitCheckResult.Value)
+        {
+            return Result.Failure<GeneratedLlmPlanResult>(
+                Error.LimitExceeded("AiTask.PlanLimitExceeded", "AI task creation limit exceeded for your current plan."));
+        }
         var request = new GeneratedLlmPlanRequest(
             command.LlmSettingId,
             command.WorkspaceId,

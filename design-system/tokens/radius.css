@@ -1,0 +1,14 @@
+/*
+ * Ordovita — radius tokens.
+ * Arena uses very small radii. Nothing reads larger than ~10px except pills
+ * (rounded-full). Avoid arbitrary radii.
+ */
+
+:root {
+  --radius-sm: 4px; /* small chips */
+  --radius-md: 6px; /* buttons, inputs, default */
+  --radius-lg: 8px; /* cards, list rows */
+  --radius-xl: 10px; /* larger cards, modals (capped) */
+  --radius-input: 10px; /* the input / search bar */
+  --radius-full: 9999px; /* pills, badges, avatars only */
+}

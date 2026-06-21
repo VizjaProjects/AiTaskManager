@@ -1,0 +1,63 @@
+<!-- @dsCard group="Colors" viewport="700x150" subtitle="Ink ladder — primary, secondary, tertiary" name="Text colors" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 22px;
+      }
+      .stack {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .line {
+        display: flex;
+        align-items: baseline;
+        gap: 14px;
+      }
+      .sample {
+        font-size: 18px;
+      }
+      .meta {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-tertiary);
+        font-variant-numeric: tabular-nums;
+      }
+      .role {
+        font-size: 11px;
+        color: var(--text-tertiary);
+        width: 110px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="stack">
+      <div class="line">
+        <span class="role">primary</span
+        ><span class="sample" style="color: var(--text-body)"
+          >Reduce cognitive load.</span
+        ><span class="meta">on-surface · #1a1a18</span>
+      </div>
+      <div class="line">
+        <span class="role">secondary</span
+        ><span class="sample" style="color: var(--text-secondary)"
+          >Focus on what matters today.</span
+        ><span class="meta">on-surface-variant · #6b6965</span>
+      </div>
+      <div class="line">
+        <span class="role">tertiary</span
+        ><span class="sample" style="color: var(--text-tertiary)"
+          >Placeholder &amp; hints</span
+        ><span class="meta">text-tertiary · #9b9791</span>
+      </div>
+    </div>
+  </body>
+</html>

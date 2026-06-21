@@ -64,7 +64,7 @@ public static class WorkspaceEndpoint
 
         g.MapDelete("/delete/{workspaceId:guid}", DeleteWorkspace)
             .WithName("DeleteWorkspace")
-            .Produces(204)
+            .Produces(204)  
             .Produces(401)
             .Produces(404);
 

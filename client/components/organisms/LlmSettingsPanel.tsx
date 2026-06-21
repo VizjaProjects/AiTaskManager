@@ -21,7 +21,9 @@ import {
   useLlmProviders,
   useLlmSettings,
   useUpdateLlmSettings,
+  useUserPlan,
 } from "@/lib/hooks";
+import { PlanUsageBar } from "@/components/molecules/PlanUsageBar";
 import type { LlmConnectionMode, LlmSettings } from "@/lib/types";
 import {
   CUSTOM_CONNECTION,
@@ -382,6 +384,56 @@ function ConfigRow({
   );
 }
 
+function PlanUsageCard() {
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
+  const { data: plan, isLoading } = useUserPlan();
+
+  if (isLoading || !plan) return null;
+
+  return (
+    <Card variant="elevated">
+      <View className="flex-row items-center justify-between mb-4">
+        <View>
+          <Text className="text-on-surface font-headline text-title-lg">
+            Your plan
+          </Text>
+          <Text
+            className="font-body text-body-md mt-1"
+            style={{ color: ui.textSecondary }}
+          >
+            Usage resets daily for AI calls.
+          </Text>
+        </View>
+        <View className="px-3 py-1 rounded-full bg-accent/10">
+          <Text className="font-label text-[10px] uppercase tracking-widest text-accent">
+            {plan.planName}
+          </Text>
+        </View>
+      </View>
+      <View className="gap-4">
+        <PlanUsageBar
+          icon="auto-awesome"
+          label="AI calls today"
+          used={plan.aiTaskUsage}
+          limit={plan.aiTaskLimit}
+        />
+        <PlanUsageBar
+          icon="public"
+          label="Public workspaces"
+          used={plan.publicWorkspaceUsage}
+          limit={plan.publicWorkspaceLimit}
+        />
+        <PlanUsageBar
+          icon="lock"
+          label="Private workspaces"
+          used={plan.privateWorkspaceUsage}
+          limit={plan.privateWorkspaceLimit}
+        />
+      </View>
+    </Card>
+  );
+}
+
 export function LlmSettingsPanel() {
   const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: settings = [], isLoading } = useLlmSettings();
@@ -421,6 +473,7 @@ export function LlmSettingsPanel() {
 
   return (
     <View className="gap-4">
+      <PlanUsageCard />
       <View>
         <Text className="text-on-surface font-headline text-title-lg">
           Your models

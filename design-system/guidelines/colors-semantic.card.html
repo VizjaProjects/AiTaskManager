@@ -1,0 +1,72 @@
+<!-- @dsCard group="Colors" viewport="700x170" subtitle="Exactly one value per role" name="Semantic states" -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="../styles.css" />
+    <style>
+      body {
+        margin: 0;
+        font-family: var(--font-sans);
+        background: var(--surface-card);
+        color: var(--text-body);
+        padding: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(6, 1fr);
+        gap: 10px;
+      }
+      .cell {
+        text-align: left;
+      }
+      .chip {
+        height: 44px;
+        border-radius: var(--radius-md);
+      }
+      .role {
+        font-size: 11px;
+        margin-top: 6px;
+      }
+      .hex {
+        font-size: 10px;
+        color: var(--text-tertiary);
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      <div class="cell">
+        <div class="chip" style="background: #ba1a1a"></div>
+        <div class="role">error</div>
+        <div class="hex">#ba1a1a</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #c0392b"></div>
+        <div class="role">critical</div>
+        <div class="hex">#c0392b</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #b7770d"></div>
+        <div class="role">warning</div>
+        <div class="hex">#b7770d</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #2e7d52"></div>
+        <div class="role">success</div>
+        <div class="hex">#2e7d52</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #dc2c4f"></div>
+        <div class="role">events</div>
+        <div class="hex">#dc2c4f</div>
+      </div>
+      <div class="cell">
+        <div class="chip" style="background: #006b58"></div>
+        <div class="role">notes</div>
+        <div class="hex">#006b58</div>
+      </div>
+    </div>
+  </body>
+</html>

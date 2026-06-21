@@ -25,7 +25,8 @@ public sealed class DomainUser : AggregateRoot<UserId>
     {
     }
 
-    public static Result<DomainUser> Create(string fullName, Email email, Role role, string aspIdentityUserId)
+    public static Result<DomainUser> Create(string fullName, Email email, Role role, string aspIdentityUserId,
+        PlanId? planId = null)
     {
         if (string.IsNullOrWhiteSpace(fullName))
             return Result.Failure<DomainUser>(UserException.MissingFullName);
@@ -42,13 +43,21 @@ public sealed class DomainUser : AggregateRoot<UserId>
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow,
             IsEmailVerified = false,
-            AspIdentityUserId = aspIdentityUserId
+            AspIdentityUserId = aspIdentityUserId,
+            PlanId = planId ?? PlanDefaults.FreePlanId
         };
 
         domainUser.RaiseDomainEvent(new UserCreated(domainUser.Id, domainUser.Role, domainUser.Email,
             domainUser.FullName, domainUser.AspIdentityUserId));
 
         return Result.Success(domainUser);
+    }
+
+    public Result AssignPlan(PlanId planId)
+    {
+        PlanId = planId;
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
     }
 
     public Result VerifyEmail()

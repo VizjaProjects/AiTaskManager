@@ -7,7 +7,8 @@ public enum ErrorType
     Validation,
     NotFound,
     Conflict,
-    Unauthorized
+    Unauthorized,
+    LimitExceeded
 }
 
 public sealed record Error(string Code, string Description, ErrorType Type = ErrorType.Failure)
@@ -37,5 +38,10 @@ public sealed record Error(string Code, string Description, ErrorType Type = Err
     public static Error AspIdentity(string code, string description)
     {
         return new Error(code, description, ErrorType.Unauthorized);
+    }
+    
+    public static Error LimitExceeded(string code, string description)
+    {
+        return new Error(code, description, ErrorType.LimitExceeded);
     }
 }
