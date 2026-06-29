@@ -60,7 +60,12 @@ type ViewMode = "kanban" | "list";
 type ListGrouping = "status" | "category-status";
 type ColumnSort = "default" | "updated" | "category" | "priority";
 
-const COLUMN_ORDER_KEY = "kanban-column-order";
+// v2: reset stale saved orders so the canonical default (To Do, In Progress,
+// Cancelled, Completed) applies until the user explicitly reorders again.
+const COLUMN_ORDER_KEY = "kanban-column-order-v2";
+
+// Special token in the assignee filter set meaning "tasks with no assignees".
+const UNASSIGNED_FILTER = "__unassigned__";
 
 function loadColumnOrder(): string[] {
   if (Platform.OS === "web" && typeof window !== "undefined") {
@@ -476,6 +481,11 @@ export default function TasksScreen() {
   const [selectedStatusIds, setSelectedStatusIds] = useState<Set<string>>(
     new Set(),
   );
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const members = useWorkspaceStore((s) => s.getActiveWorkspace())
+    ?.assignedUsers ?? [];
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{
     top: number;
@@ -484,6 +494,7 @@ export default function TasksScreen() {
   const priorityBtnRef = useRef<View>(null);
   const categoryBtnRef = useRef<View>(null);
   const statusBtnRef = useRef<View>(null);
+  const assigneeBtnRef = useRef<View>(null);
 
   const openDropdownAt = useCallback(
     (name: string, ref: RefObject<View | null>) => {
@@ -548,10 +559,9 @@ export default function TasksScreen() {
 
   const orderedStatuses = useMemo(() => {
     if (!statuses) return [];
-    const base =
-      columnOrder.length === 0
-        ? sortStatusesByDefaultOrder(statuses)
-        : statuses;
+    // Always start from the canonical order; a saved columnOrder only reorders
+    // on top of it, and any statuses it doesn't mention stay canonically sorted.
+    const base = sortStatusesByDefaultOrder(statuses);
     if (columnOrder.length === 0) return base;
     const statusMap = new Map(base.map((s) => [s.statusId, s]));
     const ordered: TaskStatus[] = [];
@@ -601,6 +611,13 @@ export default function TasksScreen() {
       );
     if (selectedStatusIds.size > 0)
       result = result.filter((t) => selectedStatusIds.has(t.statusId));
+    if (selectedUserIds.size > 0)
+      result = result.filter((t) => {
+        const ids = t.assignedUserIds ?? [];
+        if (selectedUserIds.has(UNASSIGNED_FILTER) && ids.length === 0)
+          return true;
+        return ids.some((id) => selectedUserIds.has(id));
+      });
     if (!showCompleted)
       result = result.filter((t) => !isDoneStatus(t.statusId));
     return result;
@@ -609,6 +626,7 @@ export default function TasksScreen() {
     selectedPriorities,
     selectedCategoryIds,
     selectedStatusIds,
+    selectedUserIds,
     showCompleted,
     isDoneStatus,
   ]);
@@ -1112,6 +1130,95 @@ export default function TasksScreen() {
             document.body,
           )}
 
+        {openDropdown === "assignee" &&
+          dropdownPos &&
+          Platform.OS === "web" &&
+          createPortal(
+            <View
+              className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
+              style={{
+                position: "fixed" as any,
+                top: dropdownPos.top,
+                left: dropdownPos.left,
+                minWidth: 220,
+                zIndex: 99999,
+                shadowColor: "#000",
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.15,
+                shadowRadius: 12,
+              }}
+            >
+              <TouchableOpacity
+                onPress={() => {
+                  setSelectedUserIds((prev) => {
+                    const next = new Set(prev);
+                    if (next.has(UNASSIGNED_FILTER))
+                      next.delete(UNASSIGNED_FILTER);
+                    else next.add(UNASSIGNED_FILTER);
+                    return next;
+                  });
+                }}
+                className="flex-row items-center gap-2.5 px-3 py-2.5 border-b border-outline-variant/30"
+              >
+                <MaterialIcons
+                  name={
+                    selectedUserIds.has(UNASSIGNED_FILTER)
+                      ? "check-box"
+                      : "check-box-outline-blank"
+                  }
+                  size={18}
+                  color={
+                    selectedUserIds.has(UNASSIGNED_FILTER)
+                      ? accentColor
+                      : mutedIcon
+                  }
+                />
+                <View className="w-6 h-6 rounded-full items-center justify-center border border-dashed border-outline">
+                  <MaterialIcons name="person-off" size={13} color={mutedIcon} />
+                </View>
+                <Text className="text-xs font-label text-on-surface-variant">
+                  {t("tasks.unassigned")}
+                </Text>
+              </TouchableOpacity>
+              {members.map((m) => {
+                const active = selectedUserIds.has(m.userId);
+                const label = m.fullName ?? m.email ?? "?";
+                return (
+                  <TouchableOpacity
+                    key={m.userId}
+                    onPress={() => {
+                      setSelectedUserIds((prev) => {
+                        const next = new Set(prev);
+                        if (active) next.delete(m.userId);
+                        else next.add(m.userId);
+                        return next;
+                      });
+                    }}
+                    className="flex-row items-center gap-2.5 px-3 py-2.5 mx-1 rounded-lg hover:bg-surface-container-low"
+                  >
+                    <MaterialIcons
+                      name={active ? "check-box" : "check-box-outline-blank"}
+                      size={18}
+                      color={active ? accentColor : mutedIcon}
+                    />
+                    <View className="w-6 h-6 rounded-full bg-primary-fixed items-center justify-center">
+                      <Text className="text-primary text-[9px] font-headline">
+                        {getInitials(label)}
+                      </Text>
+                    </View>
+                    <Text
+                      className={`text-xs font-label ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+                      numberOfLines={1}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>,
+            document.body,
+          )}
+
         {/* Portaled sort menu */}
         {openSortMenu &&
           sortMenuPos &&
@@ -1303,14 +1410,52 @@ export default function TasksScreen() {
             </View>
           )}
 
+          {/* Assignee dropdown */}
+          {members.length > 0 && (
+            <View
+              ref={assigneeBtnRef}
+              style={{ position: "relative", zIndex: 27 }}
+            >
+              <TouchableOpacity
+                onPress={() => openDropdownAt("assignee", assigneeBtnRef)}
+                className={`flex-row items-center gap-1.5 px-3 py-2 rounded-xl border ${
+                  selectedUserIds.size > 0
+                    ? "bg-accent/10 border-accent"
+                    : "bg-surface-container-high border-outline-variant"
+                }`}
+              >
+                <MaterialIcons
+                  name="person"
+                  size={14}
+                  color={selectedUserIds.size > 0 ? accentColor : mutedIcon}
+                />
+                <Text
+                  className={`text-xs font-label ${selectedUserIds.size > 0 ? "text-accent" : "text-on-surface-variant"}`}
+                >
+                  {t("tasks.filterAssignee")}
+                  {selectedUserIds.size > 0 ? ` (${selectedUserIds.size})` : ""}
+                </Text>
+                <MaterialIcons
+                  name={
+                    openDropdown === "assignee" ? "expand-less" : "expand-more"
+                  }
+                  size={16}
+                  color={mutedIcon}
+                />
+              </TouchableOpacity>
+            </View>
+          )}
+
           {(selectedPriorities.size > 0 ||
             selectedCategoryIds.size > 0 ||
-            selectedStatusIds.size > 0) && (
+            selectedStatusIds.size > 0 ||
+            selectedUserIds.size > 0) && (
             <TouchableOpacity
               onPress={() => {
                 setSelectedPriorities(new Set());
                 setSelectedCategoryIds(new Set());
                 setSelectedStatusIds(new Set());
+                setSelectedUserIds(new Set());
                 setOpenDropdown(null);
               }}
               className="px-3 py-2"

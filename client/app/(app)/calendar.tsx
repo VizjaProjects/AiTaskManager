@@ -40,6 +40,11 @@ import {
   eventPillStyle,
   resolveEventColor,
 } from "@/lib/utils/eventColors";
+import {
+  buildCalendarPrintHtml,
+  printCalendar,
+  type PrintTheme,
+} from "@/lib/utils/calendarPrint";
 import { useQueryClient } from "@tanstack/react-query";
 
 const WEEK_DAYS_SHORT = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
@@ -702,6 +707,8 @@ export default function CalendarScreen() {
   const [createStartM, setCreateStartM] = useState("00");
   const [createEndH, setCreateEndH] = useState("10");
   const [createEndM, setCreateEndM] = useState("00");
+  const [printOpen, setPrintOpen] = useState(false);
+  const [printTheme, setPrintTheme] = useState<PrintTheme>("classic");
 
   const displayDaysRef = useRef<Date[]>([]);
   const [gridReady, setGridReady] = useState(0);
@@ -735,6 +742,13 @@ export default function CalendarScreen() {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
     return d;
+  }, []);
+
+  // Live clock for the "current time" indicator line; ticks once a minute.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
   }, []);
 
   const weekStart = useMemo(() => {
@@ -936,7 +950,11 @@ export default function CalendarScreen() {
   };
 
   useEffect(() => {
-    if (Platform.OS !== "web" || viewType === "month") return;
+    // Drag-to-create / drag-to-move / resize is a desktop (mouse) interaction.
+    // On mobile web (touch, narrow viewport) attaching it sets touchAction:"none"
+    // on the grid, which kills vertical scrolling. Skip it there so the calendar
+    // scrolls and tap-to-edit (via TouchableOpacity below) works like native.
+    if (Platform.OS !== "web" || isMobile || viewType === "month") return;
 
     let grid: HTMLElement | null = null;
     let cancelled = false;
@@ -1235,7 +1253,7 @@ export default function CalendarScreen() {
       cleanupFns.forEach((fn) => fn());
       grid = null;
     };
-  }, [viewType, gridReady]);
+  }, [viewType, gridReady, isMobile]);
 
   // Expose events to the mouse handler
   useEffect(() => {
@@ -1289,6 +1307,19 @@ export default function CalendarScreen() {
 
   const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
   const cellBorder = isDark ? "#2a2a2a" : "#e5e7eb";
+
+  const handlePrint = useCallback(() => {
+    const html = buildCalendarPrintHtml({
+      viewType,
+      selectedDate,
+      displayDays,
+      events: events ?? [],
+      theme: printTheme,
+      title: formatCalendarTitle(viewType, selectedDate, weekStart),
+    });
+    printCalendar(html);
+    setPrintOpen(false);
+  }, [viewType, selectedDate, displayDays, events, printTheme, weekStart]);
 
   const monthGrid = (
     <View className="flex-1 bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
@@ -1503,6 +1534,12 @@ export default function CalendarScreen() {
     </View>
   );
 
+  // Only show the all-day strip when the visible days actually contain an
+  // all-day event — otherwise it is just an empty band wasting vertical space.
+  const hasAllDayEvents = displayDays.some(
+    (d) => getAllDayEventsForDay(d).length > 0,
+  );
+
   const weekTimeGrid = (
     <View className="flex-1 bg-surface-container-lowest rounded-2xl overflow-hidden shadow-card">
       {/* Day header row */}
@@ -1516,6 +1553,9 @@ export default function CalendarScreen() {
         <View style={{ width: TIME_GUTTER_WIDTH }} />
         {displayDays.map((day, i) => {
           const isToday = isSameDay(day, today);
+          // On mobile (esp. the 3-day view) mark the selected/center day so it
+          // is clear which day is in focus, even when it is not today.
+          const isSelected = isMobile && isSameDay(day, selectedDate);
           const dayOfWeek = day.getDay();
           const dayLabel = WEEK_DAYS_SHORT[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
           return (
@@ -1526,86 +1566,116 @@ export default function CalendarScreen() {
               style={{
                 borderLeftWidth: 1,
                 borderLeftColor: gridBorderColor,
+                ...(isToday
+                  ? { borderTopWidth: 2, borderTopColor: accentColor }
+                  : null),
+                backgroundColor: isToday
+                  ? eventColorWithAlpha(accentColor, 0.08)
+                  : isSelected
+                    ? isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "rgba(0,0,0,0.04)"
+                    : undefined,
+                ...(isSelected
+                  ? {
+                      shadowColor: "#000",
+                      shadowOffset: { width: 0, height: 2 },
+                      shadowOpacity: 0.18,
+                      shadowRadius: 4,
+                      elevation: 4,
+                      zIndex: 2,
+                    }
+                  : null),
               }}
             >
               <Text
                 className={`text-[10px] font-label uppercase ${
-                  isToday ? "text-primary" : "text-on-surface-variant"
+                  isToday ? "" : "text-on-surface-variant"
                 }`}
+                style={isToday ? { color: accentColor } : undefined}
               >
                 {dayLabel}
               </Text>
-              <Text
-                className={`text-lg font-headline mt-0.5 ${
-                  isToday ? "text-primary" : "text-on-surface"
-                }`}
-              >
-                {day.getDate()}
-              </Text>
+              {isToday ? (
+                <View
+                  className="w-8 h-8 rounded-full items-center justify-center mt-0.5"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  <Text className="text-white font-headline text-lg">
+                    {day.getDate()}
+                  </Text>
+                </View>
+              ) : (
+                <Text className="text-lg font-headline mt-0.5 text-on-surface">
+                  {day.getDate()}
+                </Text>
+              )}
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* All-day events row */}
-      <View
-        className="flex-row"
-        style={{
-          borderBottomWidth: 1,
-          borderBottomColor: gridBorderColor,
-        }}
-      >
+      {/* All-day events row — only when there is at least one all-day event */}
+      {hasAllDayEvents && (
         <View
+          className="flex-row"
           style={{
-            width: TIME_GUTTER_WIDTH,
-            paddingRight: 8,
-            alignItems: "flex-end",
-            justifyContent: "center",
+            borderBottomWidth: 1,
+            borderBottomColor: gridBorderColor,
           }}
         >
-          <Text className="text-on-surface-variant font-body text-[9px]">
-            all-day
-          </Text>
-        </View>
-        {displayDays.map((day, colIdx) => {
-          const allDayEvts = getAllDayEventsForDay(day);
-          return (
-            <View
-              key={colIdx}
-              className="flex-1 min-h-[36px] gap-0.5"
-              style={{
-                borderLeftWidth: 1,
-                borderLeftColor: gridBorderColor,
-                paddingVertical: 4,
-              }}
-            >
-              {allDayEvts.map((evt) => {
-                const color = resolveEventColor(evt);
-                return (
-                  <TouchableOpacity
-                    key={evt.eventId}
-                    onPress={() => setEditingEvent(evt)}
-                    className="rounded px-1.5 py-0.5"
-                    style={{
-                      backgroundColor: eventColorWithAlpha(color, 0.2),
-                      borderLeftWidth: 3,
-                      borderLeftColor: color,
-                    }}
-                  >
-                    <Text
-                      className="text-on-surface font-headline"
-                      style={{ fontSize: 9 }}
-                      numberOfLines={1}
+          <View
+            style={{
+              width: TIME_GUTTER_WIDTH,
+              paddingRight: 8,
+              alignItems: "flex-end",
+              justifyContent: "center",
+            }}
+          >
+            <Text className="text-on-surface-variant font-body text-[9px]">
+              all-day
+            </Text>
+          </View>
+          {displayDays.map((day, colIdx) => {
+            const allDayEvts = getAllDayEventsForDay(day);
+            return (
+              <View
+                key={colIdx}
+                className="flex-1 min-h-[36px] gap-0.5"
+                style={{
+                  borderLeftWidth: 1,
+                  borderLeftColor: gridBorderColor,
+                  paddingVertical: 4,
+                }}
+              >
+                {allDayEvts.map((evt) => {
+                  const color = resolveEventColor(evt);
+                  return (
+                    <TouchableOpacity
+                      key={evt.eventId}
+                      onPress={() => setEditingEvent(evt)}
+                      className="rounded px-1.5 py-0.5"
+                      style={{
+                        backgroundColor: eventColorWithAlpha(color, 0.2),
+                        borderLeftWidth: 3,
+                        borderLeftColor: color,
+                      }}
                     >
-                      {evt.title}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          );
-        })}
-      </View>
+                      <Text
+                        className="text-on-surface font-headline"
+                        style={{ fontSize: 9 }}
+                        numberOfLines={1}
+                      >
+                        {evt.title}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       {/* Time grid */}
       <ScrollView
@@ -1631,7 +1701,9 @@ export default function CalendarScreen() {
                   width: TIME_GUTTER_WIDTH,
                   paddingRight: 8,
                   alignItems: "flex-end",
-                  marginTop: -7,
+                  // The first label would be clipped above the scroll top by the
+                  // usual -7 offset, so nudge it down instead of overlapping all-day.
+                  marginTop: hour === GRID_START_HOUR ? 2 : -7,
                 }}
               >
                 <Text className="text-on-surface-variant font-body text-[10px]">
@@ -1639,13 +1711,20 @@ export default function CalendarScreen() {
                 </Text>
               </View>
               <View className="flex-1 flex-row">
-                {displayDays.map((_, colIdx) => (
+                {displayDays.map((d, colIdx) => (
                   <View
                     key={colIdx}
                     className="flex-1"
                     style={{
                       borderLeftWidth: 1,
                       borderLeftColor: gridLineColor,
+                      backgroundColor: isSameDay(d, today)
+                        ? eventColorWithAlpha(accentColor, 0.06)
+                        : isMobile && isSameDay(d, selectedDate)
+                          ? isDark
+                            ? "rgba(255,255,255,0.04)"
+                            : "rgba(0,0,0,0.03)"
+                          : undefined,
                     }}
                   />
                 ))}
@@ -1662,7 +1741,9 @@ export default function CalendarScreen() {
               setGridReady(1);
             }}
             dataSet={{ calendarGrid: "true" }}
-            pointerEvents={Platform.OS === "web" ? "auto" : "box-none"}
+            pointerEvents={
+              Platform.OS === "web" && !isMobile ? "auto" : "box-none"
+            }
             className="absolute flex-row"
             style={{
               left: TIME_GUTTER_WIDTH,
@@ -1678,7 +1759,9 @@ export default function CalendarScreen() {
               return (
                 <View
                   key={colIdx}
-                  pointerEvents={Platform.OS === "web" ? "auto" : "box-none"}
+                  pointerEvents={
+                    Platform.OS === "web" && !isMobile ? "auto" : "box-none"
+                  }
                   style={{ flex: 1, position: "relative", height: GRID_HEIGHT }}
                 >
                   {laidOut.map(({ event: evt, colIdx: evtCol, totalCols }) => {
@@ -1779,7 +1862,7 @@ export default function CalendarScreen() {
                       </>
                     );
 
-                    if (Platform.OS === "web") {
+                    if (Platform.OS === "web" && !isMobile) {
                       return (
                         <View
                           key={evt.eventId}
@@ -1960,6 +2043,47 @@ export default function CalendarScreen() {
                 }}
               />
             )}
+
+            {/* Current-time indicator line (only in today's column) */}
+            {(() => {
+              const todayCol = displayDays.findIndex((d) =>
+                isSameDay(d, today),
+              );
+              if (todayCol === -1) return null;
+              const nowHour = now.getHours() + now.getMinutes() / 60;
+              return (
+                <View
+                  pointerEvents="none"
+                  style={{
+                    position: "absolute",
+                    left: `${(todayCol / displayDays.length) * 100}%`,
+                    width: `${100 / displayDays.length}%`,
+                    top: hourToTop(nowHour),
+                    height: 2,
+                    zIndex: 15,
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: 4,
+                      marginLeft: -4,
+                      backgroundColor: accentColor,
+                    }}
+                  />
+                  <View
+                    style={{
+                      flex: 1,
+                      height: 2,
+                      backgroundColor: accentColor,
+                    }}
+                  />
+                </View>
+              );
+            })()}
           </View>
         </View>
       </ScrollView>
@@ -2109,24 +2233,34 @@ export default function CalendarScreen() {
               </View>
             </View>
 
-            <TouchableOpacity
-              onPress={() => {
-                setCreateStartH("09");
-                setCreateStartM("00");
-                setCreateEndH("10");
-                setCreateEndM("00");
-                setShowCreate(true);
-              }}
-              className="rounded-xl px-4 py-2.5 flex-row items-center gap-1.5"
-              style={{ backgroundColor: accentColor }}
-            >
-              <MaterialIcons name="add" size={18} color="#fff" />
-              {isDesktop && (
-                <Text className="text-white font-headline text-sm">
-                  New Event
-                </Text>
+            <View className="flex-row items-center gap-2">
+              {Platform.OS === "web" && (
+                <TouchableOpacity
+                  onPress={() => setPrintOpen(true)}
+                  className="w-10 h-10 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest"
+                >
+                  <MaterialIcons name="print" size={20} color="#9b9791" />
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => {
+                  setCreateStartH("09");
+                  setCreateStartM("00");
+                  setCreateEndH("10");
+                  setCreateEndM("00");
+                  setShowCreate(true);
+                }}
+                className="rounded-xl px-4 py-2.5 flex-row items-center gap-1.5"
+                style={{ backgroundColor: accentColor }}
+              >
+                <MaterialIcons name="add" size={18} color="#fff" />
+                {isDesktop && (
+                  <Text className="text-white font-headline text-sm">
+                    New Event
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
 
@@ -2152,6 +2286,78 @@ export default function CalendarScreen() {
           onClose={() => setEditingEvent(null)}
         />
       )}
+
+      <Modal visible={printOpen} transparent animationType="fade">
+        <View className="flex-1 bg-black/50 items-center justify-center p-6">
+          <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
+            <View className="flex-row items-center justify-between">
+              <Text className="font-headline text-on-surface text-lg">
+                Drukuj kalendarz
+              </Text>
+              <TouchableOpacity onPress={() => setPrintOpen(false)}>
+                <MaterialIcons name="close" size={24} color="#6b6965" />
+              </TouchableOpacity>
+            </View>
+            <Text className="text-on-surface-variant font-body text-sm">
+              Zostanie wydrukowany aktualny widok:{" "}
+              {viewType === "day"
+                ? "dzień"
+                : viewType === "week"
+                  ? "tydzień"
+                  : "miesiąc"}
+              .
+            </Text>
+            <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
+              Motyw
+            </Text>
+            <View className="gap-2">
+              {(
+                [
+                  { key: "classic", label: "Klasyczny" },
+                  { key: "mono", label: "Czarno-biały" },
+                  { key: "grid", label: "Kolorowa siatka" },
+                ] as { key: PrintTheme; label: string }[]
+              ).map((opt) => {
+                const active = printTheme === opt.key;
+                return (
+                  <TouchableOpacity
+                    key={opt.key}
+                    onPress={() => setPrintTheme(opt.key)}
+                    className={`flex-row items-center gap-2.5 px-3 py-2.5 rounded-xl border ${
+                      active
+                        ? "border-primary bg-primary-fixed"
+                        : "border-outline-variant bg-surface-container-low"
+                    }`}
+                  >
+                    <MaterialIcons
+                      name={
+                        active ? "radio-button-checked" : "radio-button-unchecked"
+                      }
+                      size={20}
+                      color={active ? accentColor : "#9b9791"}
+                    />
+                    <Text
+                      className={`font-body text-sm ${
+                        active ? "text-primary" : "text-on-surface"
+                      }`}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View className="flex-row gap-3 justify-end mt-2">
+              <Button
+                variant="outline"
+                label="Anuluj"
+                onPress={() => setPrintOpen(false)}
+              />
+              <Button label="Drukuj" onPress={handlePrint} />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </PageLayout>
   );
 }
