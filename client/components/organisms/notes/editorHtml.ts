@@ -129,7 +129,22 @@ export function buildEditorHtml(options: {
   #editor .checklist-item > input[type=checkbox] { margin-top: 0.35em; width: 16px; height: 16px; accent-color: var(--editor-accent); cursor: pointer; flex: none; }
   #editor .checklist-item > span { flex: 1; min-height: 1.55em; }
   #editor .checklist-item.done > span { text-decoration: line-through; color: var(--editor-muted); }
-  #editor img { max-width: 100%; }
+  #editor img { max-width: 100%; height: auto; cursor: pointer; }
+  #editor img.img-selected { outline: 2px solid var(--editor-accent); outline-offset: 1px; }
+  #img-resize-handle {
+    display: none;
+    position: fixed;
+    z-index: 1200;
+    width: 14px;
+    height: 14px;
+    margin: -7px 0 0 -7px;
+    border-radius: 50%;
+    background: var(--editor-accent);
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    cursor: nwse-resize;
+    touch-action: none;
+  }
   html[data-theme="dark"] #editor [style*="color: rgb(0, 0, 0)"],
   html[data-theme="dark"] #editor [style*="color: rgb(26, 26, 26)"],
   html[data-theme="dark"] #editor [style*="color: #000000"],
@@ -207,6 +222,7 @@ export function buildEditorHtml(options: {
 <div id="editor" contenteditable="true" data-placeholder="${placeholder.replace(/"/g, "&quot;")}"></div>
 ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zaplanuj z AI</button>' : ""}
 <div id="slash-menu" role="listbox"></div>
+<div id="img-resize-handle" contenteditable="false"></div>
 <script>
   (function () {
     var editor = document.getElementById("editor");
@@ -789,12 +805,102 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
     }, true);
     window.addEventListener("resize", hideSlash);
 
+    /* ---------- Image resize (click an image, drag the corner handle) ---------- */
+    var imgHandle = document.getElementById("img-resize-handle");
+    var selectedImg = null;
+    var imgResize = null; // { startX, startW }
+
+    function positionImgHandle() {
+      if (!selectedImg || !imgHandle) return;
+      if (!editor.contains(selectedImg)) { deselectImage(); return; }
+      var r = selectedImg.getBoundingClientRect();
+      imgHandle.style.left = r.right + "px";
+      imgHandle.style.top = r.bottom + "px";
+    }
+
+    function selectImage(img) {
+      if (selectedImg && selectedImg !== img) {
+        selectedImg.classList.remove("img-selected");
+      }
+      selectedImg = img;
+      img.classList.add("img-selected");
+      if (imgHandle) {
+        imgHandle.style.display = "block";
+        positionImgHandle();
+      }
+    }
+
+    function deselectImage() {
+      if (selectedImg) selectedImg.classList.remove("img-selected");
+      selectedImg = null;
+      if (imgHandle) imgHandle.style.display = "none";
+    }
+
+    editor.addEventListener("click", function (e) {
+      var t = e.target;
+      if (t && t.tagName === "IMG" && editor.contains(t)) {
+        selectImage(t);
+      } else {
+        deselectImage();
+      }
+    });
+
+    function startImgResize(clientX) {
+      if (!selectedImg) return;
+      imgResize = {
+        startX: clientX,
+        startW: selectedImg.getBoundingClientRect().width
+      };
+    }
+
+    function moveImgResize(clientX) {
+      if (!imgResize || !selectedImg) return;
+      // Editor horizontal padding is 44px each side (see #editor padding).
+      var maxW = Math.max(60, editor.clientWidth - 88);
+      var w = imgResize.startW + (clientX - imgResize.startX);
+      w = Math.max(40, Math.min(maxW, w));
+      selectedImg.style.width = Math.round(w) + "px";
+      selectedImg.style.height = "auto";
+      positionImgHandle();
+    }
+
+    function endImgResize() {
+      if (!imgResize) return;
+      imgResize = null;
+      emitChange();
+    }
+
+    if (imgHandle) {
+      imgHandle.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        startImgResize(e.clientX);
+      });
+      imgHandle.addEventListener("touchstart", function (e) {
+        if (!e.touches[0]) return;
+        e.preventDefault();
+        e.stopPropagation();
+        startImgResize(e.touches[0].clientX);
+      }, { passive: false });
+    }
+    window.addEventListener("mousemove", function (e) {
+      if (imgResize) { e.preventDefault(); moveImgResize(e.clientX); }
+    });
+    window.addEventListener("touchmove", function (e) {
+      if (imgResize && e.touches[0]) { e.preventDefault(); moveImgResize(e.touches[0].clientX); }
+    }, { passive: false });
+    window.addEventListener("mouseup", endImgResize);
+    window.addEventListener("touchend", endImgResize);
+    window.addEventListener("scroll", function () { if (selectedImg) positionImgHandle(); }, true);
+    window.addEventListener("resize", function () { if (selectedImg) positionImgHandle(); });
+
     function handleMessage(raw) {
       var msg;
       try { msg = JSON.parse(raw); } catch (e) { return; }
       if (!msg || !msg.type) return;
       if (msg.type === "setContent") {
         if (editor.innerHTML !== msg.html) {
+          deselectImage();
           editor.innerHTML = msg.html || "";
         }
       } else if (msg.type === "command") {
