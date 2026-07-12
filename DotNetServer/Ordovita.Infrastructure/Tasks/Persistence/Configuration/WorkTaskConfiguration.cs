@@ -49,6 +49,12 @@ public sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
         builder.Navigation(t => t.AssignedUsers).HasField("_assignedUsers");
         builder.Ignore(t => t.AssignedUserIds);
 
+        builder.HasMany(t => t.Steps)
+            .WithOne()
+            .HasForeignKey(step => step.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(t => t.Steps).HasField("_steps");
+
         builder.Ignore(t => t.DomainEvents);
     }
 }

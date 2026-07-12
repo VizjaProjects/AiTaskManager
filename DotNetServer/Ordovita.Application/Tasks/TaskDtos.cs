@@ -16,7 +16,8 @@ public sealed record WorkTaskDto(
     TaskSource Source,
     IReadOnlyList<Guid> AssignedUserIds,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    IReadOnlyList<TaskStepDto> Steps);
 
 public sealed record CreateWorkTaskResult(Guid TaskId, DateTime CreatedAt);
 
@@ -85,7 +86,8 @@ public sealed record PendingWorkTaskDto(
     DateTime? DueDateTime,
     Guid StatusId,
     TaskSource Source,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    IReadOnlyList<TaskStepDto> Steps);
 
 public sealed record PendingCalendarEventDto(
     Guid EventId,
@@ -123,7 +125,8 @@ public static class TaskMapper
             task.Source,
             task.AssignedUsers.Select(a => a.UserId.Value).ToList(),
             task.CreatedAt,
-            task.UpdatedAt);
+            task.UpdatedAt,
+            task.Steps.OrderBy(step => step.Position).Select(ToDto).ToList());
     }
 
     public static TaskCategoryDto ToDto(TaskCategory category)
@@ -180,7 +183,23 @@ public static class TaskMapper
             task.DueDateTime,
             task.StatusId.Value,
             task.Source,
-            task.CreatedAt);
+            task.CreatedAt,
+            task.Steps.OrderBy(step => step.Position).Select(ToDto).ToList());
+    }
+
+    public static TaskStepDto ToDto(TaskStep step)
+    {
+        return new TaskStepDto(
+            step.Id.Value,
+            step.TaskId.Value,
+            step.Title,
+            step.Position,
+            step.Completed,
+            step.AssignedUserId?.Value,
+            step.CreatedBy.Value,
+            step.Source,
+            step.CreatedAt,
+            step.UpdatedAt);
     }
 
     public static PendingCalendarEventDto ToPendingDto(CalendarEvent calendarEvent)

@@ -27,6 +27,7 @@ import {
   CreateTaskModal,
 } from "@/components/organisms/TaskModals";
 import { EmptyState, TaskCardSkeleton } from "@/components/atoms";
+import { CompactTaskSteps } from "@/components/molecules";
 import {
   useTasks,
   useCategories,
@@ -225,6 +226,8 @@ function KanbanTaskCard({
             </Text>
           </View>
         ) : null}
+
+        <CompactTaskSteps task={task} />
 
         {/* Footer: quiet metadata on the left, people on the right */}
         <View className="flex-row items-center justify-between mt-3">

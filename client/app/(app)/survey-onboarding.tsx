@@ -28,7 +28,7 @@ import { Role } from "@/lib/types";
 import { normalizeSurveyId } from "@/lib/surveys/utils";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 interface LoadedQuestion {
   questionId: string;

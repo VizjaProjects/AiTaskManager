@@ -1,6 +1,6 @@
 import "../global.css";
 import { useEffect, useRef } from "react";
-import { View, Platform } from "react-native";
+import { ActivityIndicator, View, Platform } from "react-native";
 import { Slot, useRouter, usePathname } from "expo-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,6 +20,7 @@ import { setOnRefreshFailed } from "@/lib/api";
 import { startSessionKeepAlive } from "@/lib/session";
 import { Role } from "@/lib/types";
 import { useSurveyGate } from "@/lib/hooks";
+import { OrdovitaLogo } from "@/components/atoms";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -105,6 +106,14 @@ function AuthGate() {
 
     if (!isAuthenticated && !inAuthGroup && !isPublicPage) {
       target = "/(auth)/login";
+    } else if (isAuthenticated && pathname === "/") {
+      if (isUser && hasPendingSurvey) {
+        target = "/(app)/survey-onboarding";
+      } else if (workspaces.length === 0) {
+        target = "/(app)/workspace-create";
+      } else {
+        target = isUser ? "/(app)/dashboard" : "/(app)/admin-surveys";
+      }
     } else if (isAuthenticated && inAuthGroup) {
       if (isUser && hasPendingSurvey) {
         target = "/(app)/survey-onboarding";
@@ -170,6 +179,15 @@ function AuthGate() {
   useEffect(() => {
     lastRedirectRef.current = null;
   }, [pathname]);
+
+  if (isLoading) {
+    return (
+      <View className="flex-1 items-center justify-center bg-background gap-5">
+        <OrdovitaLogo size="md" showTagline={false} />
+        <ActivityIndicator size="small" color="#5b4ee0" />
+      </View>
+    );
+  }
 
   return <Slot />;
 }

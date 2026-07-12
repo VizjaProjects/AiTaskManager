@@ -42,13 +42,23 @@ public class LlmTornadoProvider(
             ? await repository.GetByIdAsync(LlmSettingsId.From(llmSettingId.Value), user.Id, ct)
             : null;
 
-        var (api, model, requestType) = ResolveApiAndModel(llmSettings);
+        var (api, model, requestType, supportsStructuredOutput) = ResolveApiAndModel(llmSettings);
 
-        var result = await api.Chat.CreateChatCompletion(new ChatRequest
+        var chatRequest = new ChatRequest
         {
             Model = model,
-            Messages = [new ChatMessage(ChatMessageRoles.User, request.Prompt)]
-        });
+            Messages =
+            [
+                new ChatMessage(ChatMessageRoles.System, request.SystemPrompt),
+                new ChatMessage(ChatMessageRoles.User, request.UserPrompt)
+            ]
+        };
+
+        if (supportsStructuredOutput && request.ResponseSchema is not null)
+            chatRequest.ResponseFormat = ChatRequestResponseFormats.StructuredJson(
+                "ordovita_ai_plan", request.ResponseSchema, true);
+
+        var result = await api.Chat.CreateChatCompletion(chatRequest);
         
 
         var content = result?.Choices?[0].Message?.Content;
@@ -61,23 +71,26 @@ public class LlmTornadoProvider(
         var totalToken = result?.Usage?.TotalTokens;
         var domainRequestType = Enum.Parse<Ordovita.Domain.LlmStatistic.RequestType>(requestType.ToString());
 
-        var llmStatistic = Domain.LlmStatistic.LlmStatistic.Create(request.Prompt, outputTokens!.Value, inputTokens!.Value,
+        var llmStatistic = Domain.LlmStatistic.LlmStatistic.Create(request.AuditPrompt, outputTokens!.Value, inputTokens!.Value,
             totalToken!.Value, user.Id, domainRequestType);
         
         await llmStatisticRepository.AddAsync(llmStatistic.Value!, ct);
         await uow.SaveChangesAsync(ct);
 
-        return Result.Success(new AiResponse(content, inputTokens!.Value,outputTokens!.Value,totalToken!.Value, request.Prompt, requestType));
+        return Result.Success(new AiResponse(content, inputTokens!.Value, outputTokens!.Value, totalToken!.Value,
+            request.AuditPrompt, requestType));
     }
 
-    private (TornadoApi Api, ChatModel Model, RequestType requestType) ResolveApiAndModel(Domain.LlmSettings.LlmSettings? llmSettings)
+    private (TornadoApi Api, ChatModel Model, RequestType requestType, bool SupportsStructuredOutput)
+        ResolveApiAndModel(Domain.LlmSettings.LlmSettings? llmSettings)
     {
  
         if (llmSettings is null)
-            return (GetTornadoApi("Groq", configuration.ApiKey), ChatModel.Groq.OpenAi.GptOss120B,  RequestType.Standard);
+            return (GetTornadoApi("Groq", configuration.ApiKey), ChatModel.Groq.OpenAi.GptOss120B,
+                RequestType.Standard, true);
 
         if (llmSettings.CustomUrl is not null)
-            return (GetTornadoApi(llmSettings.CustomUrl), new ChatModel(llmSettings.Model),  RequestType.Custom);
+            return (GetTornadoApi(llmSettings.CustomUrl), new ChatModel(llmSettings.Model), RequestType.Custom, false);
 
         if (llmSettings.Provider is null || llmSettings.ApiKey is null)
             throw new InvalidOperationException($"LlmSettings '{llmSettings.Id}' is missing Provider or ApiKey.");
@@ -104,7 +117,7 @@ public class LlmTornadoProvider(
             model = new ChatModel(cleanModelName, providerEnum);
         }
 
-        return (api, model, RequestType.Custom);
+        return (api, model, RequestType.Custom, true);
     }
 
     private static TornadoApi GetTornadoApi(string provider, string apiKey)

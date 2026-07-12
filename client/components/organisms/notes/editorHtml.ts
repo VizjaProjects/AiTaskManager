@@ -352,7 +352,19 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
         case "h2": setCss(false); document.execCommand("formatBlock", false, "H2"); break;
         case "p": setCss(false); document.execCommand("formatBlock", false, "P"); break;
         case "blockquote": setCss(false); document.execCommand("formatBlock", false, "BLOCKQUOTE"); break;
-        case "code": setCss(false); document.execCommand("formatBlock", false, "PRE"); break;
+        case "code": {
+          setCss(false);
+          var codeSelection = window.getSelection();
+          var codeNode = codeSelection && codeSelection.rangeCount
+            ? codeSelection.getRangeAt(0).startContainer
+            : null;
+          document.execCommand(
+            "formatBlock",
+            false,
+            closestCodeBlock(codeNode) ? "P" : "PRE"
+          );
+          break;
+        }
         case "hr": document.execCommand("insertHTML", false, "<hr/><p><br/></p>"); break;
         case "highlight": setCss(true); document.execCommand("hiliteColor", false, value || "#fef9c3"); break;
         case "foreColor": setCss(true); document.execCommand("foreColor", false, value || "#000000"); break;
@@ -403,6 +415,66 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
       sel.removeAllRanges();
       sel.addRange(range);
     }
+
+    function closestCodeBlock(node) {
+      var element = node && node.nodeType === 1 ? node : node && node.parentElement;
+      while (element && element !== editor) {
+        if (element.tagName === "PRE") return element;
+        element = element.parentElement;
+      }
+      return null;
+    }
+
+    function caretIsAtEndOf(node, range) {
+      try {
+        var beforeCaret = document.createRange();
+        beforeCaret.selectNodeContents(node);
+        beforeCaret.setEnd(range.endContainer, range.endOffset);
+        return beforeCaret.toString().length === (node.textContent || "").length;
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function exitCodeBlock(pre) {
+      var paragraph = document.createElement("p");
+      paragraph.innerHTML = "<br/>";
+      pre.parentNode.insertBefore(paragraph, pre.nextSibling);
+      placeCaretAtEnd(paragraph);
+      emitChange();
+      emitState();
+    }
+
+    // A code block must never trap the caret. Enter on an empty final line
+    // follows editor conventions; Escape or Ctrl/Cmd+Enter exits immediately.
+    editor.addEventListener("keydown", function (e) {
+      var sel = window.getSelection();
+      if (!sel || sel.rangeCount === 0) return;
+      var range = sel.getRangeAt(0);
+      var pre = closestCodeBlock(range.startContainer);
+      if (!pre) return;
+
+      if (e.key === "Escape" || (e.key === "Enter" && (e.metaKey || e.ctrlKey))) {
+        e.preventDefault();
+        e.stopPropagation();
+        exitCodeBlock(pre);
+        return;
+      }
+
+      if (e.key === "Enter" && !e.shiftKey && caretIsAtEndOf(pre, range)) {
+        var codeText = pre.innerText || pre.textContent || "";
+        if (codeText.trim() === "" || /\\n\\s*$/.test(codeText)) {
+          e.preventDefault();
+          e.stopPropagation();
+          exitCodeBlock(pre);
+        }
+      } else if (e.key === "Backspace" && (pre.textContent || "").length === 0) {
+        e.preventDefault();
+        document.execCommand("formatBlock", false, "P");
+        emitChange();
+        emitState();
+      }
+    });
 
     // Keep a multi-line block selection highlighted after a formatting command
     // so the user can chain another action on the same lines.

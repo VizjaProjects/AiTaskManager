@@ -1740,7 +1740,7 @@ export default function CalendarScreen() {
               gridLayoutSyncedRef.current = true;
               setGridReady(1);
             }}
-            dataSet={{ calendarGrid: "true" }}
+            {...({ dataSet: { calendarGrid: "true" } } as object)}
             pointerEvents={
               Platform.OS === "web" && !isMobile ? "auto" : "box-none"
             }
@@ -1848,7 +1848,7 @@ export default function CalendarScreen() {
                         </Text>
                         {Platform.OS === "web" && (
                           <View
-                            dataSet={{ resizeHandle: "true" }}
+                            {...({ dataSet: { resizeHandle: "true" } } as object)}
                             style={{
                               position: "absolute",
                               bottom: 0,
@@ -1856,7 +1856,7 @@ export default function CalendarScreen() {
                               right: 0,
                               height: 6,
                               cursor: "ns-resize" as const,
-                            }}
+                            } as any}
                           />
                         )}
                       </>
@@ -1866,9 +1866,9 @@ export default function CalendarScreen() {
                       return (
                         <View
                           key={evt.eventId}
-                          dataSet={eventDataSet}
+                          {...({ dataSet: eventDataSet } as object)}
                           className="rounded-md px-1.5 py-1 overflow-hidden"
-                          style={eventStyle}
+                          style={eventStyle as any}
                         >
                           {eventBody}
                         </View>
@@ -1888,8 +1888,8 @@ export default function CalendarScreen() {
                         }}
                         activeOpacity={0.7}
                         className="rounded-md px-1.5 py-1 overflow-hidden"
-                        dataSet={eventDataSet}
-                        style={eventStyle}
+                        {...({ dataSet: eventDataSet } as object)}
+                        style={eventStyle as any}
                       >
                         {eventBody}
                       </TouchableOpacity>

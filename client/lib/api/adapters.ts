@@ -9,6 +9,7 @@ import {
   type Question,
   type Survey,
   type Task,
+  type TaskStep,
   type TaskStatus,
 } from "../types";
 import { parseApiDateTime, toLocalDateTimeString } from "../utils";
@@ -56,6 +57,26 @@ export function mapTaskDto(raw: Record<string, unknown>): Task {
     assignedUserIds: Array.isArray(raw.assignedUserIds)
       ? (raw.assignedUserIds as string[])
       : [],
+    steps: Array.isArray(raw.steps)
+      ? (raw.steps as Record<string, unknown>[])
+          .map(mapTaskStepDto)
+          .sort((a, b) => a.position - b.position)
+      : [],
+    createdAt: new Date(raw.createdAt as string).toISOString(),
+    updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}
+
+export function mapTaskStepDto(raw: Record<string, unknown>): TaskStep {
+  return {
+    stepId: raw.stepId as string,
+    taskId: raw.taskId as string,
+    title: raw.title as string,
+    position: Number(raw.position ?? 0),
+    completed: Boolean(raw.completed),
+    assignedUserId: (raw.assignedUserId as string) ?? null,
+    createdBy: raw.createdBy as string,
+    source: raw.source as TaskStep["source"],
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
   };

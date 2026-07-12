@@ -17,6 +17,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
     {
         return await context.WorkTasks
             .Include(t => t.AssignedUsers)
+            .Include(t => t.Steps)
             .FirstOrDefaultAsync(t => t.Id == id, ct);
     }
 
@@ -26,6 +27,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
         return await context.WorkTasks
             .AsNoTracking()
             .Include(t => t.AssignedUsers)
+            .Include(t => t.Steps)
             .Where(t => t.WorkspaceId == workspaceId && t.Accepted)
             .ToListAsync(ct);
     }
@@ -36,6 +38,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
         return await context.WorkTasks
             .AsNoTracking()
             .Include(t => t.AssignedUsers)
+            .Include(t => t.Steps)
             .Where(t => t.WorkspaceId == workspaceId && !t.Accepted)
             .ToListAsync(ct);
     }

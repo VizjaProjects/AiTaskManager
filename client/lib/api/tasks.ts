@@ -7,6 +7,7 @@ import {
   mapPriorityToApi,
   mapStatusDto,
   mapTaskDto,
+  mapTaskStepDto,
   normalizeArray,
 } from "./adapters";
 import type {
@@ -20,6 +21,8 @@ import type {
   EditEventRequest,
   EditTaskRequest,
   EditTaskStatusRequest,
+  CreateTaskStepRequest,
+  EditTaskStepRequest,
   GenerateAiPlanRequest,
 } from "../types";
 
@@ -56,6 +59,61 @@ export const taskApi = {
     api.put(
       `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/assignees`,
       { userIds },
+    ),
+
+  createStep: async (
+    workspaceId: string,
+    taskId: string,
+    data: CreateTaskStepRequest,
+  ) => {
+    const response = await api.post<Record<string, unknown>>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps`,
+      data,
+    );
+    return mapTaskStepDto(response.data);
+  },
+
+  editStep: async (
+    workspaceId: string,
+    taskId: string,
+    stepId: string,
+    data: EditTaskStepRequest,
+  ) => {
+    const response = await api.put<Record<string, unknown>>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps/${encodeURIComponent(stepId)}`,
+      data,
+    );
+    return mapTaskStepDto(response.data);
+  },
+
+  setStepCompletion: async (
+    workspaceId: string,
+    taskId: string,
+    stepId: string,
+    completed: boolean,
+  ) => {
+    const response = await api.put<Record<string, unknown>>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps/${encodeURIComponent(stepId)}/completion`,
+      { completed },
+    );
+    return mapTaskStepDto(response.data);
+  },
+
+  reorderSteps: async (
+    workspaceId: string,
+    taskId: string,
+    stepIds: string[],
+  ) => {
+    const response = await api.put<Record<string, unknown>[]>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps/order`,
+      { stepIds },
+    );
+    return response.data.map(mapTaskStepDto).sort((a, b) => a.position - b.position);
+  },
+
+  deleteStep: (workspaceId: string, taskId: string, stepId: string) =>
+    api.delete(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps/${encodeURIComponent(stepId)}`,
     ),
 };
 

@@ -20,7 +20,6 @@ public sealed class GetWorkspaceTasksHandler(
 
         var tasks = await taskRepository.GetAcceptedByWorkspaceIdAsync(
             WorkspaceId.From(query.WorkspaceId), ct);
-
         return Result.Success<IReadOnlyList<WorkTaskDto>>(
             tasks.Select(TaskMapper.ToDto).ToList());
     }

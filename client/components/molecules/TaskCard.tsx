@@ -4,6 +4,7 @@ import type { Task, Category, TaskStatus } from "@/lib/types";
 import { TaskPriority, TaskSource } from "@/lib/types";
 import { PriorityBadge, ColorBadge } from "../atoms";
 import { formatDate, formatDuration, isOverdue, isDueToday } from "@/lib/utils";
+import { CompactTaskSteps } from "./CompactTaskSteps";
 
 interface TaskCardProps {
   task: Task;
@@ -63,6 +64,7 @@ export function TaskCard({ task, category, status, onPress }: TaskCardProps) {
             </Text>
           )}
         </View>
+        <CompactTaskSteps task={task} density="list" />
       </View>
     </TouchableOpacity>
   );

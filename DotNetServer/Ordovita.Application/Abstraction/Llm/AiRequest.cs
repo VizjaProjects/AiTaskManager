@@ -1,10 +1,19 @@
 namespace Ordovita.Application.Abstraction.Llm;
 
-public sealed record AiRequest(string Prompt)
+public sealed record AiRequest(
+    string SystemPrompt,
+    string UserPrompt,
+    object? ResponseSchema = null)
 {
-    public static AiRequest Create(string prompt)
+    public string AuditPrompt => $"SYSTEM:\n{SystemPrompt}\n\nUSER:\n{UserPrompt}";
+
+    public static AiRequest Create(string systemPrompt, string userPrompt, object? responseSchema = null)
     {
-        if (string.IsNullOrWhiteSpace(prompt)) throw new ArgumentNullException("Prompt cannot be null", nameof(prompt));
-        return new AiRequest(prompt);
+        if (string.IsNullOrWhiteSpace(systemPrompt))
+            throw new ArgumentException("System prompt cannot be blank.", nameof(systemPrompt));
+        if (string.IsNullOrWhiteSpace(userPrompt))
+            throw new ArgumentException("User prompt cannot be blank.", nameof(userPrompt));
+
+        return new AiRequest(systemPrompt, userPrompt, responseSchema);
     }
 }

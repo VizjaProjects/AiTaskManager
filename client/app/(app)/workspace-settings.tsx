@@ -25,7 +25,7 @@ import type { WorkspaceVisibility } from "@/lib/types";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 /**
  * A deliberately heavy, type-to-confirm modal for the irreversible workspace

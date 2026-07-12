@@ -1,4 +1,6 @@
 export { TaskCard } from "./TaskCard";
+export { CompactTaskSteps } from "./CompactTaskSteps";
+export { TaskStepsSection, DraftTaskStepsEditor } from "./TaskStepsSection";
 export { StatCard } from "./StatCard";
 export { DashboardTaskCard } from "./DashboardTaskCard";
 export { NavItem } from "./NavItem";

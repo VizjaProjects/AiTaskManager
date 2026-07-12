@@ -16,7 +16,7 @@ public class AiGroqClient(HttpClient client, GroqConfiguration configuration, IL
 
         try
         {
-            var body = GroqRequest.Of(configuration.Model, request.Prompt);
+            var body = GroqRequest.Of(configuration.Model, request.SystemPrompt, request.UserPrompt);
 
             var responseMessage = await client.PostAsJsonAsync("chat/completions", body, ct);
 
@@ -39,7 +39,8 @@ public class AiGroqClient(HttpClient client, GroqConfiguration configuration, IL
             var promptTokens = response!.Usage?.PromptTokens ?? 0;
             var completionTokens = response.Usage?.CompletionTokens ?? 0;
 
-            return Result.Success(new AiResponse(content,completionTokens ,promptTokens,promptTokens + completionTokens, request.Prompt, RequestType.Standard));
+            return Result.Success(new AiResponse(content, completionTokens, promptTokens,
+                promptTokens + completionTokens, request.AuditPrompt, RequestType.Standard));
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)
         {

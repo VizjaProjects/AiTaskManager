@@ -80,6 +80,11 @@ using Ordovita.Application.Tasks.Proposals.AcceptAiTask;
 using Ordovita.Application.Tasks.Proposals.RejectAiTask;
 using Ordovita.Application.Tasks.Proposals.AcceptAiEvent;
 using Ordovita.Application.Tasks.Proposals.RejectAiEvent;
+using Ordovita.Application.Tasks.TaskSteps.CreateTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.DeleteTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.EditTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.ReorderTaskSteps;
+using Ordovita.Application.Tasks.TaskSteps.SetTaskStepCompletion;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
@@ -236,6 +241,12 @@ public static class DependencyInjection
                 GetAllUsersForAdminHandler>();
 
         services.AddScoped<PlanLimitChecker>();
+
+        services.AddScoped<ICommandHandler<CreateTaskStepCommand, TaskStepDto>, CreateTaskStepHandler>();
+        services.AddScoped<ICommandHandler<DeleteTaskStepCommand, Unit>, DeleteTaskStepHandler>();
+        services.AddScoped<ICommandHandler<EditTaskStepCommand, TaskStepDto>, EditTaskStepHandler>();
+        services.AddScoped<ICommandHandler<SetTaskStepCompletionCommand, TaskStepDto>, SetTaskStepCompletionHandler>();
+        services.AddScoped<ICommandHandler<ReorderTaskStepsCommand, IReadOnlyList<TaskStepDto>>, ReorderTaskStepsHandler>();
 
         return services;
     }

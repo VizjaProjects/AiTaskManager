@@ -42,13 +42,11 @@ const accentTint = (alpha: number) => `rgba(91,78,224,${alpha})`;
 export default function Index() {
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 1024;
 
-  if (isAuthenticated) {
-    router.replace("/(app)/dashboard");
-    return null;
-  }
+  if (isLoading || isAuthenticated) return null;
 
   function openDownload(url: string) {
     if (Platform.OS === "web" && typeof window !== "undefined") {

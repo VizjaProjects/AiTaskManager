@@ -123,8 +123,27 @@ export interface Task {
   source: TaskSource;
   accepted: boolean;
   assignedUserIds: UUID[];
+  steps: TaskStep[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface TaskStep {
+  stepId: UUID;
+  taskId: UUID;
+  title: string;
+  position: number;
+  completed: boolean;
+  assignedUserId: UUID | null;
+  createdBy: UUID;
+  source: TaskSource;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTaskStepInput {
+  title: string;
+  assignedUserId?: UUID;
 }
 
 export interface Category {
@@ -257,6 +276,17 @@ export interface CreateTaskRequest {
   dueDateTime?: string;
   statusId: UUID;
   source: TaskSource;
+  steps?: CreateTaskStepInput[];
+}
+
+export interface CreateTaskStepRequest {
+  title: string;
+  assignedUserId?: UUID;
+}
+
+export interface EditTaskStepRequest {
+  title: string;
+  assignedUserId: UUID | null;
 }
 
 export interface EditTaskRequest {

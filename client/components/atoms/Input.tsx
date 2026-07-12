@@ -10,7 +10,7 @@ import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 interface InputProps extends TextInputProps {
   label?: string;

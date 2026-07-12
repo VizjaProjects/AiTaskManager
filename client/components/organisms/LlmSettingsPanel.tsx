@@ -38,7 +38,7 @@ import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 type FormState = {
   connectionMode: LlmConnectionMode;

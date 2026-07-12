@@ -89,3 +89,25 @@ public static class TaskStatusExceptions
     public static readonly Error CannotDeleteDefault =
         Error.Validation("TaskStatus.CannotDeleteDefault", "Default statuses cannot be deleted.");
 }
+
+public static class TaskStepExceptions
+{
+    public static readonly Error NotFound =
+        Error.NotFound("TaskStep.NotFound", "Task step was not found.");
+
+    public static readonly Error MissingTitle =
+        Error.Validation("TaskStep.MissingTitle", "Task step title is required.");
+
+    public static readonly Error TitleTooLong =
+        Error.Validation("TaskStep.TitleTooLong", "Task step title cannot exceed 200 characters.");
+
+    public static readonly Error LimitExceeded =
+        Error.Validation("TaskStep.LimitExceeded", "A task cannot have more than 20 steps.");
+
+    public static readonly Error InvalidOrder =
+        Error.Validation("TaskStep.InvalidOrder", "Task step order must contain every current step exactly once.");
+
+    public static readonly Error PendingTaskCannotBeCompleted =
+        Error.Validation("TaskStep.PendingTaskCannotBeCompleted",
+            "A step cannot be completed before its AI task proposal is accepted.");
+}

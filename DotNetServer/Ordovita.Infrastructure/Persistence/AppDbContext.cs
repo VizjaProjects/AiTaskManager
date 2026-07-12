@@ -40,6 +40,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options)
 
     public DbSet<Domain.LlmStatistic.LlmStatistic> LlmStatistics => Set<Domain.LlmStatistic.LlmStatistic>();
 
+    public DbSet<TaskStep> TaskSteps => Set<TaskStep>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

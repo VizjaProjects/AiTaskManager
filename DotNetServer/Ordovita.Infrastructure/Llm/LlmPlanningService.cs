@@ -31,6 +31,7 @@ public sealed class LlmPlanningService(
     private const int DescriptionMaxLength = 2000;
     private const int CategoryNameMaxLength = 100;
     private const int ColorMaxLength = 20;
+    private const int AiStepLimit = 8;
 
     public async Task<Result<GeneratedLlmPlanResult>> GeneratePlanAsync(
         GeneratedLlmPlanRequest request, CancellationToken ct)
@@ -48,11 +49,17 @@ public sealed class LlmPlanningService(
 
         var surveyAnswers = await userAnswerReader.GetByUserIdAsync(userId, ct);
         var categories = await taskCategoryRepository.GetByWorkspaceIdAsync(workspaceId, ct);
+        var acceptedTasks = await taskRepository.GetAcceptedByWorkspaceIdAsync(workspaceId, ct);
+        var activeTasks = SelectActiveTasks(acceptedTasks, statuses);
 
         var nowInUserZone = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, request.TimeZone);
-        var prompt = LlmPlanPromptBuilder.Build(request.UserText, surveyAnswers, categories, statuses, nowInUserZone);
+        var prompt = LlmPlanPromptBuilder.Build(
+            request.UserText, surveyAnswers, categories, statuses, activeTasks, nowInUserZone);
 
-        var aiResponse = await aiClient.AskAsync(new AiRequest(prompt), request.LlmSettingId, ct);
+        var aiResponse = await aiClient.AskAsync(
+            AiRequest.Create(prompt.SystemPrompt, prompt.UserPrompt, prompt.ResponseSchema),
+            request.LlmSettingId,
+            ct);
         if (aiResponse.IsFailure || aiResponse.Value is null)
             return Result.Failure<GeneratedLlmPlanResult>(aiResponse.Error);
 
@@ -113,6 +120,14 @@ public sealed class LlmPlanningService(
             }
 
             var task = taskResult.Value;
+            foreach (var stepTitle in NormalizeAiSteps(t.Steps, task.Title))
+            {
+                var stepResult = task.AddStep(context.UserId, stepTitle, TaskSource.AI_PARSED);
+                if (stepResult.IsFailure)
+                    logger.LogWarning("Skipping invalid AI task step '{StepTitle}': {Error}",
+                        stepTitle, stepResult.Error.Code);
+            }
+
             await taskRepository.AddAsync(task, ct);
 
             if (dueDateTime is { } start)
@@ -126,7 +141,15 @@ public sealed class LlmPlanningService(
 
             generated.Add(new GeneratedTask(
                 task.Id.Value, task.Title, task.Description, task.Priority.ToString(),
-                task.CategoryId?.Value, task.StatusId.Value, task.EstimatedDuration, task.DueDateTime));
+                task.CategoryId?.Value, task.StatusId.Value, task.EstimatedDuration, task.DueDateTime,
+                task.Steps.OrderBy(step => step.Position)
+                    .Select(step => new GeneratedTaskStep(
+                        step.Id.Value,
+                        step.Title,
+                        step.Position,
+                        step.Completed,
+                        step.AssignedUserId?.Value))
+                    .ToList()));
         }
 
         return generated;
@@ -224,6 +247,44 @@ public sealed class LlmPlanningService(
     private static string? Normalize(string? value, int maxLength)
     {
         return string.IsNullOrWhiteSpace(value) ? null : AiPlanMapper.Clamp(value.Trim(), maxLength);
+    }
+
+    private static IReadOnlyList<WorkTask> SelectActiveTasks(
+        IReadOnlyList<WorkTask> tasks,
+        IReadOnlyList<WorkTaskStatus> statuses)
+    {
+        var completedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "done", "completed", "zakończone", "ukończone"
+        };
+        var completedStatusIds = statuses
+            .Where(status => completedNames.Contains(status.Name.Trim()))
+            .Select(status => status.Id)
+            .ToHashSet();
+
+        return tasks
+            .Where(task => !completedStatusIds.Contains(task.StatusId))
+            .OrderByDescending(task => task.UpdatedAt)
+            .Take(30)
+            .ToList();
+    }
+
+    private static IReadOnlyList<string> NormalizeAiSteps(
+        IReadOnlyList<AiTaskStepJson>? steps,
+        string taskTitle)
+    {
+        if (steps is null)
+            return [];
+
+        var normalizedTaskTitle = taskTitle.Trim();
+        return steps
+            .Select(step => step.Title?.Trim())
+            .Where(title => !string.IsNullOrWhiteSpace(title))
+            .Select(title => AiPlanMapper.Clamp(title!, WorkTask.StepTitleMaxLength))
+            .Where(title => !string.Equals(title, normalizedTaskTitle, StringComparison.OrdinalIgnoreCase))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(AiStepLimit)
+            .ToList();
     }
 
     private sealed class PlanBuildContext

@@ -1,6 +1,7 @@
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Domain.Common;
+using Ordovita.Domain.Identity;
 using Ordovita.Domain.Tasks;
 using Ordovita.Domain.Tasks.Exception;
 using Ordovita.Domain.Tasks.port;
@@ -17,7 +18,7 @@ public sealed record CreateWorkTaskCommand(
     int EstimatedDuration,
     DateTime? DueDateTime,
     Guid StatusId,
-    TaskSource Source) : ICommand<CreateWorkTaskResult>;
+    IReadOnlyList<CreateTaskStepInput> Steps) : ICommand<CreateWorkTaskResult>;
 
 public sealed class CreateWorkTaskHandler(
     WorkspaceAccessGuard accessGuard,
@@ -56,13 +57,30 @@ public sealed class CreateWorkTaskHandler(
             command.EstimatedDuration,
             command.DueDateTime,
             TaskStatusId.From(command.StatusId),
-            command.Source);
+            TaskSource.MANUAL);
 
         if (taskResult.IsFailure || taskResult.Value is null)
             return Result.Failure<CreateWorkTaskResult>(taskResult.Error);
 
-        if (taskResult.Value.Source == TaskSource.MANUAL)
-            taskResult.Value.Accept();
+        var memberIds = access.Value.Workspace.AssignedUsers.Select(member => member.UserId).ToHashSet();
+        foreach (var stepInput in command.Steps)
+        {
+            UserId? assignedUserId = null;
+            if (stepInput.AssignedUserId is { } requestedUserId)
+            {
+                assignedUserId = UserId.From(requestedUserId);
+                if (!memberIds.Contains(assignedUserId.Value))
+                    return Result.Failure<CreateWorkTaskResult>(TaskExceptions.AssigneeNotWorkspaceMember);
+            }
+
+            var stepResult = taskResult.Value.AddStep(
+                access.Value.User.Id,
+                stepInput.Title,
+                TaskSource.MANUAL,
+                assignedUserId);
+            if (stepResult.IsFailure)
+                return Result.Failure<CreateWorkTaskResult>(stepResult.Error);
+        }
 
         await taskRepository.AddAsync(taskResult.Value!, ct);
 

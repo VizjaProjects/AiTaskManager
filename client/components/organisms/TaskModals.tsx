@@ -16,8 +16,18 @@ import { Button, Input } from "../atoms";
 import { PriorityBadge, ColorBadge } from "../atoms";
 import { InlineDatePicker } from "../atoms";
 import { Avatar } from "../atoms/Avatar";
-import { LinkCheckboxModal } from "../molecules";
-import type { Task, Category, TaskStatus, CalendarEvent } from "@/lib/types";
+import {
+  DraftTaskStepsEditor,
+  LinkCheckboxModal,
+  TaskStepsSection,
+} from "../molecules";
+import type {
+  Task,
+  Category,
+  TaskStatus,
+  CalendarEvent,
+  CreateTaskStepInput,
+} from "@/lib/types";
 import { TaskPriority, TaskSource, EventStatus } from "@/lib/types";
 import {
   PRIORITY_COLORS,
@@ -59,6 +69,8 @@ type TaskSaveData = {
   dueDateTime?: string;
 };
 
+type TaskDetailTab = "details" | "steps" | "links";
+
 interface TaskDetailModalProps {
   task: Task | null;
   categories: Category[];
@@ -76,7 +88,7 @@ interface TaskDetailModalProps {
 }
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 export function TaskDetailModal({
   task: taskProp,
@@ -127,6 +139,7 @@ export function TaskDetailModal({
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [noteLinkOpen, setNoteLinkOpen] = useState(false);
   const [draftLinkedNoteIds, setDraftLinkedNoteIds] = useState<string[]>([]);
+  const [activeTab, setActiveTab] = useState<TaskDetailTab>("details");
   const syncEntityNoteLinks = useSyncEntityNoteLinks();
 
   function toggleAssignee(userId: string) {
@@ -145,6 +158,9 @@ export function TaskDetailModal({
   useEffect(() => {
     if (visible && task) {
       setEditing(forceEdit || !!onSaveCustom);
+      setActiveTab(
+        !task.accepted && task.steps.length > 0 ? "steps" : "details",
+      );
       if (forceEdit || onSaveCustom) startEdit();
     } else {
       setEditing(false);
@@ -391,12 +407,9 @@ export function TaskDetailModal({
         >
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            className="bg-surface rounded-2xl w-full max-w-3xl max-h-[90%] overflow-hidden border border-outline-variant"
+            className="bg-surface rounded-xl w-full max-w-4xl overflow-hidden border border-outline-variant"
+            style={{ height: isNarrow ? "94%" : "86%", maxHeight: 780 }}
           >
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ padding: 0 }}
-            >
               {/* Header: badges + close */}
               <View className="px-6 pt-6 pb-2">
                 <View className="flex-row items-start justify-between">
@@ -505,8 +518,63 @@ export function TaskDetailModal({
                 </View>
               )}
 
+              <View className="px-6 border-b border-outline-variant flex-row gap-1">
+                {(
+                  [
+                    ["details", "info-outline", t("taskModal.tabDetails")],
+                    [
+                      "steps",
+                      "checklist",
+                      `${t("taskModal.tabSteps")} (${task.steps.length})`,
+                    ],
+                    ["links", "link", t("taskModal.tabLinks")],
+                  ] as const
+                ).map(([tabId, icon, label]) => {
+                  const selected = activeTab === tabId;
+                  return (
+                    <TouchableOpacity
+                      key={tabId}
+                      accessibilityState={{ selected }}
+                      className={`min-h-11 flex-row items-center justify-center gap-1.5 px-3 border-b-2 ${
+                        selected ? "border-primary" : "border-transparent"
+                      }`}
+                      onPress={() => setActiveTab(tabId)}
+                    >
+                      <MaterialIcons
+                        name={icon}
+                        size={15}
+                        color={selected ? "#5b4ee0" : "#8a8680"}
+                      />
+                      <Text
+                        className={`font-label text-xs ${
+                          selected ? "text-primary" : "text-on-surface-variant"
+                        }`}
+                      >
+                        {label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+            <ScrollView
+              className="flex-1"
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingTop: 20, paddingBottom: 20 }}
+            >
+
+              {activeTab === "steps" ? (
+                <View className="px-6">
+                  <TaskStepsSection
+                    task={task}
+                    editable={editing}
+                    allowCompletion={task.accepted}
+                  />
+                </View>
+              ) : null}
+
               {/* Two-column layout */}
-              <View
+              {activeTab === "details" ? <View
                 className={`px-6 pb-4 ${isWide ? "flex-row gap-6" : "gap-4"}`}
               >
                 {/* Left column: description + category */}
@@ -968,10 +1036,10 @@ export function TaskDetailModal({
                     </View>
                   )}
                 </View>
-              </View>
+              </View> : null}
 
               {/* Related events */}
-              {!editing && relatedEvents.length > 0 && (
+              {activeTab === "links" && relatedEvents.length > 0 && (
                 <View className="px-6 pb-4">
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
                     {t("taskModal.relatedEvents")}
@@ -1018,7 +1086,7 @@ export function TaskDetailModal({
               )}
 
               {/* Linked notes */}
-              {!editing && (
+              {activeTab === "links" && (
                 <View className="px-6 pb-4">
                   <View className="flex-row items-center justify-between mb-3">
                     <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
@@ -1069,6 +1137,8 @@ export function TaskDetailModal({
                   )}
                 </View>
               )}
+
+            </ScrollView>
 
               {/* Action buttons */}
               <View
@@ -1198,7 +1268,6 @@ export function TaskDetailModal({
                   </>
                 )}
               </View>
-            </ScrollView>
           </Pressable>
         </Pressable>
       </Modal>
@@ -1241,6 +1310,7 @@ export function CreateTaskModal({
   const [statusId, setStatusId] = useState(defaultStatusId ?? "");
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [estimatedDuration, setEstimatedDuration] = useState("");
+  const [steps, setSteps] = useState<CreateTaskStepInput[]>([]);
 
   const resolveDefaultStatusId = () => {
     if (defaultStatusId) return defaultStatusId;
@@ -1278,6 +1348,7 @@ export function CreateTaskModal({
     priority,
     categoryId,
     estimatedDuration,
+    steps,
   ]);
 
   function reset() {
@@ -1287,10 +1358,14 @@ export function CreateTaskModal({
     setStatusId(resolveDefaultStatusId());
     setCategoryId(null);
     setEstimatedDuration("");
+    setSteps([]);
   }
 
   function handleCreate() {
     if (!title.trim() || !statusId) return;
+    const normalizedSteps = steps
+      .map((step) => ({ ...step, title: step.title.trim() }))
+      .filter((step) => step.title.length > 0);
     createTask.mutate(
       {
         title: title.trim(),
@@ -1302,6 +1377,7 @@ export function CreateTaskModal({
           ? parseInt(estimatedDuration, 10)
           : undefined,
         source: TaskSource.MANUAL,
+        steps: normalizedSteps,
       },
       {
         onSuccess: () => {
@@ -1381,6 +1457,8 @@ export function CreateTaskModal({
                 placeholderTextColor="#b8b4af"
               />
             </View>
+
+            <DraftTaskStepsEditor steps={steps} onChange={setSteps} />
 
             {/* Priority — soft-tinted chips with a color dot */}
             <View className="w-full">

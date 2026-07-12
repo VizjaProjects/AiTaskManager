@@ -69,7 +69,12 @@ internal sealed record AiTaskJson(
     [property: JsonPropertyName("newCategoryName")]
     string? NewCategoryName,
     [property: JsonPropertyName("newCategoryColor")]
-    string? NewCategoryColor);
+    string? NewCategoryColor,
+    [property: JsonPropertyName("steps")]
+    IReadOnlyList<AiTaskStepJson>? Steps);
+
+internal sealed record AiTaskStepJson(
+    [property: JsonPropertyName("title")] string? Title);
 
 internal sealed record AiEventJson(
     [property: JsonPropertyName("title")] string? Title,

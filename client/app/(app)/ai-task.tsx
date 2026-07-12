@@ -305,6 +305,22 @@ export default function AiTaskScreen() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
+  useEffect(() => {
+    if (!proposals) return;
+    if (previewTask) {
+      const current = proposals.tasks.find(
+        (task) => task.taskId === previewTask.taskId,
+      );
+      if (current && current !== previewTask) setPreviewTask(current);
+    }
+    if (editingTask) {
+      const current = proposals.tasks.find(
+        (task) => task.taskId === editingTask.taskId,
+      );
+      if (current && current !== editingTask) setEditingTask(current);
+    }
+  }, [proposals, previewTask, editingTask]);
+
   const categoryMap = new Map((categories ?? []).map((c) => [c.categoryId, c]));
 
   async function generateFromText(input: string) {
@@ -665,6 +681,7 @@ export default function AiTaskScreen() {
                       title={task.title}
                       description={task.description ?? undefined}
                       priority={task.priority}
+                      steps={task.steps}
                       duration={
                         task.estimatedDuration > 0
                           ? formatDuration(task.estimatedDuration)

@@ -32,6 +32,8 @@ import type {
   CalendarEvent,
   CreateTaskRequest,
   EditTaskRequest,
+  CreateTaskStepRequest,
+  EditTaskStepRequest,
   CreateCategoryRequest,
   EditCategoryRequest,
   CreateTaskStatusRequest,
@@ -276,6 +278,129 @@ export function useSetTaskAssignees() {
       if (ctx?.previous) qc.setQueryData(["tasks", workspaceId], ctx.previous);
     },
     onSettled: () => qc.invalidateQueries({ queryKey: ["tasks", workspaceId] }),
+  });
+}
+
+function invalidateTaskStepQueries(
+  qc: ReturnType<typeof useQueryClient>,
+  workspaceId: string | null,
+) {
+  qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
+  qc.invalidateQueries({ queryKey: ["aiProposals", workspaceId] });
+}
+
+export function useCreateTaskStep() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, data }: { taskId: string; data: CreateTaskStepRequest }) =>
+      taskApi.createStep(requireWorkspaceId(workspaceId), taskId, data),
+    onSettled: () => invalidateTaskStepQueries(qc, workspaceId),
+  });
+}
+
+export function useEditTaskStep() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      stepId,
+      data,
+    }: {
+      taskId: string;
+      stepId: string;
+      data: EditTaskStepRequest;
+    }) => taskApi.editStep(requireWorkspaceId(workspaceId), taskId, stepId, data),
+    onSettled: () => invalidateTaskStepQueries(qc, workspaceId),
+  });
+}
+
+export function useSetTaskStepCompleted() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      stepId,
+      completed,
+    }: {
+      taskId: string;
+      stepId: string;
+      completed: boolean;
+    }) =>
+      taskApi.setStepCompletion(
+        requireWorkspaceId(workspaceId),
+        taskId,
+        stepId,
+        completed,
+      ),
+    onMutate: async ({ taskId, stepId, completed }) => {
+      await qc.cancelQueries({ queryKey: ["tasks", workspaceId] });
+      const previous = qc.getQueryData<Task[]>(["tasks", workspaceId]);
+      qc.setQueryData<Task[]>(["tasks", workspaceId], (old) =>
+        (old ?? []).map((task) =>
+          task.taskId === taskId
+            ? {
+                ...task,
+                steps: task.steps.map((step) =>
+                  step.stepId === stepId ? { ...step, completed } : step,
+                ),
+              }
+            : task,
+        ),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous)
+        qc.setQueryData(["tasks", workspaceId], context.previous);
+    },
+    onSettled: () => invalidateTaskStepQueries(qc, workspaceId),
+  });
+}
+
+export function useReorderTaskSteps() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, stepIds }: { taskId: string; stepIds: string[] }) =>
+      taskApi.reorderSteps(requireWorkspaceId(workspaceId), taskId, stepIds),
+    onMutate: async ({ taskId, stepIds }) => {
+      await qc.cancelQueries({ queryKey: ["tasks", workspaceId] });
+      const previous = qc.getQueryData<Task[]>(["tasks", workspaceId]);
+      qc.setQueryData<Task[]>(["tasks", workspaceId], (old) =>
+        (old ?? []).map((task) => {
+          if (task.taskId !== taskId) return task;
+          const byId = new Map(task.steps.map((step) => [step.stepId, step]));
+          return {
+            ...task,
+            steps: stepIds
+              .map((id, position) => {
+                const step = byId.get(id);
+                return step ? { ...step, position } : null;
+              })
+              .filter((step): step is NonNullable<typeof step> => step !== null),
+          };
+        }),
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous)
+        qc.setQueryData(["tasks", workspaceId], context.previous);
+    },
+    onSettled: () => invalidateTaskStepQueries(qc, workspaceId),
+  });
+}
+
+export function useDeleteTaskStep() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, stepId }: { taskId: string; stepId: string }) =>
+      taskApi.deleteStep(requireWorkspaceId(workspaceId), taskId, stepId),
+    onSettled: () => invalidateTaskStepQueries(qc, workspaceId),
   });
 }
 

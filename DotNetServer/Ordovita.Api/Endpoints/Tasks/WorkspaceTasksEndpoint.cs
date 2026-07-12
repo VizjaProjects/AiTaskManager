@@ -13,6 +13,11 @@ using Ordovita.Application.Tasks.TaskStatuses.CreateWorkTaskStatus;
 using Ordovita.Application.Tasks.TaskStatuses.DeleteWorkTaskStatus;
 using Ordovita.Application.Tasks.TaskStatuses.EditWorkTaskStatus;
 using Ordovita.Application.Tasks.TaskStatuses.GetWorkspaceTaskStatuses;
+using Ordovita.Application.Tasks.TaskSteps.CreateTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.DeleteTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.EditTaskStep;
+using Ordovita.Application.Tasks.TaskSteps.ReorderTaskSteps;
+using Ordovita.Application.Tasks.TaskSteps.SetTaskStepCompletion;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.AssignUsersToTask;
@@ -35,6 +40,12 @@ public static class WorkspaceTasksEndpoint
         g.MapPut("/task/{taskId:guid}/assignees", SetTaskAssignees).WithName("SetTaskAssignees");
         g.MapDelete("/task/{taskId:guid}", DeleteTask).WithName("DeleteWorkTask");
         g.MapGet("/task", GetTasks).WithName("GetWorkspaceTasks");
+        g.MapPost("/task/{taskId:guid}/steps", CreateTaskStep).WithName("CreateTaskStep");
+        g.MapPut("/task/{taskId:guid}/steps/{stepId:guid}", EditTaskStep).WithName("EditTaskStep");
+        g.MapPut("/task/{taskId:guid}/steps/{stepId:guid}/completion", SetTaskStepCompletion)
+            .WithName("SetTaskStepCompletion");
+        g.MapPut("/task/{taskId:guid}/steps/order", ReorderTaskSteps).WithName("ReorderTaskSteps");
+        g.MapDelete("/task/{taskId:guid}/steps/{stepId:guid}", DeleteTaskStep).WithName("DeleteTaskStep");
 
         g.MapPost("/event", CreateEvent).WithName("CreateCalendarEvent");
         g.MapPut("/event", EditEvent).WithName("EditCalendarEvent");
@@ -60,7 +71,7 @@ public static class WorkspaceTasksEndpoint
         var result = await sender.Send(new CreateWorkTaskCommand(
             workspaceId, request.Title, request.Description, request.Priority,
             request.CategoryId, request.EstimatedDuration, request.DueDateTime,
-            request.StatusId, request.Source), ct);
+            request.StatusId, request.Steps ?? []), ct);
         return result.IsSuccess
             ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{result.Value!.TaskId}", result.Value)
             : result.Error.ToProblem();
@@ -94,6 +105,48 @@ public static class WorkspaceTasksEndpoint
     {
         var result = await sender.Send(new GetWorkspaceTasksQuery(workspaceId), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> CreateTaskStep(
+        Guid workspaceId, Guid taskId, CreateTaskStepRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new CreateTaskStepCommand(workspaceId, taskId, request.Title, request.AssignedUserId), ct);
+        return result.IsSuccess
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{taskId}/steps/{result.Value!.StepId}", result.Value)
+            : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> EditTaskStep(
+        Guid workspaceId, Guid taskId, Guid stepId, EditTaskStepRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new EditTaskStepCommand(workspaceId, taskId, stepId, request.Title, request.AssignedUserId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> SetTaskStepCompletion(
+        Guid workspaceId, Guid taskId, Guid stepId, SetTaskStepCompletionRequest request,
+        ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new SetTaskStepCompletionCommand(workspaceId, taskId, stepId, request.Completed), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> ReorderTaskSteps(
+        Guid workspaceId, Guid taskId, ReorderTaskStepsRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(
+            new ReorderTaskStepsCommand(workspaceId, taskId, request.StepIds ?? []), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> DeleteTaskStep(
+        Guid workspaceId, Guid taskId, Guid stepId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new DeleteTaskStepCommand(workspaceId, taskId, stepId), ct);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
     }
 
     private static async Task<IResult> CreateEvent(
@@ -197,7 +250,12 @@ public static class WorkspaceTasksEndpoint
         int EstimatedDuration,
         DateTime? DueDateTime,
         Guid StatusId,
-        TaskSource Source);
+        IReadOnlyList<CreateTaskStepInput>? Steps);
+
+    private sealed record CreateTaskStepRequest(string Title, Guid? AssignedUserId);
+    private sealed record EditTaskStepRequest(string Title, Guid? AssignedUserId);
+    private sealed record SetTaskStepCompletionRequest(bool Completed);
+    private sealed record ReorderTaskStepsRequest(IReadOnlyList<Guid>? StepIds);
 
     private sealed record EditTaskRequest(
         Guid TaskId,

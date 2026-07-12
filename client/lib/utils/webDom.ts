@@ -3,12 +3,14 @@ import type { View } from "react-native";
 
 export function viewToHTMLElement(node: View | null): HTMLElement | null {
   if (!node || Platform.OS !== "web") return null;
-  const candidate = node as unknown as HTMLElement & {
+  const candidate = node as unknown as {
     _nativeNode?: HTMLElement;
   };
-  if (candidate instanceof HTMLElement) return candidate;
+  if ((candidate as unknown) instanceof HTMLElement) {
+    return candidate as unknown as HTMLElement;
+  }
   if (candidate._nativeNode instanceof HTMLElement) return candidate._nativeNode;
-  return candidate;
+  return candidate as unknown as HTMLElement;
 }
 
 export function queryCalendarGridElement(): HTMLElement | null {

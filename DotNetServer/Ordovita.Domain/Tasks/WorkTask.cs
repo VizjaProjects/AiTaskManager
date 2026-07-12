@@ -8,7 +8,11 @@ namespace Ordovita.Domain.Tasks;
 
 public sealed class WorkTask : AggregateRoot<TaskId>
 {
+    public const int MaxSteps = 20;
+    public const int StepTitleMaxLength = 200;
+
     private readonly HashSet<WorkTaskAssignee> _assignedUsers = [];
+    private readonly List<TaskStep> _steps = [];
     public WorkspaceId WorkspaceId { get; private set; }
     public UserId CreatedBy { get; private set; }
     public string Title { get; private set; } = null!;
@@ -25,6 +29,7 @@ public sealed class WorkTask : AggregateRoot<TaskId>
 
     public IReadOnlyCollection<WorkTaskAssignee> AssignedUsers => _assignedUsers;
     public IReadOnlyCollection<UserId> AssignedUserIds => _assignedUsers.Select(a => a.UserId).ToList();
+    public IReadOnlyCollection<TaskStep> Steps => _steps;
 
     private WorkTask()
     {
@@ -147,5 +152,87 @@ public sealed class WorkTask : AggregateRoot<TaskId>
 
         UpdatedAt = DateTime.UtcNow;
         return Result.Success();
+    }
+
+    public Result<TaskStep> AddStep(
+        UserId createdBy,
+        string title,
+        TaskSource source,
+        UserId? assignedUserId = null)
+    {
+        if (_steps.Count >= MaxSteps)
+            return Result.Failure<TaskStep>(TaskStepExceptions.LimitExceeded);
+
+        var result = TaskStep.Create(Id, createdBy, title, _steps.Count, source, assignedUserId);
+        if (result.IsFailure || result.Value is null)
+            return Result.Failure<TaskStep>(result.Error);
+
+        _steps.Add(result.Value);
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success(result.Value);
+    }
+
+    public Result<TaskStep> UpdateStep(TaskStepId stepId, string title, UserId? assignedUserId)
+    {
+        var step = _steps.FirstOrDefault(candidate => candidate.Id == stepId);
+        if (step is null)
+            return Result.Failure<TaskStep>(TaskStepExceptions.NotFound);
+
+        var result = step.Update(title, assignedUserId);
+        if (result.IsFailure)
+            return Result.Failure<TaskStep>(result.Error);
+
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success(step);
+    }
+
+    public Result<TaskStep> SetStepCompleted(TaskStepId stepId, bool completed)
+    {
+        var step = _steps.FirstOrDefault(candidate => candidate.Id == stepId);
+        if (step is null)
+            return Result.Failure<TaskStep>(TaskStepExceptions.NotFound);
+
+        step.SetCompleted(completed);
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success(step);
+    }
+
+    public Result RemoveStep(TaskStepId stepId)
+    {
+        var step = _steps.FirstOrDefault(candidate => candidate.Id == stepId);
+        if (step is null)
+            return Result.Failure(TaskStepExceptions.NotFound);
+
+        _steps.Remove(step);
+        NormalizeStepPositions();
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
+    }
+
+    public Result<IReadOnlyList<TaskStep>> ReorderSteps(IReadOnlyList<TaskStepId> orderedStepIds)
+    {
+        if (orderedStepIds.Count != _steps.Count || orderedStepIds.Distinct().Count() != _steps.Count)
+            return Result.Failure<IReadOnlyList<TaskStep>>(TaskStepExceptions.InvalidOrder);
+
+        var stepById = _steps.ToDictionary(step => step.Id);
+        if (orderedStepIds.Any(stepId => !stepById.ContainsKey(stepId)))
+            return Result.Failure<IReadOnlyList<TaskStep>>(TaskStepExceptions.InvalidOrder);
+
+        _steps.Clear();
+        for (var index = 0; index < orderedStepIds.Count; index++)
+        {
+            var step = stepById[orderedStepIds[index]];
+            step.SetPosition(index);
+            _steps.Add(step);
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success<IReadOnlyList<TaskStep>>(_steps.OrderBy(step => step.Position).ToList());
+    }
+
+    private void NormalizeStepPositions()
+    {
+        for (var index = 0; index < _steps.Count; index++)
+            _steps[index].SetPosition(index);
     }
 }

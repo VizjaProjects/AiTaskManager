@@ -3,7 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE =
-  Platform.OS === "web" ? ({ outlineStyle: "none" } as const) : undefined;
+  Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
 
 interface SearchBarProps {
   value: string;

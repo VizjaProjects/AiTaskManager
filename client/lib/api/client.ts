@@ -154,4 +154,4 @@ api.interceptors.response.use(
   },
 );
 
-export { getAccessToken, getRefreshToken, getApiBaseUrl };
+export { getAccessToken, getRefreshToken };

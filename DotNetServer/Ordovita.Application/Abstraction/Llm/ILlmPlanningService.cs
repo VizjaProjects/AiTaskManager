@@ -29,7 +29,15 @@ public sealed record GeneratedTask(
     Guid? CategoryId,
     Guid StatusId,
     int EstimatedDuration,
-    DateTime? DueDateTime);
+    DateTime? DueDateTime,
+    IReadOnlyList<GeneratedTaskStep> Steps);
+
+public sealed record GeneratedTaskStep(
+    Guid StepId,
+    string Title,
+    int Position,
+    bool Completed,
+    Guid? AssignedUserId);
 
 public sealed record GeneratedEvent(
     Guid EventId,
