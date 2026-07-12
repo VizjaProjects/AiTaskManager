@@ -65,6 +65,25 @@ public sealed class LlmPlanningService(
 
         var plan = AiPlanResponseParser.Parse(aiResponse.Value.Content);
         if (plan is null)
+        {
+            logger.LogWarning(
+                "AI returned a malformed plan for workspace {WorkspaceId}; requesting one structured recovery response.",
+                workspaceId.Value);
+
+            var recoveryPrompt = LlmPlanPromptBuilder.BuildRecovery(prompt, aiResponse.Value.Content);
+            var recoveryResponse = await aiClient.AskAsync(
+                AiRequest.Create(
+                    recoveryPrompt.SystemPrompt,
+                    recoveryPrompt.UserPrompt,
+                    recoveryPrompt.ResponseSchema),
+                request.LlmSettingId,
+                ct);
+
+            if (recoveryResponse is { IsSuccess: true, Value: not null })
+                plan = AiPlanResponseParser.Parse(recoveryResponse.Value.Content);
+        }
+
+        if (plan is null)
             return Result.Failure<GeneratedLlmPlanResult>(LlmPlanningErrors.InvalidAiResponse);
 
         var context = new PlanBuildContext(workspaceId, userId, calendar.Id, categories);
