@@ -29,7 +29,7 @@ Linki do plików podawaj względem roota repo, np. [client/app/(app)/calendar.ts
 - ⚠️ **[server/](server/) to MARTWY stary backend (Java/Gradle) — IGNORUJ go.** Nie edytuj, nie wnioskuj z niego.
 - **Frontend: [client/](client/)** — Expo Router, NativeWind (Tailwind), React Query, Zustand.
 - **Design system: [design-system/](design-system/)** (skill + tokeny + karty HTML) oraz spec [client/DESIGN_SYSTEM.md](client/DESIGN_SYSTEM.md) — język wizualny „Arena".
-- Język UI: PL + EN (i18n wdrożone **częściowo** — patrz [i18n](#i18n--uwaga-wdrożone-częściowo)). Kod/komentarze: mieszane PL/EN.
+- Język UI: PL + EN (i18n wdrożone w całym `(app)/` — patrz [i18n](#i18n--wdrożone-w-całym-app)). Kod/komentarze: mieszane PL/EN.
 
 Spis treści:
 - [Komendy](#-komendy)
@@ -130,10 +130,11 @@ Zasady utrzymane w hookach (trzymaj je przy dopisywaniu nowych):
 
 ⚠️ Workspace'y **nie są** w React Query — `useWorkspaces()` czyta ze store'a. Kolejność wyboru aktywnego workspace przy starcie: serwerowy `defaultWorkspaceId` → zapamiętany lokalnie → pierwszy z listy ([workspace.ts](client/lib/stores/workspace.ts)).
 
-### i18n — uwaga: wdrożone częściowo
+### i18n — wdrożone w całym `(app)/`
 - Języki: **pl + en** ([config.ts](client/lib/i18n/config.ts)), domyślny `pl`. Słowniki **płaskie** (klucze `namespace.key`) w [translations.ts](client/lib/i18n/translations.ts). Interpolacja `{name}`. Fallback: aktywny język → `pl` → sam klucz.
 - Użycie: `const t = useT(); t("tasks.filterStatus")`. Dodając tekst → dodaj klucz do **obu** języków.
-- ⚠️ **Nie wszystkie ekrany używają i18n.** Zaszyte stringi mają m.in.: [calendar.tsx](client/app/%28app%29/calendar.tsx), [notes/](client/components/organisms/notes/), [ai-task.tsx](client/app/%28app%29/ai-task.tsx), `surveys`, `survey-onboarding`, `my-responses`, `categories`, `statuses`, `workspace-create`, `workspace-settings`, wszystkie `admin-*`. **Trzymaj się stylu edytowanego pliku** — nie wprowadzaj i18n punktowo do ekranu, który go nie ma, chyba że migrujesz cały ekran.
+- **Daty/godziny: `useLocale()`** (w komponentach) lub `getLocale()` (poza Reactem) z [lib/i18n](client/lib/i18n/index.ts) — **nigdy zaszyte `"pl-PL"`/`"en-US"`**, bo zamrażają format niezależnie od przełącznika języka. Poza Reactem tłumacz przez `tr(key)`.
+- Stan na 2026-07-29: wszystkie ekrany `(app)/`, `(auth)/`, landing i walidacja zod przeszły na i18n (646 kluczy × 2 języki, parytet PL/EN zweryfikowany). **Poza i18n świadomie zostają:** [app/+html.tsx](client/app/%2Bhtml.tsx) (statyczna skorupa HTML renderowana poza Reactem — nie ma dostępu do store'u języka), [privacy-policy.tsx](client/app/privacy-policy.tsx) i [terms-of-service.tsx](client/app/terms-of-service.tsx) (teksty prawne — tłumaczenie ma skutki prawne, decyzja właściciela).
 
 ### Design system („Arena")
 - Źródła prawdy: [client/DESIGN_SYSTEM.md](client/DESIGN_SYSTEM.md) (spec), [client/global.css](client/global.css) (CSS vars: `:root` + `.dark`), [client/tailwind.config.js](client/tailwind.config.js) (skala tokenów), [lib/utils/uiTokens.ts](client/lib/utils/uiTokens.ts) (`getUiTokens(isDark)` do inline'owych propów RN), [design-system/](design-system/) (skill + karty).
@@ -314,6 +315,8 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 
 > Dopisuj na górze: `YYYY-MM-DD — co i gdzie`. Krótko.
 
+- **2026-07-29** — `admin-plans` i `admin-users` dostały `<Tabs.Screen href: null />` w [(app)/_layout.tsx](client/app/%28app%29/_layout.tsx) — bez tego expo-router robił z nich widoczne zakładki na natywnym mobile (na webie niewidoczne, bo pasek ma `display:none`). Ostatnie 8 zaszytych `"pl-PL"`/`"en-US"` zastąpione `useLocale()` (`calendar`, `admin-surveys`, `dashboard`, `DashboardFocusItem`, `TaskModals`). Sekcja i18n zaktualizowana — nie jest już „wdrożone częściowo".
+
 - **2026-07-28** — Fix migania kart w „To Do" na dashboardzie: filtr `todoTasks` przepuszczał wszystkie zadania (łącznie z zakończonymi/anulowanymi), dopóki `useTaskStatuses()` nie wróciło. Teraz `if (!statuses) return []` + nowa flaga `todoLoading` (tasks + statuses) i szkielety `DashboardTaskCardSkeleton` zamiast pustej siatki. Fix braku scrolla w [workspace-settings.tsx](client/app/%28app%29/workspace-settings.tsx) (brakujący `ScrollView` — treść była ucinana) oraz zaszytego `"pl-PL"` w [DashboardTaskCard.tsx](client/components/molecules/DashboardTaskCard.tsx). Usunięty dolny padding z przycinającego kontenera w [PageLayout.tsx](client/components/organisms/PageLayout.tsx) (48 px desktop / 44 px web mobile) — powodował martwy pas i twardą linię ucięcia nad dołem ekranu na **każdym** przewijalnym ekranie; oddech dokładany teraz w `contentContainerStyle` (dopisany w `workspaces`, `surveys`, `my-responses`). Nowe pułapki #19 i #20.
 
 - **2026-07-28** — Duża aktualizacja `CLAUDE.md` po pełnym przeglądzie front+back: dodano mapę API, klucze React Query, receptę na nowy use-case backendowy (z pułapką ręcznej rejestracji handlerów w `DependencyInjection.cs`), sekcję AI/LLM (LlmTornado + prompt builder), konwencje domenowe i design system „Arena". Korekty: baseline `tsc` to teraz **0 błędów** (nie ~22), i18n wdrożone tylko częściowo, `AiGroqClient`/`GroqSection__Model` to martwy kod, `IUserContext.UserId` = ID AspIdentity, `ErrorType.LimitExceeded` → HTTP 500, priorytet `CRITICAL`↔`URGENT`, daty jako lokalny wall-clock.
@@ -322,4 +325,4 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 
 ---
 
-_Last updated: 2026-07-28_
+_Last updated: 2026-07-29_

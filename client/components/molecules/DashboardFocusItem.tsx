@@ -4,7 +4,7 @@ import type { Task, Category, CalendarEvent } from "@/lib/types";
 import { TaskPriority } from "@/lib/types";
 import { PriorityBadge, AiSuggestedBadge, Avatar, ColorBadge } from "../atoms";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
-import { useT, useLanguageStore } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { resolveEventColor, eventColorWithAlpha } from "@/lib/utils/eventColors";
 
 interface DashboardFocusItemProps {
@@ -15,9 +15,10 @@ interface DashboardFocusItemProps {
 
 export function DashboardFocusItem({ task, category, onPress }: DashboardFocusItemProps) {
   const t = useT();
+  const locale = useLocale();
   const user = useAuthStore((s) => s.user);
   const dueLabel = task.dueDateTime
-    ? new Date(task.dueDateTime).toLocaleTimeString("en-US", {
+    ? new Date(task.dueDateTime).toLocaleTimeString(locale, {
         hour: "2-digit",
         minute: "2-digit",
       })
@@ -54,8 +55,7 @@ interface DashboardEventItemProps {
 
 export function DashboardEventItem({ event, onPress }: DashboardEventItemProps) {
   const t = useT();
-  const lang = useLanguageStore((s) => s.lang);
-  const locale = lang === "pl" ? "pl-PL" : "en-US";
+  const locale = useLocale();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const eventColor = resolveEventColor(event);
   const start = new Date(event.startDateTime);

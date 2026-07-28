@@ -57,7 +57,7 @@ import {
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 
 type TaskSaveData = {
   title: string;
@@ -107,6 +107,7 @@ export function TaskDetailModal({
 }: TaskDetailModalProps) {
   const editTask = useEditTask();
   const t = useT();
+  const locale = useLocale();
   const deleteTask = useDeleteTask();
   const setAssignees = useSetTaskAssignees();
   const router = useRouter();
@@ -858,7 +859,7 @@ export function TaskDetailModal({
                             {dueDate
                               ? (() => {
                                   const d = parseApiDateTime(dueDate);
-                                  return `${d.toLocaleDateString("pl-PL", {
+                                  return `${d.toLocaleDateString(locale, {
                                     day: "numeric",
                                     month: "long",
                                     year: "numeric",
@@ -1047,11 +1048,11 @@ export function TaskDetailModal({
                   <View className="flex-row flex-wrap gap-3">
                     {relatedEvents.map((evt) => {
                       const evtDate = new Date(evt.startDateTime);
-                      const evtTime = evtDate.toLocaleTimeString("pl-PL", {
+                      const evtTime = evtDate.toLocaleTimeString(locale, {
                         hour: "2-digit",
                         minute: "2-digit",
                       });
-                      const evtDay = evtDate.toLocaleDateString("pl-PL", {
+                      const evtDay = evtDate.toLocaleDateString(locale, {
                         day: "numeric",
                         month: "short",
                       });

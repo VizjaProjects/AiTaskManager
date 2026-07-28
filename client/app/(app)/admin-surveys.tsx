@@ -27,7 +27,7 @@ import {
   useUserResponses,
 } from "@/lib/hooks";
 import type { Survey } from "@/lib/types";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 
 cssInterop(LinearGradient, { className: "style" });
 
@@ -230,6 +230,7 @@ function SurveyCardSkeleton() {
 
 export default function AdminSurveysPage() {
   const t = useT();
+  const locale = useLocale();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data: surveys, isLoading, refetch } = useSurveys();
@@ -422,7 +423,7 @@ export default function AdminSurveysPage() {
                   </Text>
                   <Text className="text-on-surface-variant font-body text-xs mt-0.5">
                     Updated{" "}
-                    {new Date(survey.updatedAt).toLocaleDateString("en-US", {
+                    {new Date(survey.updatedAt).toLocaleDateString(locale, {
                       month: "short",
                       day: "numeric",
                     })}

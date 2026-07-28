@@ -27,7 +27,7 @@ import {
   useSurveyGate,
 } from "@/lib/hooks";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
-import { useT, useLanguageStore } from "@/lib/i18n";
+import { useT, useLanguageStore, useLocale } from "@/lib/i18n";
 import type { Category } from "@/lib/types";
 
 function SurveyBanner() {
@@ -96,7 +96,7 @@ export default function DashboardScreen() {
   const router = useRouter();
   const t = useT();
   const lang = useLanguageStore((s) => s.lang);
-  const locale = lang === "pl" ? "pl-PL" : "en-US";
+  const locale = useLocale();
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
   const isXl = Platform.OS === "web" && width >= 1280;

@@ -1470,7 +1470,7 @@ export default function CalendarScreen() {
     <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-card">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-on-surface font-headline text-sm">
-          {selectedDate.toLocaleDateString("pl-PL", {
+          {selectedDate.toLocaleDateString(locale, {
             month: "long",
             year: "numeric",
           })}
@@ -1802,13 +1802,13 @@ export default function CalendarScreen() {
                     const isProposed = evt.status === EventStatus.PROPOSED;
                     const startTime = new Date(
                       evt.startDateTime,
-                    ).toLocaleTimeString("pl-PL", {
+                    ).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     });
                     const endTime = new Date(
                       evt.endDateTime,
-                    ).toLocaleTimeString("pl-PL", {
+                    ).toLocaleTimeString(locale, {
                       hour: "2-digit",
                       minute: "2-digit",
                     });
