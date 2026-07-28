@@ -77,6 +77,7 @@ export default function MyResponsesScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         className="flex-1"
+        contentContainerStyle={{ paddingBottom: 32 }}
         refreshControl={
           <RefreshControl refreshing={false} onRefresh={onRefresh} />
         }

@@ -3,6 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import type { Task, Category } from "@/lib/types";
 import { PriorityBadge } from "../atoms";
 import { formatDuration } from "@/lib/utils";
+import { useLocale } from "@/lib/i18n";
 
 interface DashboardTaskCardProps {
   task: Task;
@@ -15,8 +16,9 @@ export function DashboardTaskCard({
   category,
   onPress,
 }: DashboardTaskCardProps) {
+  const locale = useLocale();
   const dueLabel = task.dueDateTime
-    ? new Date(task.dueDateTime).toLocaleDateString("pl-PL", {
+    ? new Date(task.dueDateTime).toLocaleDateString(locale, {
         day: "numeric",
         month: "short",
         hour: "2-digit",

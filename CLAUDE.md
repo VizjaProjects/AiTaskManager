@@ -273,8 +273,13 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 17. **Statystyki AI są zaślepką** — `aiStatisticApi` w [tasks.ts](client/lib/api/tasks.ts) zwraca pustą listę i rzuca przy delete („not implemented in .NET backend yet").
 18. **Nowy ekran w `(app)/` → dopisz `<Tabs.Screen … href: null />`** w [(app)/_layout.tsx](client/app/%28app%29/_layout.tsx), inaczej wskoczy do dolnej nawigacji na mobile.
 
+19. **Nie filtruj „przepuszczalnie", gdy zależna query jeszcze leci.** Wzorzec `!statuses?.length || !isDone(...)` przepuszcza **wszystko**, dopóki `useTaskStatuses()` nie wróci — a że `useTasks()` i `useTaskStatuses()` to dwie niezależne query, ekran renderuje się w momencie przyjścia tasków i miga zakończonymi zadaniami. Poprawnie: `if (!statuses) return []` + osobna flaga ładowania obejmująca **obie** query (wzorzec: `todoLoading` w [dashboard.tsx](client/app/%28app%29/dashboard.tsx), `orderedStatuses` w [tasks.tsx](client/app/%28app%29/tasks.tsx)). Uwaga: `isLoading` na dashboardzie celowo **nie** obejmuje statusów — statystyki i kalendarz ich nie potrzebują.
+
+20. **`PageLayout` NIE scrolluje — każdy ekran musi dać własny `ScrollView`.** Kontener treści w [PageLayout.tsx](client/components/organisms/PageLayout.tsx) to `flex-1 … overflow-hidden`, więc treść wyższa niż viewport jest po prostu **ucinana bez paska przewijania** (nie ma przepełnienia body — layout jest na sztywno wysoki). Objaw jest mylący: strona wygląda na kompletną, po prostu urywa się na dole. Wyjątek: ekrany celowo wypełniające viewport (`flex-1 justify-center`, np. [statistics.tsx](client/app/%28app%29/statistics.tsx)) — tam `ScrollView` jest zbędny.
+    **Dolny odstęp dawaj w `contentContainerStyle={{ paddingBottom: … }}` ScrollView-a, nigdy na kontenerze `PageLayout`** — padding na kontenerze przycinającym odsuwa scrollport od dołu ekranu i tworzy martwy pas z twardą linią ucięcia w połowie karty (tak było do 2026-07-28: `paddingBottom` 48 px desktop / 44 px mobile web).
+
 ### Proces
-19. **Branch:** pracuj na feature branchach (repo bywa na `frontend/...`), nie commituj do `main` bez prośby. Commity tworzyć tylko gdy użytkownik o to poprosi. Push do `main` **odpala deploy produkcyjny**.
+21. **Branch:** pracuj na feature branchach (repo bywa na `frontend/...`), nie commituj do `main` bez prośby. Commity tworzyć tylko gdy użytkownik o to poprosi. Push do `main` **odpala deploy produkcyjny**.
 
 ---
 
@@ -308,6 +313,8 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 ## 📓 Changelog
 
 > Dopisuj na górze: `YYYY-MM-DD — co i gdzie`. Krótko.
+
+- **2026-07-28** — Fix migania kart w „To Do" na dashboardzie: filtr `todoTasks` przepuszczał wszystkie zadania (łącznie z zakończonymi/anulowanymi), dopóki `useTaskStatuses()` nie wróciło. Teraz `if (!statuses) return []` + nowa flaga `todoLoading` (tasks + statuses) i szkielety `DashboardTaskCardSkeleton` zamiast pustej siatki. Fix braku scrolla w [workspace-settings.tsx](client/app/%28app%29/workspace-settings.tsx) (brakujący `ScrollView` — treść była ucinana) oraz zaszytego `"pl-PL"` w [DashboardTaskCard.tsx](client/components/molecules/DashboardTaskCard.tsx). Usunięty dolny padding z przycinającego kontenera w [PageLayout.tsx](client/components/organisms/PageLayout.tsx) (48 px desktop / 44 px web mobile) — powodował martwy pas i twardą linię ucięcia nad dołem ekranu na **każdym** przewijalnym ekranie; oddech dokładany teraz w `contentContainerStyle` (dopisany w `workspaces`, `surveys`, `my-responses`). Nowe pułapki #19 i #20.
 
 - **2026-07-28** — Duża aktualizacja `CLAUDE.md` po pełnym przeglądzie front+back: dodano mapę API, klucze React Query, receptę na nowy use-case backendowy (z pułapką ręcznej rejestracji handlerów w `DependencyInjection.cs`), sekcję AI/LLM (LlmTornado + prompt builder), konwencje domenowe i design system „Arena". Korekty: baseline `tsc` to teraz **0 błędów** (nie ~22), i18n wdrożone tylko częściowo, `AiGroqClient`/`GroqSection__Model` to martwy kod, `IUserContext.UserId` = ID AspIdentity, `ErrorType.LimitExceeded` → HTTP 500, priorytet `CRITICAL`↔`URGENT`, daty jako lokalny wall-clock.
 - **2026-07-12** — Kroki zadań (subtaski): domena `TaskStep` + `Application/Tasks/TaskSteps/*` + endpointy `task/{id}/steps*` + migracja `AddTaskSteps`; UI w `TaskStepsSection`/`CompactTaskSteps`. Dwie iteracje promptu planowania AI w `LlmPlanPromptBuilder` (reguły „task vs krok", steps w JSON Schema).

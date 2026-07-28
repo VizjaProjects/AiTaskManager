@@ -64,6 +64,19 @@ export function TaskCardSkeleton() {
   );
 }
 
+export function DashboardTaskCardSkeleton() {
+  return (
+    <View className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 gap-3 min-h-[140px] justify-between">
+      <View className="gap-2">
+        <Skeleton width={64} height={20} borderRadius={10} />
+        <Skeleton width="85%" height={14} />
+        <Skeleton width="55%" height={14} />
+      </View>
+      <Skeleton width={90} height={10} />
+    </View>
+  );
+}
+
 export function StatCardSkeleton() {
   return (
     <View className="bg-surface-container-lowest rounded-2xl p-6 h-32 justify-between">

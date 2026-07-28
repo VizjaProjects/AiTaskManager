@@ -17,7 +17,7 @@ import {
   DashboardEventItem,
   DashboardQuickActions,
 } from "@/components/molecules";
-import { StatCardSkeleton } from "@/components/atoms";
+import { StatCardSkeleton, DashboardTaskCardSkeleton } from "@/components/atoms";
 import {
   useTasks,
   useEvents,
@@ -105,7 +105,7 @@ export default function DashboardScreen() {
   const { data: events, isLoading: eventsLoading, refetch: refetchEvents } = useEvents();
   const { data: proposals, refetch: refetchProposals } = useAiProposals();
   const { data: categories } = useCategories();
-  const { data: statuses } = useTaskStatuses();
+  const { data: statuses, isLoading: statusesLoading } = useTaskStatuses();
   const [refreshing, setRefreshing] = useState(false);
 
   const stats = useMemo(() => {
@@ -141,10 +141,10 @@ export default function DashboardScreen() {
   }, [tasks, events, proposals]);
 
   const todoTasks = useMemo(() => {
-    const list = (tasks ?? []).filter(
-      (t) => !statuses?.length || !isDoneStatus(t.statusId, statuses),
-    );
-    return list
+    // Bez statusów nie da się odfiltrować zakończonych — puste, nie "wszystko".
+    if (!tasks || !statuses) return [];
+    return tasks
+      .filter((t) => !isDoneStatus(t.statusId, statuses))
       .sort((a, b) => {
         const aDue = a.dueDateTime ? new Date(a.dueDateTime).getTime() : Infinity;
         const bDue = b.dueDateTime ? new Date(b.dueDateTime).getTime() : Infinity;
@@ -179,6 +179,7 @@ export default function DashboardScreen() {
   }, [categories]);
 
   const isLoading = tasksLoading || eventsLoading;
+  const todoLoading = tasksLoading || statusesLoading;
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const iconMuted = isDark ? "#a0a0a5" : "#6b6965";
   const firstName = user?.fullName?.split(" ")[0] ?? (lang === "pl" ? "użytkowniku" : "there");
@@ -263,7 +264,18 @@ export default function DashboardScreen() {
               </TouchableOpacity>
             </View>
 
-            {!isLoading && todoTasks.length === 0 ? (
+            {todoLoading ? (
+              <View className="flex-row flex-wrap gap-3">
+                {Array.from({ length: isWide ? 3 : 2 }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={{ width: isXl ? "31.5%" : isWide ? "48%" : "100%" }}
+                  >
+                    <DashboardTaskCardSkeleton />
+                  </View>
+                ))}
+              </View>
+            ) : todoTasks.length === 0 ? (
               <View className="items-center py-10 gap-3 rounded-2xl bg-surface-container-lowest border border-outline-variant">
                 <View className="w-12 h-12 rounded-xl bg-surface-container-low items-center justify-center">
                   <MaterialIcons name="check-circle" size={26} color="#2E7D52" />

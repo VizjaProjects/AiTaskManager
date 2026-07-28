@@ -42,7 +42,11 @@ export default function WorkspacesScreen() {
             }}
           />
         ) : (
-          <ScrollView className="gap-3" showsVerticalScrollIndicator={false}>
+          <ScrollView
+            className="gap-3"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
             {workspaces.map((ws) => {
               const isActive = ws.workspaceId === activeWorkspaceId;
               return (

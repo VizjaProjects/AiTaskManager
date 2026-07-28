@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  ScrollView,
 } from "react-native";
 import { useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -333,335 +334,340 @@ export default function WorkspaceSettingsScreen() {
 
   return (
     <PageLayout>
-      <View className="gap-4 p-4 max-w-2xl w-full self-center">
-        <Card className="p-5 gap-4">
-          <View className="flex-row items-center gap-3">
-            <View className="w-12 h-12 rounded-2xl bg-primary-fixed items-center justify-center">
-              <MaterialIcons name="workspaces" size={24} color="#5b4ee0" />
-            </View>
-            <View className="flex-1 min-w-0">
-              <Text
-                className="text-on-surface font-headline text-xl"
-                numberOfLines={1}
-              >
-                {workspace.workspaceName}
-              </Text>
-              <View className="flex-row items-center gap-2 mt-1">
-                <View
-                  className={`flex-row items-center gap-1 px-2 py-0.5 rounded-full ${
-                    isPublic ? "bg-accent/10" : "bg-surface-container"
-                  }`}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 32 }}
+      >
+        <View className="gap-4 p-4 max-w-2xl w-full self-center">
+          <Card className="p-5 gap-4">
+            <View className="flex-row items-center gap-3">
+              <View className="w-12 h-12 rounded-2xl bg-primary-fixed items-center justify-center">
+                <MaterialIcons name="workspaces" size={24} color="#5b4ee0" />
+              </View>
+              <View className="flex-1 min-w-0">
+                <Text
+                  className="text-on-surface font-headline text-xl"
+                  numberOfLines={1}
                 >
-                  <MaterialIcons
-                    name={isPublic ? "group" : "lock"}
-                    size={11}
-                    color={isPublic ? "#5b4ee0" : "#9b9791"}
-                  />
-                  <Text
-                    className={`font-label text-[10px] uppercase tracking-wider ${
-                      isPublic ? "text-accent" : "text-text-tertiary"
+                  {workspace.workspaceName}
+                </Text>
+                <View className="flex-row items-center gap-2 mt-1">
+                  <View
+                    className={`flex-row items-center gap-1 px-2 py-0.5 rounded-full ${
+                      isPublic ? "bg-accent/10" : "bg-surface-container"
                     }`}
                   >
-                    {isPublic ? t("ws.public") : t("ws.private")}
-                  </Text>
-                </View>
-                <Text className="text-on-surface-variant font-body text-xs">
-                  {isOwner
-                    ? t("wsSettings.yours")
-                    : t("wsSettings.youBelong")}
-                </Text>
-              </View>
-            </View>
-          </View>
-
-          <View className="flex-row gap-3">
-            <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
-              <MaterialIcons name="group" size={18} color="#6b6965" />
-              <View>
-                <Text className="text-on-surface font-headline text-sm">
-                  {workspace.assignedUsers.length}
-                </Text>
-                <Text className="text-on-surface-variant font-body text-[11px]">
-                  {workspace.assignedUsers.length === 1
-                    ? t("wsSettings.memberOne")
-                    : t("wsSettings.memberMany")}
-                </Text>
-              </View>
-            </View>
-            <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
-              <MaterialIcons name="event" size={18} color="#6b6965" />
-              <View className="flex-1 min-w-0">
-                <Text className="text-on-surface font-headline text-sm">
-                  {new Date(workspace.createdAt).toLocaleDateString(locale)}
-                </Text>
-                <Text className="text-on-surface-variant font-body text-[11px]">
-                  {t("ws.createdWord")}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </Card>
-
-        <Card className="p-4 gap-3">
-          <Text className="text-on-surface font-headline text-sm">
-            {t("wsSettings.visibility")}
-          </Text>
-          <Text className="text-on-surface-variant font-body text-xs -mt-1">
-            {t("wsSettings.visibilityDesc")}
-          </Text>
-
-          {visibilityError ? (
-            <View className="bg-error-container rounded-xl px-3.5 py-2.5">
-              <Text className="text-on-error-container font-body text-xs">
-                {visibilityError}
-              </Text>
-            </View>
-          ) : null}
-
-          {(
-            [
-              {
-                key: "Private" as const,
-                icon: "lock" as const,
-                title: t("ws.private"),
-                desc: t("wsSettings.privateDesc"),
-              },
-              {
-                key: "Public" as const,
-                icon: "group" as const,
-                title: t("ws.public"),
-                desc: t("wsSettings.publicDesc"),
-              },
-            ]
-          ).map((opt) => {
-            const selected = workspace.visibility === opt.key;
-            const disabled = !isOwner || setVisibility.isPending;
-            return (
-              <TouchableOpacity
-                key={opt.key}
-                disabled={disabled || selected}
-                onPress={() => changeVisibility(opt.key)}
-                className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
-                  selected
-                    ? "border-accent bg-surface-container-low"
-                    : "border-outline-variant"
-                }`}
-                style={{ opacity: disabled && !selected ? 0.5 : 1 }}
-              >
-                <MaterialIcons
-                  name={opt.icon}
-                  size={20}
-                  color={selected ? "#5b4ee0" : "#6b6965"}
-                />
-                <View className="flex-1 min-w-0">
-                  <Text className="text-on-surface font-body text-body-md">
-                    {opt.title}
-                  </Text>
-                  <Text className="text-on-surface-variant font-body text-xs">
-                    {opt.desc}
-                  </Text>
-                </View>
-                <MaterialIcons
-                  name={
-                    selected ? "radio-button-checked" : "radio-button-unchecked"
-                  }
-                  size={20}
-                  color={selected ? "#5b4ee0" : "#9b9791"}
-                />
-              </TouchableOpacity>
-            );
-          })}
-
-          <View className="flex-row items-start gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5">
-            <MaterialIcons name="info-outline" size={15} color="#9b9791" />
-            <Text className="text-on-surface-variant font-body text-xs leading-4 flex-1">
-              {!isOwner
-                ? t("wsSettings.visibilityOwnerOnly")
-                : isPublic
-                  ? t("wsSettings.toPrivateHint")
-                  : t("wsSettings.toPublicHint")}
-            </Text>
-          </View>
-
-          <View className="h-px bg-border-subtle my-1" />
-
-          <Text className="text-on-surface font-headline text-sm">
-            {t("profile.defaultWorkspace")}
-          </Text>
-
-          <TouchableOpacity
-            disabled={isDefault}
-            onPress={() => setDefaultWorkspace(workspace.workspaceId)}
-            className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
-              isDefault ? "border-primary bg-surface-container-low" : "border-outline-variant"
-            }`}
-          >
-            <MaterialIcons
-              name={isDefault ? "star" : "star-outline"}
-              size={20}
-              color={isDefault ? "#5b4ee0" : "#6b6965"}
-            />
-            <View className="flex-1">
-              <Text className="text-on-surface font-body text-sm">
-                {isDefault
-                  ? t("profile.defaultWorkspace")
-                  : t("wsSettings.setAsDefault")}
-              </Text>
-              <Text className="text-on-surface-variant font-body text-xs">
-                {t("wsSettings.defaultHint")}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        </Card>
-
-        <Card className="p-4 gap-3">
-          <Text className="text-on-surface font-headline text-sm">
-            {t("wsSettings.members", {
-              count: workspace.assignedUsers.length,
-            })}
-          </Text>
-
-          <View className="gap-2">
-            {workspace.assignedUsers.map((member) => {
-              const name =
-                member.fullName?.trim() || member.email || member.userId;
-              const isCreator = member.userId === workspace.createdBy;
-              const isSelf = member.userId === currentUser?.userId;
-              return (
-                <View
-                  key={member.userId}
-                  className="flex-row items-center gap-3 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant"
-                >
-                  <Avatar fullName={name} size="sm" />
-                  <View className="flex-1 min-w-0">
+                    <MaterialIcons
+                      name={isPublic ? "group" : "lock"}
+                      size={11}
+                      color={isPublic ? "#5b4ee0" : "#9b9791"}
+                    />
                     <Text
-                      className="text-on-surface font-body text-sm"
-                      numberOfLines={1}
+                      className={`font-label text-[10px] uppercase tracking-wider ${
+                        isPublic ? "text-accent" : "text-text-tertiary"
+                      }`}
                     >
-                      {name}
+                      {isPublic ? t("ws.public") : t("ws.private")}
                     </Text>
-                    {member.email ? (
-                      <Text
-                        className="text-on-surface-variant font-body text-xs"
-                        numberOfLines={1}
-                      >
-                        {member.email}
-                      </Text>
-                    ) : null}
                   </View>
-                  {isCreator ? (
-                    <View className="px-2 py-1 rounded-lg bg-surface-container-low">
-                      <Text className="text-on-surface-variant font-label text-xs">
-                        {t("wsSettings.owner")}
-                      </Text>
-                    </View>
-                  ) : isOwner && !isSelf ? (
-                    <TouchableOpacity
-                      onPress={() => handleRemoveMember(member.userId, name)}
-                      className="w-9 h-9 items-center justify-center rounded-lg bg-error-container"
-                      disabled={removeUsers.isPending}
-                    >
-                      <MaterialIcons
-                        name="person-remove"
-                        size={18}
-                        color="#C0392B"
-                      />
-                    </TouchableOpacity>
-                  ) : null}
+                  <Text className="text-on-surface-variant font-body text-xs">
+                    {isOwner
+                      ? t("wsSettings.yours")
+                      : t("wsSettings.youBelong")}
+                  </Text>
                 </View>
-              );
-            })}
-          </View>
-        </Card>
+              </View>
+            </View>
 
-        {isOwner && isPublic ? (
+            <View className="flex-row gap-3">
+              <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
+                <MaterialIcons name="group" size={18} color="#6b6965" />
+                <View>
+                  <Text className="text-on-surface font-headline text-sm">
+                    {workspace.assignedUsers.length}
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-[11px]">
+                    {workspace.assignedUsers.length === 1
+                      ? t("wsSettings.memberOne")
+                      : t("wsSettings.memberMany")}
+                  </Text>
+                </View>
+              </View>
+              <View className="flex-1 flex-row items-center gap-2 bg-surface-container-low rounded-xl px-3 py-2.5">
+                <MaterialIcons name="event" size={18} color="#6b6965" />
+                <View className="flex-1 min-w-0">
+                  <Text className="text-on-surface font-headline text-sm">
+                    {new Date(workspace.createdAt).toLocaleDateString(locale)}
+                  </Text>
+                  <Text className="text-on-surface-variant font-body text-[11px]">
+                    {t("ws.createdWord")}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </Card>
+
           <Card className="p-4 gap-3">
             <Text className="text-on-surface font-headline text-sm">
-              {t("wsSettings.addByEmail")}
+              {t("wsSettings.visibility")}
+            </Text>
+            <Text className="text-on-surface-variant font-body text-xs -mt-1">
+              {t("wsSettings.visibilityDesc")}
             </Text>
 
-            <Input
-              placeholder={t("wsSettings.emailPlaceholder")}
-              value={emailInput}
-              onChangeText={(t) => {
-                setEmailInput(t);
-                setEmailError(null);
-              }}
-              onSubmitEditing={addPendingEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              error={emailError ?? undefined}
-              returnKeyType="done"
-            />
-            <Button
-              label={t("wsSettings.addToList")}
-              variant="secondary"
-              icon="add"
-              fullWidth
-              onPress={addPendingEmail}
-            />
-
-            {pendingEmails.length > 0 ? (
-              <View className="flex-row flex-wrap gap-2">
-                {pendingEmails.map((email) => (
-                  <View
-                    key={email}
-                    className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant"
-                  >
-                    <Text className="text-on-surface font-body text-xs">
-                      {email}
-                    </Text>
-                    <TouchableOpacity onPress={() => removePendingEmail(email)}>
-                      <MaterialIcons name="close" size={14} color="#9b9791" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            ) : null}
-
-            {resultMsg ? (
-              <View className="bg-surface-container-low rounded-xl px-3 py-2.5">
-                <Text className="text-on-surface-variant font-body text-xs leading-4">
-                  {resultMsg}
+            {visibilityError ? (
+              <View className="bg-error-container rounded-xl px-3.5 py-2.5">
+                <Text className="text-on-error-container font-body text-xs">
+                  {visibilityError}
                 </Text>
               </View>
             ) : null}
 
-            <Button
-              label={t("wsSettings.invite", { count: pendingEmails.length })}
-              loading={assignByEmail.isPending}
-              disabled={pendingEmails.length === 0}
-              fullWidth
-              onPress={handleInvite}
-            />
-          </Card>
-        ) : null}
+            {(
+              [
+                {
+                  key: "Private" as const,
+                  icon: "lock" as const,
+                  title: t("ws.private"),
+                  desc: t("wsSettings.privateDesc"),
+                },
+                {
+                  key: "Public" as const,
+                  icon: "group" as const,
+                  title: t("ws.public"),
+                  desc: t("wsSettings.publicDesc"),
+                },
+              ]
+            ).map((opt) => {
+              const selected = workspace.visibility === opt.key;
+              const disabled = !isOwner || setVisibility.isPending;
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  disabled={disabled || selected}
+                  onPress={() => changeVisibility(opt.key)}
+                  className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
+                    selected
+                      ? "border-accent bg-surface-container-low"
+                      : "border-outline-variant"
+                  }`}
+                  style={{ opacity: disabled && !selected ? 0.5 : 1 }}
+                >
+                  <MaterialIcons
+                    name={opt.icon}
+                    size={20}
+                    color={selected ? "#5b4ee0" : "#6b6965"}
+                  />
+                  <View className="flex-1 min-w-0">
+                    <Text className="text-on-surface font-body text-body-md">
+                      {opt.title}
+                    </Text>
+                    <Text className="text-on-surface-variant font-body text-xs">
+                      {opt.desc}
+                    </Text>
+                  </View>
+                  <MaterialIcons
+                    name={
+                      selected ? "radio-button-checked" : "radio-button-unchecked"
+                    }
+                    size={20}
+                    color={selected ? "#5b4ee0" : "#9b9791"}
+                  />
+                </TouchableOpacity>
+              );
+            })}
 
-        {isOwner ? (
-          <Card className="p-4 gap-3">
-            <View className="flex-row items-center gap-2">
-              <MaterialIcons name="warning-amber" size={18} color="#C0392B" />
-              <Text className="text-on-surface font-headline text-sm">
-                {t("wsSettings.dangerZone")}
+            <View className="flex-row items-start gap-2 bg-surface-container-low rounded-xl px-3.5 py-2.5">
+              <MaterialIcons name="info-outline" size={15} color="#9b9791" />
+              <Text className="text-on-surface-variant font-body text-xs leading-4 flex-1">
+                {!isOwner
+                  ? t("wsSettings.visibilityOwnerOnly")
+                  : isPublic
+                    ? t("wsSettings.toPrivateHint")
+                    : t("wsSettings.toPublicHint")}
               </Text>
             </View>
-            <Text className="text-on-surface-variant font-body text-xs leading-4">
-              {t("wsSettings.dangerDesc")}
+
+            <View className="h-px bg-border-subtle my-1" />
+
+            <Text className="text-on-surface font-headline text-sm">
+              {t("profile.defaultWorkspace")}
             </Text>
+
             <TouchableOpacity
-              onPress={handleDelete}
-              disabled={deleteWorkspace.isPending}
-              className="flex-row items-center justify-center gap-2 py-3 rounded-xl border border-error/40 bg-error-container"
-              style={{ opacity: deleteWorkspace.isPending ? 0.6 : 1 }}
+              disabled={isDefault}
+              onPress={() => setDefaultWorkspace(workspace.workspaceId)}
+              className={`flex-row items-center gap-3 rounded-md border px-4 py-3 ${
+                isDefault ? "border-primary bg-surface-container-low" : "border-outline-variant"
+              }`}
             >
-              <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
-              <Text className="text-error font-headline text-sm">
-                {t("wsSettings.deleteWorkspace")}
-              </Text>
+              <MaterialIcons
+                name={isDefault ? "star" : "star-outline"}
+                size={20}
+                color={isDefault ? "#5b4ee0" : "#6b6965"}
+              />
+              <View className="flex-1">
+                <Text className="text-on-surface font-body text-sm">
+                  {isDefault
+                    ? t("profile.defaultWorkspace")
+                    : t("wsSettings.setAsDefault")}
+                </Text>
+                <Text className="text-on-surface-variant font-body text-xs">
+                  {t("wsSettings.defaultHint")}
+                </Text>
+              </View>
             </TouchableOpacity>
           </Card>
-        ) : null}
-      </View>
+
+          <Card className="p-4 gap-3">
+            <Text className="text-on-surface font-headline text-sm">
+              {t("wsSettings.members", {
+                count: workspace.assignedUsers.length,
+              })}
+            </Text>
+
+            <View className="gap-2">
+              {workspace.assignedUsers.map((member) => {
+                const name =
+                  member.fullName?.trim() || member.email || member.userId;
+                const isCreator = member.userId === workspace.createdBy;
+                const isSelf = member.userId === currentUser?.userId;
+                return (
+                  <View
+                    key={member.userId}
+                    className="flex-row items-center gap-3 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant"
+                  >
+                    <Avatar fullName={name} size="sm" />
+                    <View className="flex-1 min-w-0">
+                      <Text
+                        className="text-on-surface font-body text-sm"
+                        numberOfLines={1}
+                      >
+                        {name}
+                      </Text>
+                      {member.email ? (
+                        <Text
+                          className="text-on-surface-variant font-body text-xs"
+                          numberOfLines={1}
+                        >
+                          {member.email}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {isCreator ? (
+                      <View className="px-2 py-1 rounded-lg bg-surface-container-low">
+                        <Text className="text-on-surface-variant font-label text-xs">
+                          {t("wsSettings.owner")}
+                        </Text>
+                      </View>
+                    ) : isOwner && !isSelf ? (
+                      <TouchableOpacity
+                        onPress={() => handleRemoveMember(member.userId, name)}
+                        className="w-9 h-9 items-center justify-center rounded-lg bg-error-container"
+                        disabled={removeUsers.isPending}
+                      >
+                        <MaterialIcons
+                          name="person-remove"
+                          size={18}
+                          color="#C0392B"
+                        />
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                );
+              })}
+            </View>
+          </Card>
+
+          {isOwner && isPublic ? (
+            <Card className="p-4 gap-3">
+              <Text className="text-on-surface font-headline text-sm">
+                {t("wsSettings.addByEmail")}
+              </Text>
+
+              <Input
+                placeholder={t("wsSettings.emailPlaceholder")}
+                value={emailInput}
+                onChangeText={(t) => {
+                  setEmailInput(t);
+                  setEmailError(null);
+                }}
+                onSubmitEditing={addPendingEmail}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                error={emailError ?? undefined}
+                returnKeyType="done"
+              />
+              <Button
+                label={t("wsSettings.addToList")}
+                variant="secondary"
+                icon="add"
+                fullWidth
+                onPress={addPendingEmail}
+              />
+
+              {pendingEmails.length > 0 ? (
+                <View className="flex-row flex-wrap gap-2">
+                  {pendingEmails.map((email) => (
+                    <View
+                      key={email}
+                      className="flex-row items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant"
+                    >
+                      <Text className="text-on-surface font-body text-xs">
+                        {email}
+                      </Text>
+                      <TouchableOpacity onPress={() => removePendingEmail(email)}>
+                        <MaterialIcons name="close" size={14} color="#9b9791" />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+
+              {resultMsg ? (
+                <View className="bg-surface-container-low rounded-xl px-3 py-2.5">
+                  <Text className="text-on-surface-variant font-body text-xs leading-4">
+                    {resultMsg}
+                  </Text>
+                </View>
+              ) : null}
+
+              <Button
+                label={t("wsSettings.invite", { count: pendingEmails.length })}
+                loading={assignByEmail.isPending}
+                disabled={pendingEmails.length === 0}
+                fullWidth
+                onPress={handleInvite}
+              />
+            </Card>
+          ) : null}
+
+          {isOwner ? (
+            <Card className="p-4 gap-3">
+              <View className="flex-row items-center gap-2">
+                <MaterialIcons name="warning-amber" size={18} color="#C0392B" />
+                <Text className="text-on-surface font-headline text-sm">
+                  {t("wsSettings.dangerZone")}
+                </Text>
+              </View>
+              <Text className="text-on-surface-variant font-body text-xs leading-4">
+                {t("wsSettings.dangerDesc")}
+              </Text>
+              <TouchableOpacity
+                onPress={handleDelete}
+                disabled={deleteWorkspace.isPending}
+                className="flex-row items-center justify-center gap-2 py-3 rounded-xl border border-error/40 bg-error-container"
+                style={{ opacity: deleteWorkspace.isPending ? 0.6 : 1 }}
+              >
+                <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
+                <Text className="text-error font-headline text-sm">
+                  {t("wsSettings.deleteWorkspace")}
+                </Text>
+              </TouchableOpacity>
+            </Card>
+          ) : null}
+        </View>
+      </ScrollView>
 
       <DeleteWorkspaceModal
         visible={deleteModalOpen}

@@ -67,10 +67,10 @@ export function PageLayout({
             showSearch={showSearch}
             searchPlaceholder={searchPlaceholder}
           />
-          <View
-            className="flex-1 px-margin-desktop py-4 overflow-hidden"
-            style={Platform.OS === "web" ? { paddingBottom: 48 } : undefined}
-          >
+          {/* Bez paddingu na dole: to kontener przycinający, więc każdy odstęp
+              tworzy martwy pas i twardą linię ucięcia. Oddech daje
+              contentContainerStyle w ScrollView ekranu. */}
+          <View className="flex-1 px-margin-desktop pt-4 overflow-hidden">
             {content}
           </View>
         </View>
@@ -86,8 +86,8 @@ export function PageLayout({
         searchPlaceholder={searchPlaceholder}
       />
       <View
-        className="flex-1 px-5 py-3 overflow-hidden"
-        style={Platform.OS === "web" ? { paddingBottom: 44 } : undefined}
+        className="flex-1 px-5 pt-3 overflow-hidden"
+        style={Platform.OS === "web" ? undefined : { paddingBottom: 12 }}
       >
         {content}
         {rightRail && <View className="mt-4">{rightRail}</View>}

@@ -10,7 +10,12 @@ export {
 export { Card } from "./Card";
 export { Avatar } from "./Avatar";
 export { EmptyState } from "./EmptyState";
-export { Skeleton, TaskCardSkeleton, StatCardSkeleton } from "./Skeleton";
+export {
+  Skeleton,
+  TaskCardSkeleton,
+  StatCardSkeleton,
+  DashboardTaskCardSkeleton,
+} from "./Skeleton";
 export { InlineDatePicker } from "./InlineDatePicker";
 export { OrdovitaLogo } from "./OrdovitaLogo";
 export { AiProposedCard } from "./AiProposedCard";
