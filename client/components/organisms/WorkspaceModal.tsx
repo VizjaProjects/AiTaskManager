@@ -6,7 +6,7 @@ import {
   ScrollView,
   Pressable,
 } from "react-native";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useForm, Controller } from "react-hook-form";
@@ -20,12 +20,9 @@ import {
 } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores";
 import type { Workspace, WorkspaceVisibility } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
-const createSchema = z.object({
-  workspaceName: z.string().min(2, "Name must be at least 2 characters"),
-});
-
-type CreateForm = z.infer<typeof createSchema>;
+type CreateForm = { workspaceName: string };
 
 function SectionLabel({
   icon,
@@ -58,6 +55,7 @@ function WorkspaceRow({
   onSelect: () => void;
   onManage: () => void;
 }) {
+  const t = useT();
   const isPublic = ws.visibility === "Public";
   return (
     <View
@@ -88,8 +86,9 @@ function WorkspaceRow({
             {ws.workspaceName}
           </Text>
           <Text className="text-on-surface-variant font-body text-xs mt-0.5">
-            {ws.assignedUsers.length} member
-            {ws.assignedUsers.length !== 1 ? "s" : ""}
+            {ws.assignedUsers.length === 1
+              ? t("wsModal.memberOne")
+              : t("wsModal.memberMany", { count: ws.assignedUsers.length })}
           </Text>
         </View>
         {isActive && (
@@ -99,7 +98,7 @@ function WorkspaceRow({
       <TouchableOpacity
         onPress={onManage}
         className="w-9 h-9 items-center justify-center rounded-lg"
-        accessibilityLabel="Workspace settings"
+        accessibilityLabel={t("wsModal.settingsA11y")}
       >
         <MaterialIcons name="settings" size={20} color="#9b9791" />
       </TouchableOpacity>
@@ -118,6 +117,7 @@ export function WorkspaceModal({
   onClose,
   onSelected,
 }: WorkspaceModalProps) {
+  const t = useT();
   const router = useRouter();
   const { workspaces, isLoading } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
@@ -126,6 +126,14 @@ export function WorkspaceModal({
   const [mode, setMode] = useState<"list" | "create">("list");
   const [error, setError] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<WorkspaceVisibility>("Private");
+
+  const createSchema = useMemo(
+    () =>
+      z.object({
+        workspaceName: z.string().min(2, t("wsCreate.nameTooShort")),
+      }),
+    [t],
+  );
 
   const {
     control,
@@ -180,7 +188,7 @@ export function WorkspaceModal({
       setError(
         err.response?.data?.title ??
           err.message ??
-          "Could not create workspace",
+          t("wsCreate.failed"),
       );
     }
   }
@@ -213,7 +221,7 @@ export function WorkspaceModal({
                 </TouchableOpacity>
               )}
               <Text className="text-on-surface font-headline text-title-lg">
-                {mode === "list" ? "Workspaces" : "New Workspace"}
+                {mode === "list" ? t("wsModal.title") : t("wsModal.newTitle")}
               </Text>
             </View>
             <TouchableOpacity onPress={handleClose} className="p-1">
@@ -224,12 +232,12 @@ export function WorkspaceModal({
           {mode === "list" ? (
             <View className="px-5 pb-5">
               <Text className="text-on-surface-variant font-body text-body-md mb-4">
-                Switch between your workspaces or create a new one.
+                {t("wsModal.switchHint")}
               </Text>
 
               {isLoading ? (
                 <Text className="text-on-surface-variant font-body text-sm py-6 text-center">
-                  Loading...
+                  {t("common.loading")}
                 </Text>
               ) : workspaces.length === 0 ? (
                 <View className="items-center py-8 gap-3">
@@ -241,7 +249,7 @@ export function WorkspaceModal({
                     />
                   </View>
                   <Text className="text-on-surface-variant font-body text-body-md text-center">
-                    No workspaces yet. Create your first one to get started.
+                    {t("wsModal.emptyDesc")}
                   </Text>
                 </View>
               ) : (
@@ -254,7 +262,7 @@ export function WorkspaceModal({
                       <View className="gap-2">
                         <SectionLabel
                           icon="group"
-                          label="Public"
+                          label={t("ws.public")}
                           count={
                             workspaces.filter((w) => w.visibility === "Public")
                               .length
@@ -277,7 +285,7 @@ export function WorkspaceModal({
                       <View className="gap-2">
                         <SectionLabel
                           icon="lock"
-                          label="Private"
+                          label={t("ws.private")}
                           count={
                             workspaces.filter((w) => w.visibility !== "Public")
                               .length
@@ -306,14 +314,14 @@ export function WorkspaceModal({
               >
                 <MaterialIcons name="add" size={20} color="#ffffff" />
                 <Text className="text-inverse-on-surface font-headline text-sm">
-                  Create Workspace
+                  {t("wsCreate.title")}
                 </Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View className="px-5 pb-5 gap-4">
               <Text className="text-on-surface-variant font-body text-body-md">
-                A workspace groups your tasks, calendar, and team settings.
+                {t("wsModal.createSubtitle")}
               </Text>
               {error && (
                 <View className="bg-error-container rounded-xl px-4 py-3">
@@ -327,8 +335,8 @@ export function WorkspaceModal({
                 name="workspaceName"
                 render={({ field: { onChange, value } }) => (
                   <Input
-                    label="Workspace name"
-                    placeholder="e.g. My Team"
+                    label={t("wsCreate.nameLabel")}
+                    placeholder={t("wsCreate.namePlaceholder")}
                     value={value}
                     onChangeText={onChange}
                     error={errors.workspaceName?.message}
@@ -339,21 +347,21 @@ export function WorkspaceModal({
 
               <View className="gap-2">
                 <Text className="text-on-surface font-label text-body-md">
-                  Visibility
+                  {t("wsSettings.visibility")}
                 </Text>
                 {(
                   [
                     {
                       key: "Private",
                       icon: "lock",
-                      title: "Private",
-                      desc: "Only you. Members can't be added.",
+                      title: t("ws.private"),
+                      desc: t("wsCreate.privateDesc"),
                     },
                     {
                       key: "Public",
                       icon: "group",
-                      title: "Public",
-                      desc: "Invite and assign members.",
+                      title: t("ws.public"),
+                      desc: t("wsSettings.publicDesc"),
                     },
                   ] as {
                     key: WorkspaceVisibility;
@@ -401,7 +409,7 @@ export function WorkspaceModal({
               </View>
 
               <Button
-                label="Create Workspace"
+                label={t("wsCreate.title")}
                 fullWidth
                 loading={createWorkspace.isPending}
                 onPress={handleSubmit(onCreate)}

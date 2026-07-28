@@ -5,6 +5,7 @@ import { useUserPlan } from "@/lib/hooks";
 import { PlanUsageBar } from "./PlanUsageBar";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 /**
  * A subtle info affordance for the AI composer. Tapping it reveals a small
@@ -12,6 +13,7 @@ import { useThemeStore } from "@/lib/stores";
  * requests are left before generating. Arena tokens + MaterialIcons only.
  */
 export function AiLimitInfo() {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode === "dark");
   const ui = getUiTokens(isDark);
   const [open, setOpen] = useState(false);
@@ -64,7 +66,7 @@ export function AiLimitInfo() {
           >
             <View className="flex-row items-center justify-between">
               <Text className="text-on-surface font-headline text-body-md">
-                AI usage
+                {t("aiLimit.title")}
               </Text>
               <View className="px-2.5 py-0.5 rounded-full bg-accent/10">
                 <Text className="font-label text-[10px] uppercase tracking-widest text-accent">
@@ -74,15 +76,17 @@ export function AiLimitInfo() {
             </View>
             <PlanUsageBar
               icon="auto-awesome"
-              label="AI calls today"
+              label={t("aiLimit.callsToday")}
               used={plan.aiTaskUsage}
               limit={plan.aiTaskLimit}
               compact
             />
             <Text className="font-body text-xs" style={{ color: ui.textMuted }}>
               {remaining === 0
-                ? "You've reached today's limit. It resets tomorrow."
-                : `${remaining} request${remaining === 1 ? "" : "s"} left today.`}
+                ? t("aiLimit.reached")
+                : remaining === 1
+                  ? t("aiLimit.remainingOne")
+                  : t("aiLimit.remaining", { count: remaining })}
             </Text>
           </View>
         </>

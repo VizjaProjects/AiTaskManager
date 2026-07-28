@@ -8,6 +8,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import type { EditorBridgeState } from "./editorHtml";
+import { useT } from "@/lib/i18n";
 
 export type EditorCommand =
   | { command: "bold" }
@@ -90,6 +91,7 @@ function ToolButton({
 }
 
 export function NoteEditorToolbar({ state, isDark, onCommand }: ToolbarProps) {
+  const t = useT();
   const [popover, setPopover] = useState<
     "format" | "highlight" | "color" | "table" | "align" | null
   >(null);
@@ -194,7 +196,7 @@ export function NoteEditorToolbar({ state, isDark, onCommand }: ToolbarProps) {
           <Text className="text-on-surface-variant font-label text-xs">
             {tableHover.r > 0
               ? `${tableHover.r} \u00d7 ${tableHover.c}`
-              : "Wybierz rozmiar tabeli"}
+              : t("notes.tableSizeHint")}
           </Text>
           <View className="gap-1">
             {Array.from({ length: TABLE_MAX }).map((_, r) => (

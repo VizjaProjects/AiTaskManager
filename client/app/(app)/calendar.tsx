@@ -46,8 +46,17 @@ import {
   type PrintTheme,
 } from "@/lib/utils/calendarPrint";
 import { useQueryClient } from "@tanstack/react-query";
+import { useT, useLocale } from "@/lib/i18n";
 
-const WEEK_DAYS_SHORT = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"];
+const WEEK_DAY_KEYS = [
+  "cal.wdMon",
+  "cal.wdTue",
+  "cal.wdWed",
+  "cal.wdThu",
+  "cal.wdFri",
+  "cal.wdSat",
+  "cal.wdSun",
+];
 const GRID_START_HOUR = 0;
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const HOUR_HEIGHT = 60;
@@ -73,9 +82,10 @@ function formatCalendarTitle(
   viewType: ViewType,
   selectedDate: Date,
   weekStart: Date,
+  locale: string,
 ): string {
   if (viewType === "day") {
-    return selectedDate.toLocaleDateString("en-US", {
+    return selectedDate.toLocaleDateString(locale, {
       weekday: "long",
       month: "long",
       day: "numeric",
@@ -88,21 +98,21 @@ function formatCalendarTitle(
     const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
     const sameYear = weekStart.getFullYear() === weekEnd.getFullYear();
     if (sameMonth && sameYear) {
-      return `${weekStart.toLocaleDateString("en-US", { month: "long", day: "numeric" })} – ${weekEnd.toLocaleDateString("en-US", { day: "numeric", year: "numeric" })}`;
+      return `${weekStart.toLocaleDateString(locale, { month: "long", day: "numeric" })} – ${weekEnd.toLocaleDateString(locale, { day: "numeric", year: "numeric" })}`;
     }
-    const startStr = weekStart.toLocaleDateString("en-US", {
+    const startStr = weekStart.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: sameYear ? undefined : "numeric",
     });
-    const endStr = weekEnd.toLocaleDateString("en-US", {
+    const endStr = weekEnd.toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
     return `${startStr} – ${endStr}`;
   }
-  return selectedDate.toLocaleDateString("en-US", {
+  return selectedDate.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -154,6 +164,8 @@ function CreateEventModal({
   initialEndHour?: string;
   initialEndMin?: string;
 }) {
+  const t = useT();
+  const locale = useLocale();
   const createEvent = useCreateEvent();
   const [title, setTitle] = useState("");
   const [startHour, setStartHour] = useState("09");
@@ -209,25 +221,25 @@ function CreateEventModal({
         <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
-              Nowe wydarzenie
+              {t("cal.newEvent")}
             </Text>
             <TouchableOpacity onPress={onClose}>
               <MaterialIcons name="close" size={24} color="#6b6965" />
             </TouchableOpacity>
           </View>
           <Input
-            label="Tytuł"
+            label={t("cal.eventTitle")}
             value={title}
             onChangeText={setTitle}
-            placeholder="Nazwa wydarzenia"
+            placeholder={t("cal.eventNamePlaceholder")}
           />
           <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-            Data: {defaultDate.toLocaleDateString("pl-PL")}
+            {t("cal.date")}: {defaultDate.toLocaleDateString(locale)}
           </Text>
           <View className="flex-row gap-6">
             <View>
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Start
+                {t("cal.start")}
               </Text>
               <View className="flex-row items-center gap-1">
                 <TextInput
@@ -255,7 +267,7 @@ function CreateEventModal({
             </View>
             <View>
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Koniec
+                {t("cal.end")}
               </Text>
               <View className="flex-row items-center gap-1">
                 <TextInput
@@ -292,13 +304,17 @@ function CreateEventModal({
               color="#5b4ee0"
             />
             <Text className="text-on-surface font-body text-sm">
-              Cały dzień
+              {t("cal.allDay")}
             </Text>
           </TouchableOpacity>
           <View className="flex-row gap-3 justify-end mt-2">
-            <Button variant="outline" label="Anuluj" onPress={onClose} />
             <Button
-              label="Utwórz"
+              variant="outline"
+              label={t("common.cancel")}
+              onPress={onClose}
+            />
+            <Button
+              label={t("common.create")}
               loading={createEvent.isPending}
               disabled={!title.trim()}
               onPress={handleCreate}
@@ -327,6 +343,7 @@ function EditCalendarEventModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const t = useT();
   const router = useRouter();
   const editEvent = useEditEvent();
   const deleteEvent = useDeleteEvent();
@@ -354,11 +371,11 @@ function EditCalendarEventModal({
   const noteLinkSections = useMemo(
     () => [
       {
-        label: "Notatki",
-        emptyMessage: "Brak notatek w tym workspace.",
+        label: t("nav.notes"),
+        emptyMessage: t("taskModal.noNotesInWorkspace"),
         items: (allNotes ?? []).map((n) => ({
           id: n.id,
-          label: n.title || "Bez tytułu",
+          label: n.title || t("taskModal.noteFallback"),
           subtitle:
             n.noteDescription?.trim() ||
             n.content.text.trim().slice(0, 80) ||
@@ -372,7 +389,7 @@ function EditCalendarEventModal({
           ),
       },
     ],
-    [allNotes, draftLinkedNoteIds],
+    [allNotes, draftLinkedNoteIds, t],
   );
 
   function openNoteLinkModal() {
@@ -449,7 +466,7 @@ function EditCalendarEventModal({
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
             <View className="flex-row items-center justify-between">
               <Text className="font-headline text-on-surface text-lg">
-                Edytuj wydarzenie
+                {t("cal.editEvent")}
               </Text>
               <TouchableOpacity onPress={onClose}>
                 <MaterialIcons name="close" size={24} color="#6b6965" />
@@ -462,21 +479,21 @@ function EditCalendarEventModal({
               keyboardShouldPersistTaps="handled"
             >
               <Input
-                label="Tytuł"
+                label={t("cal.eventTitle")}
                 value={title}
                 onChangeText={setTitle}
-                placeholder="Nazwa wydarzenia"
+                placeholder={t("cal.eventNamePlaceholder")}
               />
               <View>
                 <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                  Data
+                  {t("cal.date")}
                 </Text>
                 <InlineDatePicker value={eventDate} onChange={setEventDate} />
               </View>
               <View className="flex-row gap-6">
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Start
+                    {t("cal.start")}
                   </Text>
                   <View className="flex-row items-center gap-1">
                     <TextInput
@@ -506,7 +523,7 @@ function EditCalendarEventModal({
                 </View>
                 <View>
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                    Koniec
+                    {t("cal.end")}
                   </Text>
                   <View className="flex-row items-center gap-1">
                     <TextInput
@@ -545,13 +562,13 @@ function EditCalendarEventModal({
                   color="#5b4ee0"
                 />
                 <Text className="text-on-surface font-body text-sm">
-                  Cały dzień
+                  {t("cal.allDay")}
                 </Text>
               </TouchableOpacity>
 
               <View className="gap-2">
                 <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                  Kolor
+                  {t("cal.color")}
                 </Text>
                 <View className="flex-row flex-wrap gap-2">
                   {EVENT_COLOR_OPTIONS.map((c) => (
@@ -571,7 +588,7 @@ function EditCalendarEventModal({
               <View className="gap-2">
                 <View className="flex-row items-center justify-between">
                   <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                    Powiązane notatki
+                    {t("taskModal.relatedNotes")}
                   </Text>
                   <TouchableOpacity
                     onPress={openNoteLinkModal}
@@ -579,7 +596,7 @@ function EditCalendarEventModal({
                   >
                     <MaterialIcons name="link" size={14} color="#9b9791" />
                     <Text className="text-on-surface-variant font-label text-xs">
-                      Podłącz
+                      {t("taskModal.link")}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -601,7 +618,7 @@ function EditCalendarEventModal({
                           className="text-on-surface font-body text-xs"
                           numberOfLines={1}
                         >
-                          {n.title || "Bez tytułu"}
+                          {n.title || t("taskModal.noteFallback")}
                         </Text>
                         <MaterialIcons
                           name="arrow-forward"
@@ -613,7 +630,7 @@ function EditCalendarEventModal({
                   </View>
                 ) : (
                   <Text className="text-on-surface-variant font-body text-sm">
-                    Brak powiązanych notatek.
+                    {t("taskModal.noLinkedNotes")}
                   </Text>
                 )}
               </View>
@@ -622,13 +639,17 @@ function EditCalendarEventModal({
             <View className="flex-row gap-3 justify-end mt-2">
               <Button
                 variant="error"
-                label="Usuń"
+                label={t("common.delete")}
                 loading={deleteEvent.isPending}
                 onPress={handleDelete}
               />
-              <Button variant="outline" label="Anuluj" onPress={onClose} />
               <Button
-                label="Zapisz"
+                variant="outline"
+                label={t("common.cancel")}
+                onPress={onClose}
+              />
+              <Button
+                label={t("common.save")}
                 loading={editEvent.isPending}
                 disabled={!title.trim()}
                 onPress={handleSave}
@@ -639,8 +660,8 @@ function EditCalendarEventModal({
       </Modal>
       <LinkCheckboxModal
         visible={noteLinkOpen}
-        title="Podłącz notatki do wydarzenia"
-        searchPlaceholder="Szukaj notatek…"
+        title={t("cal.linkNotesTitle")}
+        searchPlaceholder={t("taskModal.searchNotes")}
         sections={noteLinkSections}
         onClose={() => setNoteLinkOpen(false)}
         onSave={saveEventNoteLinks}
@@ -651,6 +672,9 @@ function EditCalendarEventModal({
 }
 
 export default function CalendarScreen() {
+  const t = useT();
+  const locale = useLocale();
+  const weekDaysShort = useMemo(() => WEEK_DAY_KEYS.map((k) => t(k)), [t]);
   const gridRef = useRef<View>(null);
   const weekScrollRef = useRef<ScrollView>(null);
   const weekDaysRef = useRef<Date[]>([]);
@@ -1315,11 +1339,19 @@ export default function CalendarScreen() {
       displayDays,
       events: events ?? [],
       theme: printTheme,
-      title: formatCalendarTitle(viewType, selectedDate, weekStart),
+      title: formatCalendarTitle(viewType, selectedDate, weekStart, locale),
     });
     printCalendar(html);
     setPrintOpen(false);
-  }, [viewType, selectedDate, displayDays, events, printTheme, weekStart]);
+  }, [
+    viewType,
+    selectedDate,
+    displayDays,
+    events,
+    printTheme,
+    weekStart,
+    locale,
+  ]);
 
   const monthGrid = (
     <View className="flex-1 bg-surface-container-lowest rounded-2xl border border-outline-variant overflow-hidden">
@@ -1327,12 +1359,12 @@ export default function CalendarScreen() {
         className="flex-row"
         style={{ borderBottomWidth: 1, borderBottomColor: cellBorder }}
       >
-        {WEEK_DAYS_SHORT.map((d) => (
+        {weekDaysShort.map((d, i) => (
           <View
             key={d}
             className="flex-1 items-center py-3"
             style={{
-              borderLeftWidth: d === "MO" ? 0 : 1,
+              borderLeftWidth: i === 0 ? 0 : 1,
               borderLeftColor: cellBorder,
             }}
           >
@@ -1465,7 +1497,7 @@ export default function CalendarScreen() {
         </View>
       </View>
       <View className="flex-row mb-1">
-        {WEEK_DAYS_SHORT.map((d) => (
+        {weekDaysShort.map((d) => (
           <View key={d} className="flex-1 items-center">
             <Text className="text-on-surface-variant font-label text-[10px]">
               {d}
@@ -1512,13 +1544,13 @@ export default function CalendarScreen() {
   const priorityFilters = (
     <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-card">
       <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
-        Priorities
+        {t("cal.priorities")}
       </Text>
       {[
-        { label: "Critical Tasks", color: "#C0392B" },
-        { label: "High Focus", color: "#B7770D" },
-        { label: "Standard", color: "#3b82f6" },
-        { label: "Low Priority", color: "#2E7D52" },
+        { label: t("cal.prioCritical"), color: "#C0392B" },
+        { label: t("cal.prioHigh"), color: "#B7770D" },
+        { label: t("cal.prioStandard"), color: "#3b82f6" },
+        { label: t("cal.prioLow"), color: "#2E7D52" },
       ].map((p) => (
         <View key={p.label} className="flex-row items-center gap-2 py-1.5">
           <View
@@ -1557,7 +1589,7 @@ export default function CalendarScreen() {
           // is clear which day is in focus, even when it is not today.
           const isSelected = isMobile && isSameDay(day, selectedDate);
           const dayOfWeek = day.getDay();
-          const dayLabel = WEEK_DAYS_SHORT[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
+          const dayLabel = weekDaysShort[dayOfWeek === 0 ? 6 : dayOfWeek - 1];
           return (
             <TouchableOpacity
               key={i}
@@ -2091,12 +2123,12 @@ export default function CalendarScreen() {
   );
 
   const headerTitle = isMobile
-    ? selectedDate.toLocaleDateString("en-US", {
+    ? selectedDate.toLocaleDateString(locale, {
         weekday: "short",
         month: "short",
         day: "numeric",
       })
-    : formatCalendarTitle(viewType, selectedDate, weekStart);
+    : formatCalendarTitle(viewType, selectedDate, weekStart, locale);
 
   return (
     <PageLayout>
@@ -2166,7 +2198,7 @@ export default function CalendarScreen() {
                           : "text-on-surface-variant"
                       }`}
                     >
-                      {v === "day" ? "1 dzień" : "3 dni"}
+                      {v === "day" ? t("cal.view1Day") : t("cal.view3Days")}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -2176,7 +2208,7 @@ export default function CalendarScreen() {
                 className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
                 <Text className="text-on-surface-variant font-label text-sm">
-                  Dziś
+                  {t("common.today")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -2204,7 +2236,7 @@ export default function CalendarScreen() {
                 className="px-3 py-1.5 rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
                 <Text className="text-on-surface-variant font-label text-sm">
-                  Today
+                  {t("common.today")}
                 </Text>
               </TouchableOpacity>
               <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
@@ -2226,7 +2258,11 @@ export default function CalendarScreen() {
                           : "text-on-surface-variant"
                       }`}
                     >
-                      {v === "day" ? "Day" : v === "week" ? "Week" : "Month"}
+                      {v === "day"
+                        ? t("cal.viewDay")
+                        : v === "week"
+                          ? t("cal.viewWeek")
+                          : t("cal.viewMonth")}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -2256,7 +2292,7 @@ export default function CalendarScreen() {
                 <MaterialIcons name="add" size={18} color="#fff" />
                 {isDesktop && (
                   <Text className="text-white font-headline text-sm">
-                    New Event
+                    {t("cal.newEvent")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -2292,30 +2328,32 @@ export default function CalendarScreen() {
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
             <View className="flex-row items-center justify-between">
               <Text className="font-headline text-on-surface text-lg">
-                Drukuj kalendarz
+                {t("cal.printTitle")}
               </Text>
               <TouchableOpacity onPress={() => setPrintOpen(false)}>
                 <MaterialIcons name="close" size={24} color="#6b6965" />
               </TouchableOpacity>
             </View>
             <Text className="text-on-surface-variant font-body text-sm">
-              Zostanie wydrukowany aktualny widok:{" "}
-              {viewType === "day"
-                ? "dzień"
-                : viewType === "week"
-                  ? "tydzień"
-                  : "miesiąc"}
-              .
+              {t("cal.printCurrentView", {
+                view: t(
+                  viewType === "day"
+                    ? "cal.viewDay"
+                    : viewType === "week"
+                      ? "cal.viewWeek"
+                      : "cal.viewMonth",
+                ).toLowerCase(),
+              })}
             </Text>
             <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-              Motyw
+              {t("menu.theme")}
             </Text>
             <View className="gap-2">
               {(
                 [
-                  { key: "classic", label: "Klasyczny" },
-                  { key: "mono", label: "Czarno-biały" },
-                  { key: "grid", label: "Kolorowa siatka" },
+                  { key: "classic", label: t("cal.printThemeClassic") },
+                  { key: "mono", label: t("cal.printThemeMono") },
+                  { key: "grid", label: t("cal.printThemeGrid") },
                 ] as { key: PrintTheme; label: string }[]
               ).map((opt) => {
                 const active = printTheme === opt.key;
@@ -2350,10 +2388,10 @@ export default function CalendarScreen() {
             <View className="flex-row gap-3 justify-end mt-2">
               <Button
                 variant="outline"
-                label="Anuluj"
+                label={t("common.cancel")}
                 onPress={() => setPrintOpen(false)}
               />
-              <Button label="Drukuj" onPress={handlePrint} />
+              <Button label={t("cal.print")} onPress={handlePrint} />
             </View>
           </View>
         </View>

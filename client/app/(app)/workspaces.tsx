@@ -5,11 +5,12 @@ import { PageLayout } from "@/components/organisms";
 import { Button, Card, EmptyState } from "@/components/atoms";
 import { useWorkspaces, useSetActiveWorkspace } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 
 export default function WorkspacesScreen() {
   const router = useRouter();
   const t = useT();
+  const locale = useLocale();
   const { workspaces, isLoading } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActive = useSetActiveWorkspace();
@@ -94,7 +95,7 @@ export default function WorkspacesScreen() {
                     <Text className="text-on-surface-variant font-body text-xs">
                       {ws.assignedUsers.length} {t("ws.membersWord")} ·{" "}
                       {t("ws.createdWord")}{" "}
-                      {new Date(ws.createdAt).toLocaleDateString("pl-PL")}
+                      {new Date(ws.createdAt).toLocaleDateString(locale)}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity

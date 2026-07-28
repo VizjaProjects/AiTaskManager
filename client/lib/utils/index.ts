@@ -1,4 +1,5 @@
 import { TaskPriority } from "../types";
+import { getLocale } from "../i18n";
 
 export const PRIORITY_COLORS: Record<TaskPriority, string> = {
   [TaskPriority.CRITICAL]: "#c0392b",
@@ -89,7 +90,7 @@ export function getCategoryDisplayColor(
 
 export function formatDate(iso: string): string {
   const date = parseApiDateTime(iso);
-  return date.toLocaleDateString("pl-PL", {
+  return date.toLocaleDateString(getLocale(), {
     day: "numeric",
     month: "short",
   });
@@ -97,7 +98,7 @@ export function formatDate(iso: string): string {
 
 export function formatDateTime(iso: string): string {
   const date = parseApiDateTime(iso);
-  return date.toLocaleDateString("pl-PL", {
+  return date.toLocaleDateString(getLocale(), {
     day: "numeric",
     month: "short",
     hour: "2-digit",

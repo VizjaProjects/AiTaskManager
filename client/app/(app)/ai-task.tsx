@@ -44,12 +44,14 @@ import type { Task, CalendarEvent } from "@/lib/types";
 import { EventStatus } from "@/lib/types";
 import { formatDuration, normalizeDueDateTime } from "@/lib/utils";
 import { UI } from "@/lib/utils/uiTokens";
+import { useT, useLocale, useLanguageStore, localeFor } from "@/lib/i18n";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
 const MAX_AI_PLAN_TEXT_LENGTH = 4000;
 
 function AiLoadingAnimation() {
+  const t = useT();
   const pulse1 = useRef(new Animated.Value(0.3)).current;
   const pulse2 = useRef(new Animated.Value(0.3)).current;
   const pulse3 = useRef(new Animated.Value(0.3)).current;
@@ -102,10 +104,10 @@ function AiLoadingAnimation() {
         ))}
       </View>
       <Text className="text-on-surface font-headline text-body-md">
-        Analyzing your plan...
+        {t("aiTask.analyzing")}
       </Text>
       <Text className="text-on-surface-variant font-body text-sm text-center">
-        Generating tasks and events. This can take up to a few minutes.
+        {t("aiTask.analyzingDesc")}
       </Text>
     </View>
   );
@@ -124,6 +126,7 @@ function EditEventModal({
   onSave: (data: any) => void;
   loading: boolean;
 }) {
+  const t = useT();
   const [title, setTitle] = useState(event.title);
   const [startDateObj, setStartDateObj] = useState<Date>(() => {
     const s = new Date(event.startDateTime);
@@ -163,23 +166,27 @@ function EditEventModal({
         <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4">
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
-              Edytuj propozycję wydarzenia
+              {t("aiTask.editEventProposal")}
             </Text>
             <TouchableOpacity onPress={onClose}>
               <MaterialIcons name="close" size={24} color="#6b6965" />
             </TouchableOpacity>
           </View>
-          <Input label="Tytuł" value={title} onChangeText={setTitle} />
+          <Input
+            label={t("cal.eventTitle")}
+            value={title}
+            onChangeText={setTitle}
+          />
           <View>
             <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-              Data
+              {t("cal.date")}
             </Text>
             <InlineDatePicker value={startDateObj} onChange={setStartDateObj} />
           </View>
           <View className="flex-row gap-6">
             <View>
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Start
+                {t("cal.start")}
               </Text>
               <View className="flex-row items-center gap-1">
                 <TextInput
@@ -209,7 +216,7 @@ function EditEventModal({
             </View>
             <View>
               <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                Koniec
+                {t("cal.end")}
               </Text>
               <View className="flex-row items-center gap-1">
                 <TextInput
@@ -248,13 +255,17 @@ function EditEventModal({
               color="#9b9791"
             />
             <Text className="text-on-surface font-body text-sm">
-              Cały dzień
+              {t("cal.allDay")}
             </Text>
           </TouchableOpacity>
           <View className="flex-row gap-3 justify-end mt-2">
-            <Button variant="outline" label="Anuluj" onPress={onClose} />
             <Button
-              label="Zapisz i akceptuj"
+              variant="outline"
+              label={t("common.cancel")}
+              onPress={onClose}
+            />
+            <Button
+              label={t("aiTask.saveAndAccept")}
               loading={loading}
               onPress={() => {
                 const { start, end } = buildDateTime();
@@ -275,6 +286,8 @@ function EditEventModal({
 }
 
 export default function AiTaskScreen() {
+  const t = useT();
+  const locale = useLocale();
   const [text, setText] = useState("");
   const [configError, setConfigError] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
@@ -328,7 +341,7 @@ export default function AiTaskScreen() {
     if (!normalized) return;
     if (normalized.length > MAX_AI_PLAN_TEXT_LENGTH) {
       setConfigError(
-        `Plan może zawierać maksymalnie ${MAX_AI_PLAN_TEXT_LENGTH} znaków.`,
+        t("aiTask.textTooLong", { max: MAX_AI_PLAN_TEXT_LENGTH }),
       );
       return;
     }
@@ -412,7 +425,7 @@ export default function AiTaskScreen() {
 
     function createRecognition() {
       const r = new SR();
-      r.lang = "pl-PL";
+      r.lang = localeFor(useLanguageStore.getState().lang);
       r.interimResults = true;
       r.continuous = true;
       let finalTranscript = textRef.current;
@@ -512,15 +525,14 @@ export default function AiTaskScreen() {
             <View className="flex-row items-center gap-1.5 self-start px-2.5 py-1 rounded-sm border border-outline-variant bg-surface">
               <MaterialIcons name="auto-awesome" size={13} color="#9b9791" />
               <Text className="text-text-tertiary font-label text-xs">
-                AI Assistant
+                {t("aiTask.badge")}
               </Text>
             </View>
             <Text className="text-on-surface font-display text-headline-md">
-              AI Task Creation
+              {t("aiTask.heading")}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md">
-              Describe your day in natural language — AI will suggest tasks and
-              events.
+              {t("aiTask.subheading")}
             </Text>
           </View>
 
@@ -536,7 +548,7 @@ export default function AiTaskScreen() {
             <View className="flex-row items-center gap-2">
               <MaterialIcons name="auto-awesome" size={16} color="#9b9791" />
               <Text className="text-on-surface font-display text-title-lg">
-                What would you like to plan?
+                {t("aiTask.promptTitle")}
               </Text>
             </View>
             <TextInput
@@ -551,7 +563,7 @@ export default function AiTaskScreen() {
                 },
                 NO_OUTLINE,
               ]}
-              placeholder="e.g. Schedule a team sync tomorrow at 2 PM, prepare the Q3 report by Friday, and remind me to call Sarah."
+              placeholder={t("aiTask.promptPlaceholder")}
               placeholderTextColor="#9b9791"
               multiline
               textAlignVertical="top"
@@ -598,7 +610,7 @@ export default function AiTaskScreen() {
                 >
                   <MaterialIcons name="north" size={16} color="#f0f0f0" />
                   <Text className="text-on-action font-headline text-sm">
-                    {generatePlan.isPending ? "..." : "Generate"}
+                    {generatePlan.isPending ? "…" : t("aiTask.generate")}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -607,7 +619,7 @@ export default function AiTaskScreen() {
               <View className="flex-row items-center gap-2">
                 <View className="w-2 h-2 rounded-full bg-error" />
                 <Text className="text-error font-label text-xs">
-                  Listening...
+                  {t("aiTask.listening")}
                 </Text>
               </View>
             )}
@@ -620,15 +632,15 @@ export default function AiTaskScreen() {
               <View className="flex-row items-start justify-between gap-4">
                 <View className="flex-1">
                   <Text className="text-on-surface font-headline text-title-lg">
-                    AI Proposals
+                    {t("aiTask.proposalsTitle")}
                   </Text>
                   <Text className="text-on-surface-variant font-body text-body-md mt-1">
-                    Review and accept the generated items.
+                    {t("aiTask.proposalsDesc")}
                   </Text>
                 </View>
                 <View className="px-2.5 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
                   <Text className="text-on-surface-variant font-label text-xs">
-                    {totalCount} pending
+                    {t("aiTask.pendingCount", { count: totalCount })}
                   </Text>
                 </View>
               </View>
@@ -637,8 +649,12 @@ export default function AiTaskScreen() {
                 {manualEvents.map((event) => {
                   const start = new Date(event.startDateTime);
                   const end = new Date(event.endDateTime);
-                  const duration = `${start.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`;
-                  const dueDate = start.toLocaleDateString("pl-PL", {
+                  const hhmm = {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  } as const;
+                  const duration = `${start.toLocaleTimeString(locale, hhmm)} – ${end.toLocaleTimeString(locale, hhmm)}`;
+                  const dueDate = start.toLocaleDateString(locale, {
                     day: "numeric",
                     month: "short",
                     hour: "2-digit",
@@ -690,7 +706,7 @@ export default function AiTaskScreen() {
                       dueDate={
                         task.dueDateTime
                           ? new Date(task.dueDateTime).toLocaleDateString(
-                              "pl-PL",
+                              locale,
                               {
                                 day: "numeric",
                                 month: "short",
@@ -729,7 +745,7 @@ export default function AiTaskScreen() {
             <View className="items-center py-8 gap-2">
               <MaterialIcons name="auto-awesome" size={32} color="#cccccc" />
               <Text className="text-on-surface-variant font-body text-body-md text-center">
-                No proposals yet. Describe your plan above and tap Generate.
+                {t("aiTask.emptyProposals")}
               </Text>
             </View>
           )}
@@ -744,7 +760,7 @@ export default function AiTaskScreen() {
         statuses={statuses ?? []}
         showDelete={false}
         rejectAction={{
-          label: "Odrzuć",
+          label: t("common.reject"),
           onPress: () => {
             if (!previewTask) return;
             rejectTask.mutate(previewTask.taskId, {
@@ -753,7 +769,7 @@ export default function AiTaskScreen() {
           },
         }}
         acceptAction={{
-          label: "Akceptuj",
+          label: t("common.accept"),
           loading: acceptTask.isPending,
           onPress: () => {
             if (!previewTask) return;
@@ -784,7 +800,7 @@ export default function AiTaskScreen() {
         statuses={statuses ?? []}
         forceEdit
         showDelete={false}
-        saveLabel="Zapisz i akceptuj"
+        saveLabel={t("aiTask.saveAndAccept")}
         saveLoading={acceptTask.isPending}
         onSaveCustom={(data) => {
           if (!editingTask) return;

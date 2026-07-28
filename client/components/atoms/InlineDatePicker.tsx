@@ -1,8 +1,17 @@
 import { View, Text, TouchableOpacity } from "react-native";
 import { useState, useMemo } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useT, useLocale } from "@/lib/i18n";
 
-const WEEK_DAYS_SHORT = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+const WEEK_DAY_KEYS = [
+  "cal.wdMon",
+  "cal.wdTue",
+  "cal.wdWed",
+  "cal.wdThu",
+  "cal.wdFri",
+  "cal.wdSat",
+  "cal.wdSun",
+];
 
 function getMonthDays(year: number, month: number) {
   const firstDay = new Date(year, month, 1);
@@ -47,6 +56,9 @@ interface InlineDatePickerProps {
 }
 
 export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
+  const t = useT();
+  const locale = useLocale();
+  const weekDaysShort = useMemo(() => WEEK_DAY_KEYS.map((k) => t(k)), [t]);
   const [viewMonth, setViewMonth] = useState(
     new Date(value.getFullYear(), value.getMonth(), 1),
   );
@@ -62,7 +74,7 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
     [viewMonth],
   );
 
-  const monthLabel = viewMonth.toLocaleDateString("pl-PL", {
+  const monthLabel = viewMonth.toLocaleDateString(locale, {
     month: "long",
     year: "numeric",
   });
@@ -100,7 +112,7 @@ export function InlineDatePicker({ value, onChange }: InlineDatePickerProps) {
 
       {/* Day-of-week headers */}
       <View className="flex-row mb-1">
-        {WEEK_DAYS_SHORT.map((d) => (
+        {weekDaysShort.map((d) => (
           <View key={d} className="flex-1 items-center py-1">
             <Text className="text-on-surface-variant font-label text-[10px] uppercase">
               {d}

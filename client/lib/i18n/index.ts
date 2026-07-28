@@ -1,6 +1,6 @@
 import { useLanguageStore } from "./store";
 import { translations } from "./translations";
-import { DEFAULT_LANG } from "./config";
+import { DEFAULT_LANG, localeFor } from "./config";
 
 type Vars = Record<string, string | number>;
 
@@ -30,6 +30,27 @@ export function useT() {
   return (key: string, vars?: Vars) => translate(lang, key, vars);
 }
 
+/** Translate outside React (utils, imperative code). */
+export function tr(key: string, vars?: Vars): string {
+  return translate(useLanguageStore.getState().lang, key, vars);
+}
+
+/** Intl locale for the active language — use instead of a hardcoded "pl-PL". */
+export function useLocale(): string {
+  return localeFor(useLanguageStore((s) => s.lang));
+}
+
+/** Same, outside React. Components prefer useLocale() so they re-render on switch. */
+export function getLocale(): string {
+  return localeFor(useLanguageStore.getState().lang);
+}
+
 export { useLanguageStore } from "./store";
-export { LANGUAGES, DEFAULT_LANG, LANGUAGE_CODES, isLang } from "./config";
+export {
+  LANGUAGES,
+  DEFAULT_LANG,
+  LANGUAGE_CODES,
+  isLang,
+  localeFor,
+} from "./config";
 export type { Lang } from "./config";

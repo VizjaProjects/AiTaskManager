@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { ProviderBrandIcon } from "../atoms/ProviderBrandIcon";
 import { useLlmSettings } from "@/lib/hooks";
 import { useLlmSettingsSelectionStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 import {
   formatPickerLabel,
   isOrdovitaAiSelection,
@@ -111,6 +112,7 @@ function DropdownItem({
 export function AiChatConfigButton({
   disabled = false,
 }: AiChatConfigButtonProps) {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode === "dark");
   const ui = getUiTokens(isDark);
   const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
@@ -206,7 +208,7 @@ export function AiChatConfigButton({
         nestedScrollEnabled
         showsVerticalScrollIndicator
       >
-        <SectionHeader label="System models" />
+        <SectionHeader label={t("llmPicker.systemModels")} />
         <DropdownItem
           active={isOrdovita}
           onSelect={() => select(ORDOVITA_AI_ID)}
@@ -216,7 +218,7 @@ export function AiChatConfigButton({
 
         {settings.length > 0 ? (
           <>
-            <SectionHeader label="Your models" />
+            <SectionHeader label={t("llmPicker.yourModels")} />
             {settings.map((item) => (
               <DropdownItem
                 key={item.llmSettingsId}
@@ -240,7 +242,7 @@ export function AiChatConfigButton({
               className="font-body text-xs"
               style={{ color: ui.textSecondary }}
             >
-              Add your own model
+              {t("llmPicker.addYourOwn")}
             </Text>
           </TouchableOpacity>
         )}
@@ -281,7 +283,7 @@ export function AiChatConfigButton({
                   ? "OrdovitaAI"
                   : active
                     ? formatPickerLabel(active)
-                    : "Select model"}
+                    : t("llmPicker.selectModel")}
               </Text>
               <MaterialIcons
                 name="expand-more"

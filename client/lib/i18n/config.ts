@@ -4,13 +4,17 @@
  * Everything else (the Lang type, the switcher, the store) derives from this list.
  */
 export const LANGUAGES = [
-  { code: "pl", label: "Polski", short: "PL" },
-  { code: "en", label: "English", short: "EN" },
+  { code: "pl", label: "Polski", short: "PL", locale: "pl-PL" },
+  { code: "en", label: "English", short: "EN", locale: "en-US" },
 ] as const;
 
 export type Lang = (typeof LANGUAGES)[number]["code"];
 
 export const DEFAULT_LANG: Lang = "pl";
+
+export function localeFor(lang: Lang): string {
+  return LANGUAGES.find((l) => l.code === lang)?.locale ?? "pl-PL";
+}
 
 export const LANGUAGE_CODES = LANGUAGES.map((l) => l.code) as readonly Lang[];
 

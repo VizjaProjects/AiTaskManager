@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SearchBar } from "./SearchBar";
+import { useT } from "@/lib/i18n";
 
 export type LinkCheckboxItem = {
   id: string;
@@ -51,12 +52,13 @@ export function LinkCheckboxModal({
   visible,
   title,
   sections,
-  searchPlaceholder = "Szukaj…",
+  searchPlaceholder,
   onClose,
   onSave,
-  saveLabel = "Zapisz",
+  saveLabel,
   saving = false,
 }: LinkCheckboxModalProps) {
+  const t = useT();
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
@@ -103,7 +105,7 @@ export function LinkCheckboxModal({
             <SearchBar
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder={searchPlaceholder}
+              placeholder={searchPlaceholder ?? t("common.search")}
             />
           </View>
 
@@ -119,8 +121,8 @@ export function LinkCheckboxModal({
                 {section.items.length === 0 ? (
                   <Text className="text-on-surface-variant font-body text-sm">
                     {searchQuery.trim()
-                      ? "Brak wyników w tej sekcji."
-                      : (section.emptyMessage ?? "Brak pozycji.")}
+                      ? t("link.noResultsInSection")
+                      : (section.emptyMessage ?? t("link.noItems"))}
                   </Text>
                 ) : (
                   section.items.map((item) => {
@@ -171,7 +173,7 @@ export function LinkCheckboxModal({
           <View className="flex-row items-center justify-end gap-2 px-5 py-3 border-t border-outline-variant">
             <TouchableOpacity onPress={onClose} className="px-4 py-2 rounded-md">
               <Text className="text-on-surface-variant font-label text-sm">
-                Anuluj
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -181,7 +183,7 @@ export function LinkCheckboxModal({
               style={saving ? { opacity: 0.6 } : undefined}
             >
               <Text className="text-on-action font-headline text-sm">
-                {saveLabel}
+                {saveLabel ?? t("common.save")}
               </Text>
             </TouchableOpacity>
           </View>

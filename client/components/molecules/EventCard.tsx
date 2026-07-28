@@ -3,6 +3,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import type { CalendarEvent } from "@/lib/types";
 import { EventStatus } from "@/lib/types";
 import { ProposedBadge } from "../atoms";
+import { useLocale } from "@/lib/i18n";
 
 interface EventCardProps {
   event: CalendarEvent;
@@ -11,12 +12,14 @@ interface EventCardProps {
 }
 
 export function EventCard({ event, onPress, compact }: EventCardProps) {
+  const locale = useLocale();
   const isProposed = event.status === EventStatus.PROPOSED;
   const start = new Date(event.startDateTime);
   const end = new Date(event.endDateTime);
-  const month = start.toLocaleDateString("en-US", { month: "short" }).toUpperCase();
+  const month = start.toLocaleDateString(locale, { month: "short" }).toUpperCase();
   const day = start.getDate();
-  const timeRange = `${start.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })} – ${end.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}`;
+  const hhmm = { hour: "2-digit", minute: "2-digit" } as const;
+  const timeRange = `${start.toLocaleTimeString(locale, hhmm)} – ${end.toLocaleTimeString(locale, hhmm)}`;
 
   if (compact) {
     return (
@@ -58,10 +61,10 @@ export function EventCard({ event, onPress, compact }: EventCardProps) {
     >
       <View className="items-center">
         <Text className="text-on-surface font-headline text-sm">
-          {start.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+          {start.toLocaleTimeString(locale, hhmm)}
         </Text>
         <Text className="text-on-surface-variant font-body text-xs">
-          {end.toLocaleTimeString("pl-PL", { hour: "2-digit", minute: "2-digit" })}
+          {end.toLocaleTimeString(locale, hhmm)}
         </Text>
       </View>
       <View className="w-0.5 h-10 bg-primary rounded-full" />

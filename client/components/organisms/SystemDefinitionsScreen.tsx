@@ -24,6 +24,7 @@ import { sortStatusesByDefaultOrder } from "@/lib/utils/taskStatusOrder";
 import { useThemeStore } from "@/lib/stores";
 import { useEffect, useMemo, useState } from "react";
 import { Input, Button } from "../atoms";
+import { useT } from "@/lib/i18n";
 
 type DefinitionKind = "category" | "status";
 
@@ -47,6 +48,7 @@ function DefinitionFormModal({
   onClose: () => void;
   onSubmit: (name: string, color: string) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [color, setColor] = useState(DEFAULT_CATEGORY_COLORS[0]);
 
@@ -60,8 +62,10 @@ function DefinitionFormModal({
   if (!target) return null;
 
   const isEdit = target.id != null;
-  const noun = target.kind === "category" ? "Category" : "Status";
-  const title = `${isEdit ? "Edit" : "New"} ${noun}`;
+  const title =
+    target.kind === "category"
+      ? t(isEdit ? "defs.editCategory" : "defs.newCategory")
+      : t(isEdit ? "defs.editStatus" : "defs.newStatus");
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
@@ -83,16 +87,20 @@ function DefinitionFormModal({
           </View>
 
           <Input
-            label="Name"
+            label={t("defs.nameLabel")}
             value={name}
             onChangeText={setName}
-            placeholder={target.kind === "category" ? "Design" : "To Do"}
+            placeholder={t(
+              target.kind === "category"
+                ? "defs.categoryPlaceholder"
+                : "defs.statusPlaceholder",
+            )}
             autoFocus
           />
 
           <View className="gap-2">
             <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-              Color
+              {t("cal.color")}
             </Text>
             <View className="flex-row flex-wrap gap-2.5">
               {DEFAULT_CATEGORY_COLORS.map((c) => (
@@ -110,11 +118,15 @@ function DefinitionFormModal({
 
           <View className="flex-row gap-2 mt-1">
             <View className="flex-1">
-              <Button label="Cancel" variant="outline" onPress={onClose} />
+              <Button
+                label={t("common.cancel")}
+                variant="outline"
+                onPress={onClose}
+              />
             </View>
             <View className="flex-1">
               <Button
-                label={isEdit ? "Save" : "Create"}
+                label={t(isEdit ? "common.save" : "common.create")}
                 loading={saving}
                 disabled={!name.trim()}
                 onPress={() => {
@@ -131,6 +143,7 @@ function DefinitionFormModal({
 }
 
 export function SystemDefinitionsScreen() {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const { width } = useWindowDimensions();
   const stacked = width < 768;
@@ -197,10 +210,10 @@ export function SystemDefinitionsScreen() {
       <ScrollView contentContainerStyle={{ gap: 24, paddingBottom: 32 }}>
         <View>
           <Text className="text-on-surface font-headline text-headline-md">
-            Categories & Statuses
+            {t("defs.title")}
           </Text>
           <Text className="text-on-surface-variant font-body text-body-md mt-1">
-            Organize your tasks with custom labels and workflow stages.
+            {t("defs.subtitle")}
           </Text>
         </View>
 
@@ -219,19 +232,19 @@ export function SystemDefinitionsScreen() {
                   <MaterialIcons name="category" size={18} color="#111111" />
                 </View>
                 <Text className="font-headline text-on-surface text-title-lg">
-                  Categories
+                  {t("defs.categories")}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => openCreate("category")}>
                 <Text className="text-primary font-headline text-sm">
-                  + Add New
+                  {t("defs.addNew")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {categories.length === 0 ? (
               <Text className="text-on-surface-variant font-body text-body-md py-4">
-                No categories yet. Add one to organize your tasks.
+                {t("defs.emptyCategories")}
               </Text>
             ) : (
               categories.map((cat) => (
@@ -293,19 +306,19 @@ export function SystemDefinitionsScreen() {
                   <MaterialIcons name="toggle-on" size={18} color="#b90538" />
                 </View>
                 <Text className="font-headline text-on-surface text-title-lg">
-                  Statuses
+                  {t("defs.statuses")}
                 </Text>
               </View>
               <TouchableOpacity onPress={() => openCreate("status")}>
                 <Text className="text-secondary font-headline text-sm">
-                  + Add New
+                  {t("defs.addNew")}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {sortedStatuses.length === 0 ? (
               <Text className="text-on-surface-variant font-body text-body-md py-4">
-                No statuses yet. Add workflow stages for your Kanban board.
+                {t("defs.emptyStatuses")}
               </Text>
             ) : (
               sortedStatuses.map((status) => (

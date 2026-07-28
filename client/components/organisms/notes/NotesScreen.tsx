@@ -38,6 +38,7 @@ import { useWorkspaceStore } from "@/lib/stores/workspace";
 import type { Note, NoteFolder } from "@/lib/types";
 import { getNoteThemeColors, NOTE_COLORS } from "@/lib/noteTheme";
 import { formatDateTime } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
@@ -73,6 +74,7 @@ function showMessage(title: string, message: string) {
 }
 
 export function NotesScreen() {
+  const t = useT();
   const { width, height } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const isDark = useThemeStore((s) => s.mode) === "dark";
@@ -126,7 +128,7 @@ export function NotesScreen() {
   ) {
     setConfirmState({
       message,
-      confirmLabel: opts?.confirmLabel ?? "Usuń",
+      confirmLabel: opts?.confirmLabel ?? t("common.delete"),
       tone: opts?.tone ?? "danger",
       onConfirm,
     });
@@ -188,8 +190,8 @@ export function NotesScreen() {
 
     return [
       {
-        label: "Zadania",
-        emptyMessage: "Brak zadań w tym workspace.",
+        label: t("notes.sectionTasks"),
+        emptyMessage: t("notes.noTasksInWorkspace"),
         items: tasks.map((t) => ({
           id: t.taskId,
           label: t.title,
@@ -203,8 +205,8 @@ export function NotesScreen() {
           ),
       },
       {
-        label: "Wydarzenia",
-        emptyMessage: "Brak wydarzeń w tym workspace.",
+        label: t("notes.sectionEvents"),
+        emptyMessage: t("notes.noEventsInWorkspace"),
         items: events.map((e) => ({
           id: e.eventId,
           label: e.title,
@@ -220,7 +222,7 @@ export function NotesScreen() {
           ),
       },
     ];
-  }, [linkNote, tasks, events, linkTaskIds, linkEventIds]);
+  }, [linkNote, tasks, events, linkTaskIds, linkEventIds, t]);
 
   // load selected note into buffers
   useEffect(() => {
@@ -392,7 +394,7 @@ export function NotesScreen() {
 
   async function handleCreateNote() {
     const res = await createNote.mutateAsync({
-      title: "Nowa notatka",
+      title: t("notes.newNoteTitle"),
       noteColor: color || NOTE_COLORS[0],
       noteFolderId: currentFolderId,
       html: "",
@@ -426,7 +428,7 @@ export function NotesScreen() {
   }
 
   function deleteNoteById(id: string) {
-    requestConfirm("Usunąć tę notatkę?", () => {
+    requestConfirm(t("notes.confirmDeleteNote"), () => {
       deleteNote.mutate(id);
       if (selectedNoteId === id) {
         setSelectedNoteId(null);
@@ -471,7 +473,7 @@ export function NotesScreen() {
 
   function deleteFolderById(id: string) {
     requestConfirm(
-      "Usunąć ten folder? Notatki zostaną przeniesione do „Bez folderu”.",
+      t("notes.confirmDeleteFolder"),
       () => {
         deleteFolder.mutate(id);
         if (menuFolder?.id === id) setMenuFolder(null);
@@ -550,18 +552,18 @@ export function NotesScreen() {
     if (!selectedText) return;
     if (selectedText.length > MAX_AI_PLAN_TEXT_LENGTH) {
       showMessage(
-        "Zaznaczenie jest za długie",
-        `Do planowania można wysłać maksymalnie ${MAX_AI_PLAN_TEXT_LENGTH} znaków.`,
+        t("notes.selectionTooLongTitle"),
+        t("notes.selectionTooLongDesc", { max: MAX_AI_PLAN_TEXT_LENGTH }),
       );
       return;
     }
 
     requestConfirm(
-      "Wysłać zaznaczony tekst do AI, aby zaproponować zadania i wydarzenia?",
+      t("notes.confirmSendToAi"),
       () => {
         void runScheduleSelection(selectedText);
       },
-      { confirmLabel: "Wyślij do AI", tone: "default" },
+      { confirmLabel: t("notes.sendToAi"), tone: "default" },
     );
   }
 
@@ -572,10 +574,7 @@ export function NotesScreen() {
       setEditorOpen(false);
       router.push("/(app)/ai-task" as never);
     } catch {
-      showMessage(
-        "Nie udało się zapisać notatki",
-        "Spróbuj ponownie przed wysłaniem tekstu do planowania.",
-      );
+      showMessage(t("notes.saveFailedTitle"), t("notes.saveFailedDesc"));
     }
   }
 
@@ -610,7 +609,7 @@ export function NotesScreen() {
               setTitle(t);
               scheduleMetaSave({ title: t });
             }}
-            placeholder="Tytuł"
+            placeholder={t("notes.titlePlaceholder")}
             placeholderTextColor={editorTheme.mutedText}
             selectTextOnFocus
             className="flex-1 font-headline text-xl"
@@ -650,6 +649,7 @@ export function NotesScreen() {
         initialHtml={selectedNote.content.html}
         isDark={isDark}
         backgroundColor={editorTheme.background}
+        placeholder={t("notes.editorPlaceholder")}
         fontSize={editorFontSize}
         onChange={scheduleContentSave}
         onScheduleSelection={handleScheduleSelection}
@@ -738,12 +738,12 @@ export function NotesScreen() {
           className="w-full max-w-[360px] bg-surface-container-lowest rounded-2xl p-4 gap-3 border border-outline-variant"
         >
           <Text className="text-on-surface font-headline text-base">
-            Edytuj folder
+            {t("notes.editFolder")}
           </Text>
           <TextInput
             value={menuTitle}
             onChangeText={setMenuTitle}
-            placeholder="Nazwa folderu"
+            placeholder={t("notes.folderNamePlaceholder")}
             placeholderTextColor="#9b9791"
             className="bg-surface-container-low rounded-lg px-3 py-2.5 text-on-surface font-body text-sm border border-outline-variant"
             style={NO_OUTLINE}
@@ -751,7 +751,7 @@ export function NotesScreen() {
           <TextInput
             value={menuDesc}
             onChangeText={setMenuDesc}
-            placeholder="Opis (opcjonalnie)"
+            placeholder={t("notes.folderDescPlaceholder")}
             placeholderTextColor="#9b9791"
             multiline
             className="bg-surface-container-low rounded-lg px-3 py-2.5 text-on-surface font-body text-sm border border-outline-variant min-h-[64px]"
@@ -763,7 +763,9 @@ export function NotesScreen() {
               className="flex-row items-center gap-1.5 px-2 py-2"
             >
               <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
-              <Text className="text-error font-label text-sm">Usuń</Text>
+              <Text className="text-error font-label text-sm">
+                {t("common.delete")}
+              </Text>
             </TouchableOpacity>
             <View className="flex-row items-center gap-2">
               <TouchableOpacity
@@ -771,7 +773,7 @@ export function NotesScreen() {
                 className="px-3 py-2"
               >
                 <Text className="text-on-surface-variant font-label text-sm">
-                  Anuluj
+                  {t("common.cancel")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -779,7 +781,7 @@ export function NotesScreen() {
                 className="bg-primary rounded-xl px-4 py-2"
               >
                 <Text className="text-on-primary font-headline text-sm">
-                  Zapisz
+                  {t("common.save")}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -807,7 +809,7 @@ export function NotesScreen() {
           className="bg-surface-container-lowest rounded-t-2xl p-4 gap-1 border-t border-outline-variant"
         >
           <Text className="text-on-surface font-headline text-base mb-1">
-            Przenieś do folderu
+            {t("notes.moveToFolder")}
           </Text>
           <TouchableOpacity
             onPress={() => {
@@ -818,7 +820,7 @@ export function NotesScreen() {
           >
             <MaterialIcons name="inbox" size={20} color="#6b6965" />
             <Text className="text-on-surface font-body text-sm">
-              Bez folderu
+              {t("notes.noFolder")}
             </Text>
           </TouchableOpacity>
           {folders.map((f) => (
@@ -887,7 +889,7 @@ export function NotesScreen() {
         >
           <ContextMenuItem
             icon="drive-file-rename-outline"
-            label="Zmień nazwę"
+            label={t("notes.rename")}
             onPress={() => {
               beginRename(
                 contextMenu.kind === "folder"
@@ -899,7 +901,7 @@ export function NotesScreen() {
           {contextMenu.kind === "note" && contextMenu.note.noteFolderId ? (
             <ContextMenuItem
               icon="drive-file-move-outline"
-              label="Przenieś poza folder"
+              label={t("notes.moveOutOfFolder")}
               onPress={() => {
                 moveNoteToFolder(contextMenu.note.id, null);
                 setContextMenu(null);
@@ -909,7 +911,7 @@ export function NotesScreen() {
           {contextMenu.kind === "note" ? (
             <ContextMenuItem
               icon="link"
-              label="Połącz z zadaniami / wydarzeniami"
+              label={t("notes.linkWithTasksEvents")}
               onPress={() => {
                 const note = contextMenu.note;
                 setContextMenu(null);
@@ -920,7 +922,7 @@ export function NotesScreen() {
           <View className="h-px bg-outline-variant/60 mx-2 my-1" />
           <ContextMenuItem
             icon="delete-outline"
-            label="Usuń"
+            label={t("common.delete")}
             destructive
             onPress={() => {
               const target = contextMenu;
@@ -944,7 +946,7 @@ export function NotesScreen() {
       <TextInput
         value={folderName}
         onChangeText={setFolderName}
-        placeholder="Nazwa folderu"
+        placeholder={t("notes.folderNamePlaceholder")}
         placeholderTextColor="#9b9791"
         autoFocus
         onSubmitEditing={handleCreateFolder}
@@ -968,7 +970,7 @@ export function NotesScreen() {
     >
       <MaterialIcons name="create-new-folder" size={16} color="#6b6965" />
       <Text className="text-on-surface-variant font-label text-xs">
-        Nowy folder
+        {t("notes.newFolder")}
       </Text>
     </TouchableOpacity>
   );
@@ -1009,7 +1011,9 @@ export function NotesScreen() {
               size={16}
               color={isDark ? "#121212" : "#fff"}
             />
-            <Text className="text-on-primary font-headline text-xs">Nowa</Text>
+            <Text className="text-on-primary font-headline text-xs">
+              {t("notes.newNote")}
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -1076,8 +1080,8 @@ export function NotesScreen() {
                   />
                   <Text className="text-on-surface-variant font-body text-sm text-center">
                     {currentFolderId
-                      ? "Folder jest pusty."
-                      : "Brak notatek. Utwórz pierwszą."}
+                      ? t("notes.emptyFolder")
+                      : t("notes.emptyNotes")}
                   </Text>
                 </View>
               )}
@@ -1104,8 +1108,8 @@ export function NotesScreen() {
         >
           <Text className="text-on-surface font-headline text-base">
             {confirmState?.tone === "danger"
-              ? "Potwierdź usunięcie"
-              : "Potwierdź"}
+              ? t("notes.confirmDeleteTitle")
+              : t("notes.confirmTitle")}
           </Text>
           <Text className="text-on-surface-variant font-body text-sm">
             {confirmState?.message}
@@ -1116,7 +1120,7 @@ export function NotesScreen() {
               className="px-4 py-2 rounded-md"
             >
               <Text className="text-on-surface-variant font-label text-sm">
-                Anuluj
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -1150,8 +1154,8 @@ export function NotesScreen() {
   const linkModal = (
     <LinkCheckboxModal
       visible={!!linkNote}
-      title="Połącz notatkę"
-      searchPlaceholder="Szukaj zadań i wydarzeń…"
+      title={t("notes.linkModalTitle")}
+      searchPlaceholder={t("notes.linkSearchPlaceholder")}
       sections={linkSections}
       onClose={() => setLinkNote(null)}
       onSave={saveLinks}
@@ -1259,6 +1263,7 @@ function RootCrumb({
   onPress: () => void;
   onMoveNoteOut: (noteId: string) => void;
 }) {
+  const t = useT();
   const { ref, over } = useNoteDrop(onMoveNoteOut);
   return (
     <View ref={ref}>
@@ -1269,7 +1274,7 @@ function RootCrumb({
         <Text
           className={`font-headline text-headline-md ${active ? "text-on-surface" : "text-on-surface-variant"}`}
         >
-          Notatki
+          {t("notes.title")}
         </Text>
       </TouchableOpacity>
     </View>
@@ -1375,6 +1380,7 @@ function NoteFileTile({
   onRename: (value: string) => void;
   onCancelRename: () => void;
 }) {
+  const t = useT();
   const noteTheme = getNoteThemeColors(note.noteColor, isDark);
   const preview = note.content.text;
 
@@ -1398,7 +1404,7 @@ function NoteFileTile({
           style={{ color: noteTheme.text, fontSize: 9, lineHeight: 12 }}
           numberOfLines={1}
         >
-          {note.title || "Bez tytułu"}
+          {note.title || t("taskModal.noteFallback")}
         </Text>
         {preview ? (
           <Text
@@ -1427,7 +1433,7 @@ function NoteFileTile({
             className="font-body text-xs text-on-surface text-center w-[120px]"
             numberOfLines={2}
           >
-            {note.title || "Bez tytułu"}
+            {note.title || t("taskModal.noteFallback")}
           </Text>
           {folderLabel ? (
             <Text

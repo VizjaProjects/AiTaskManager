@@ -15,6 +15,7 @@
  *                   { type: "state", state: { bold, italic, ... } }
  *                   { type: "scheduleSelection", text }
  */
+import { tr } from "@/lib/i18n";
 
 export interface EditorBridgeState {
   bold: boolean;
@@ -54,6 +55,11 @@ const EDITOR_THEMES = {
   },
 } as const;
 
+/** Translated label as a quoted JS string literal, safe to embed in the editor script. */
+function jsLabel(key: string): string {
+  return JSON.stringify(tr(key));
+}
+
 export function buildEditorHtml(options: {
   isDark: boolean;
   backgroundColor: string;
@@ -65,7 +71,7 @@ export function buildEditorHtml(options: {
   const {
     isDark,
     backgroundColor,
-    placeholder = "Zacznij pisać…",
+    placeholder = tr("notes.editorPlaceholder"),
     enableScheduleSelection = false,
     fontSize = 17.5,
   } = options;
@@ -694,15 +700,15 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
     /* ---------- Notion-style "/" slash command menu ---------- */
     var slashMenu = document.getElementById("slash-menu");
     var slashItems = [
-      { command: "h1", label: "Nagłówek 1", glyph: "H1" },
-      { command: "h2", label: "Nagłówek 2", glyph: "H2" },
-      { command: "p", label: "Tekst", glyph: "T" },
-      { command: "insertUnorderedList", label: "Lista punktowana", glyph: "•" },
-      { command: "insertOrderedList", label: "Lista numerowana", glyph: "1." },
-      { command: "checklist", label: "Lista zadań", glyph: "☑" },
-      { command: "blockquote", label: "Cytat", glyph: "\u201D" },
-      { command: "code", label: "Kod", glyph: "<>" },
-      { command: "hr", label: "Separator", glyph: "—" }
+      { command: "h1", label: ${jsLabel("notes.slashH1")}, glyph: "H1" },
+      { command: "h2", label: ${jsLabel("notes.slashH2")}, glyph: "H2" },
+      { command: "p", label: ${jsLabel("notes.slashText")}, glyph: "T" },
+      { command: "insertUnorderedList", label: ${jsLabel("notes.slashBulletList")}, glyph: "•" },
+      { command: "insertOrderedList", label: ${jsLabel("notes.slashNumberedList")}, glyph: "1." },
+      { command: "checklist", label: ${jsLabel("notes.slashChecklist")}, glyph: "☑" },
+      { command: "blockquote", label: ${jsLabel("notes.slashQuote")}, glyph: "\u201D" },
+      { command: "code", label: ${jsLabel("notes.slashCode")}, glyph: "<>" },
+      { command: "hr", label: ${jsLabel("notes.slashDivider")}, glyph: "—" }
     ];
     var slashOpen = false;
     var slashNode = null;

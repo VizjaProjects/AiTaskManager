@@ -21,6 +21,7 @@ import {
 } from "@/lib/hooks";
 import { useWorkspaceStore, useAuthStore } from "@/lib/stores";
 import type { WorkspaceVisibility } from "@/lib/types";
+import { useT, useLocale, tr } from "@/lib/i18n";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -47,15 +48,22 @@ function DeleteWorkspaceModal({
   onClose: () => void;
   onConfirm: () => void;
 }) {
+  const t = useT();
   const [confirmText, setConfirmText] = useState("");
   const matches = confirmText.trim() === workspaceName.trim();
 
   const consequences: { icon: keyof typeof MaterialIcons.glyphMap; label: string }[] = [
-    { icon: "checklist", label: "Wszystkie zadania i tablica Kanban" },
-    { icon: "event", label: "Wszystkie wydarzenia w kalendarzu" },
-    { icon: "sticky-note-2", label: "Wszystkie notatki" },
-    { icon: "tune", label: "Kategorie i statusy" },
-    { icon: "group", label: `Dostęp ${memberCount} ${memberCount === 1 ? "członka" : "członków"}` },
+    { icon: "checklist", label: t("wsSettings.delTasks") },
+    { icon: "event", label: t("wsSettings.delEvents") },
+    { icon: "sticky-note-2", label: t("wsSettings.delNotes") },
+    { icon: "tune", label: t("nav.categoriesStatuses") },
+    {
+      icon: "group",
+      label:
+        memberCount === 1
+          ? t("wsSettings.delAccessOne")
+          : t("wsSettings.delAccessMany", { count: memberCount }),
+    },
   ];
 
   return (
@@ -83,7 +91,7 @@ function DeleteWorkspaceModal({
               </View>
               <View className="flex-1 min-w-0">
                 <Text className="text-on-surface font-display text-title-lg">
-                  Usuń workspace
+                  {t("wsSettings.deleteWorkspace")}
                 </Text>
                 <Text
                   className="text-on-surface-variant font-body text-xs"
@@ -96,17 +104,16 @@ function DeleteWorkspaceModal({
 
             <View className="rounded-xl border border-[rgba(192,57,43,0.35)] bg-error-container/60 px-3.5 py-3 gap-1">
               <Text className="text-[#C0392B] font-headline text-sm">
-                Tej operacji nie można cofnąć.
+                {t("wsSettings.deleteIrreversible")}
               </Text>
               <Text className="text-on-surface-variant font-body text-xs leading-4">
-                Workspace zostanie usunięty na stałe wraz ze wszystkimi danymi.
-                Tego nie da się odzyskać.
+                {t("wsSettings.deleteWarning")}
               </Text>
             </View>
 
             <View className="gap-2 mt-1">
               <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
-                Co zostanie trwale usunięte
+                {t("wsSettings.whatWillBeDeleted")}
               </Text>
               {consequences.map((c) => (
                 <View key={c.label} className="flex-row items-center gap-2.5">
@@ -120,7 +127,7 @@ function DeleteWorkspaceModal({
 
             <View className="gap-1.5 mt-1">
               <Text className="text-on-surface-variant font-body text-xs">
-                Aby potwierdzić, wpisz nazwę workspace:{" "}
+                {t("wsSettings.confirmTypeName")}{" "}
                 <Text className="text-on-surface font-headline">
                   {workspaceName}
                 </Text>
@@ -144,7 +151,7 @@ function DeleteWorkspaceModal({
               className="flex-1 items-center justify-center py-3 rounded-md border border-outline-variant bg-surface"
             >
               <Text className="text-on-surface font-headline text-sm">
-                Anuluj
+                {t("common.cancel")}
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -158,7 +165,7 @@ function DeleteWorkspaceModal({
             >
               <MaterialIcons name="delete-outline" size={18} color="#ffffff" />
               <Text className="text-white font-headline text-sm">
-                Usuń trwale
+                {t("wsSettings.deletePermanently")}
               </Text>
             </TouchableOpacity>
           </View>
@@ -184,12 +191,14 @@ function confirmAction(
     return;
   }
   Alert.alert(title, message, [
-    { text: "Anuluj", style: "cancel" },
+    { text: tr("common.cancel"), style: "cancel" },
     { text: confirmLabel, style: "destructive", onPress: onConfirm },
   ]);
 }
 
 export default function WorkspaceSettingsScreen() {
+  const t = useT();
+  const locale = useLocale();
   const { workspaceId } = useLocalSearchParams<{ workspaceId: string }>();
   const router = useRouter();
   const { workspaces } = useWorkspaces();
@@ -219,11 +228,11 @@ export default function WorkspaceSettingsScreen() {
     setResultMsg(null);
     if (!value) return;
     if (!EMAIL_RE.test(value)) {
-      setEmailError("Niepoprawny adres email");
+      setEmailError(t("wsSettings.invalidEmail"));
       return;
     }
     if (pendingEmails.includes(value)) {
-      setEmailError("Ten adres jest już na liście");
+      setEmailError(t("wsSettings.emailAlreadyListed"));
       return;
     }
     setPendingEmails((prev) => [...prev, value]);
@@ -260,7 +269,7 @@ export default function WorkspaceSettingsScreen() {
       setResultMsg(
         err.response?.data?.title ??
           err.message ??
-          "Nie udało się dodać użytkowników",
+          t("wsSettings.addUsersFailed"),
       );
     }
   }
@@ -268,9 +277,9 @@ export default function WorkspaceSettingsScreen() {
   function handleRemoveMember(userId: string, label: string) {
     if (!workspaceId) return;
     confirmAction(
-      "Usuń użytkownika",
-      `Czy na pewno chcesz usunąć ${label} z tego workspace?`,
-      "Usuń",
+      t("wsSettings.removeMemberTitle"),
+      t("wsSettings.removeMemberMsg", { name: label }),
+      t("common.delete"),
       () => removeUsers.mutate({ workspaceId, userIds: [userId] }),
     );
   }
@@ -305,7 +314,7 @@ export default function WorkspaceSettingsScreen() {
           setVisibilityError(
             err.response?.data?.title ??
               err.message ??
-              "Nie udało się zmienić widoczności",
+              t("wsSettings.visibilityChangeFailed"),
           );
         },
       },
@@ -316,7 +325,7 @@ export default function WorkspaceSettingsScreen() {
     return (
       <PageLayout>
         <Text className="text-on-surface-variant p-4">
-          Workspace nie znaleziony.
+          {t("wsSettings.notFound")}
         </Text>
       </PageLayout>
     );
@@ -353,11 +362,13 @@ export default function WorkspaceSettingsScreen() {
                       isPublic ? "text-accent" : "text-text-tertiary"
                     }`}
                   >
-                    {isPublic ? "Publiczny" : "Prywatny"}
+                    {isPublic ? t("ws.public") : t("ws.private")}
                   </Text>
                 </View>
                 <Text className="text-on-surface-variant font-body text-xs">
-                  {isOwner ? "Twój workspace" : "Należysz do tego workspace"}
+                  {isOwner
+                    ? t("wsSettings.yours")
+                    : t("wsSettings.youBelong")}
                 </Text>
               </View>
             </View>
@@ -372,8 +383,8 @@ export default function WorkspaceSettingsScreen() {
                 </Text>
                 <Text className="text-on-surface-variant font-body text-[11px]">
                   {workspace.assignedUsers.length === 1
-                    ? "członek"
-                    : "członków"}
+                    ? t("wsSettings.memberOne")
+                    : t("wsSettings.memberMany")}
                 </Text>
               </View>
             </View>
@@ -381,10 +392,10 @@ export default function WorkspaceSettingsScreen() {
               <MaterialIcons name="event" size={18} color="#6b6965" />
               <View className="flex-1 min-w-0">
                 <Text className="text-on-surface font-headline text-sm">
-                  {new Date(workspace.createdAt).toLocaleDateString("pl-PL")}
+                  {new Date(workspace.createdAt).toLocaleDateString(locale)}
                 </Text>
                 <Text className="text-on-surface-variant font-body text-[11px]">
-                  utworzono
+                  {t("ws.createdWord")}
                 </Text>
               </View>
             </View>
@@ -393,10 +404,10 @@ export default function WorkspaceSettingsScreen() {
 
         <Card className="p-4 gap-3">
           <Text className="text-on-surface font-headline text-sm">
-            Widoczność
+            {t("wsSettings.visibility")}
           </Text>
           <Text className="text-on-surface-variant font-body text-xs -mt-1">
-            Decyduje, czy do workspace można zapraszać inne osoby.
+            {t("wsSettings.visibilityDesc")}
           </Text>
 
           {visibilityError ? (
@@ -412,14 +423,14 @@ export default function WorkspaceSettingsScreen() {
               {
                 key: "Private" as const,
                 icon: "lock" as const,
-                title: "Prywatny",
-                desc: "Tylko Ty masz dostęp. Nie można dodawać członków.",
+                title: t("ws.private"),
+                desc: t("wsSettings.privateDesc"),
               },
               {
                 key: "Public" as const,
                 icon: "group" as const,
-                title: "Publiczny",
-                desc: "Możesz zapraszać i przypisywać członków.",
+                title: t("ws.public"),
+                desc: t("wsSettings.publicDesc"),
               },
             ]
           ).map((opt) => {
@@ -465,17 +476,17 @@ export default function WorkspaceSettingsScreen() {
             <MaterialIcons name="info-outline" size={15} color="#9b9791" />
             <Text className="text-on-surface-variant font-body text-xs leading-4 flex-1">
               {!isOwner
-                ? "Tylko właściciel workspace może zmienić jego widoczność."
+                ? t("wsSettings.visibilityOwnerOnly")
                 : isPublic
-                  ? "Zmiana na prywatny zachowa obecnych członków, ale nie dodasz już nowych osób."
-                  : "Zmiana na publiczny pozwoli zapraszać i przypisywać członków po adresie email."}
+                  ? t("wsSettings.toPrivateHint")
+                  : t("wsSettings.toPublicHint")}
             </Text>
           </View>
 
           <View className="h-px bg-border-subtle my-1" />
 
           <Text className="text-on-surface font-headline text-sm">
-            Domyślny workspace
+            {t("profile.defaultWorkspace")}
           </Text>
 
           <TouchableOpacity
@@ -492,10 +503,12 @@ export default function WorkspaceSettingsScreen() {
             />
             <View className="flex-1">
               <Text className="text-on-surface font-body text-sm">
-                {isDefault ? "Domyślny workspace" : "Ustaw jako domyślny"}
+                {isDefault
+                  ? t("profile.defaultWorkspace")
+                  : t("wsSettings.setAsDefault")}
               </Text>
               <Text className="text-on-surface-variant font-body text-xs">
-                Otwierany po starcie aplikacji.
+                {t("wsSettings.defaultHint")}
               </Text>
             </View>
           </TouchableOpacity>
@@ -503,7 +516,9 @@ export default function WorkspaceSettingsScreen() {
 
         <Card className="p-4 gap-3">
           <Text className="text-on-surface font-headline text-sm">
-            Członkowie ({workspace.assignedUsers.length})
+            {t("wsSettings.members", {
+              count: workspace.assignedUsers.length,
+            })}
           </Text>
 
           <View className="gap-2">
@@ -537,7 +552,7 @@ export default function WorkspaceSettingsScreen() {
                   {isCreator ? (
                     <View className="px-2 py-1 rounded-lg bg-surface-container-low">
                       <Text className="text-on-surface-variant font-label text-xs">
-                        Właściciel
+                        {t("wsSettings.owner")}
                       </Text>
                     </View>
                   ) : isOwner && !isSelf ? (
@@ -562,11 +577,11 @@ export default function WorkspaceSettingsScreen() {
         {isOwner && isPublic ? (
           <Card className="p-4 gap-3">
             <Text className="text-on-surface font-headline text-sm">
-              Dodaj użytkowników po adresie email
+              {t("wsSettings.addByEmail")}
             </Text>
 
             <Input
-              placeholder="np. jan.kowalski@example.com"
+              placeholder={t("wsSettings.emailPlaceholder")}
               value={emailInput}
               onChangeText={(t) => {
                 setEmailInput(t);
@@ -579,7 +594,7 @@ export default function WorkspaceSettingsScreen() {
               returnKeyType="done"
             />
             <Button
-              label="Dodaj do listy"
+              label={t("wsSettings.addToList")}
               variant="secondary"
               icon="add"
               fullWidth
@@ -613,7 +628,7 @@ export default function WorkspaceSettingsScreen() {
             ) : null}
 
             <Button
-              label={`Zaproś (${pendingEmails.length})`}
+              label={t("wsSettings.invite", { count: pendingEmails.length })}
               loading={assignByEmail.isPending}
               disabled={pendingEmails.length === 0}
               fullWidth
@@ -627,12 +642,11 @@ export default function WorkspaceSettingsScreen() {
             <View className="flex-row items-center gap-2">
               <MaterialIcons name="warning-amber" size={18} color="#C0392B" />
               <Text className="text-on-surface font-headline text-sm">
-                Strefa zagrożenia
+                {t("wsSettings.dangerZone")}
               </Text>
             </View>
             <Text className="text-on-surface-variant font-body text-xs leading-4">
-              Usunięcie workspace jest nieodwracalne. Wszystkie zadania,
-              wydarzenia i ustawienia zostaną trwale usunięte.
+              {t("wsSettings.dangerDesc")}
             </Text>
             <TouchableOpacity
               onPress={handleDelete}
@@ -642,7 +656,7 @@ export default function WorkspaceSettingsScreen() {
             >
               <MaterialIcons name="delete-outline" size={18} color="#C0392B" />
               <Text className="text-error font-headline text-sm">
-                Usuń workspace
+                {t("wsSettings.deleteWorkspace")}
               </Text>
             </TouchableOpacity>
           </Card>

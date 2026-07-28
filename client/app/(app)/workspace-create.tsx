@@ -3,24 +3,30 @@ import { useRouter } from "expo-router";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, Input } from "@/components/atoms";
 import { useCreateWorkspace } from "@/lib/hooks";
 import type { WorkspaceVisibility } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
-const schema = z.object({
-  workspaceName: z.string().min(2, "Nazwa musi mieć co najmniej 2 znaki"),
-});
-
-type FormData = z.infer<typeof schema>;
+type FormData = { workspaceName: string };
 
 export default function WorkspaceCreateScreen() {
+  const t = useT();
   const router = useRouter();
   const createWorkspace = useCreateWorkspace();
   const [error, setError] = useState<string | null>(null);
   const [visibility, setVisibility] = useState<WorkspaceVisibility>("Private");
+
+  const schema = useMemo(
+    () =>
+      z.object({
+        workspaceName: z.string().min(2, t("wsCreate.nameTooShort")),
+      }),
+    [t],
+  );
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -37,7 +43,9 @@ export default function WorkspaceCreateScreen() {
       router.replace("/(app)/dashboard" as never);
     } catch (e: unknown) {
       const err = e as { response?: { data?: { title?: string } }; message?: string };
-      setError(err.response?.data?.title ?? err.message ?? "Nie udało się utworzyć workspace");
+      setError(
+        err.response?.data?.title ?? err.message ?? t("wsCreate.failed"),
+      );
     }
   }
 
@@ -46,10 +54,10 @@ export default function WorkspaceCreateScreen() {
       <View className="max-w-md w-full self-center gap-6">
         <View className="gap-2">
           <Text className="text-on-surface font-headline text-2xl">
-            Utwórz workspace
+            {t("wsCreate.title")}
           </Text>
           <Text className="text-on-surface-variant font-body text-sm">
-            Workspace grupuje zadania, kalendarz i ustawienia Twojego zespołu.
+            {t("wsCreate.subtitle")}
           </Text>
         </View>
 
@@ -66,8 +74,8 @@ export default function WorkspaceCreateScreen() {
           name="workspaceName"
           render={({ field: { onChange, value } }) => (
             <Input
-              label="Nazwa workspace"
-              placeholder="np. Mój zespół"
+              label={t("wsCreate.nameLabel")}
+              placeholder={t("wsCreate.namePlaceholder")}
               value={value}
               onChangeText={onChange}
               error={errors.workspaceName?.message}
@@ -77,21 +85,21 @@ export default function WorkspaceCreateScreen() {
 
         <View className="gap-2">
           <Text className="text-on-surface font-label text-body-md">
-            Widoczność
+            {t("wsSettings.visibility")}
           </Text>
           {(
             [
               {
                 key: "Private" as const,
                 icon: "lock" as const,
-                title: "Prywatny",
-                desc: "Tylko Ty. Nie można przypisać innych osób.",
+                title: t("ws.private"),
+                desc: t("wsCreate.privateDesc"),
               },
               {
                 key: "Public" as const,
                 icon: "group" as const,
-                title: "Publiczny",
-                desc: "Możesz zapraszać i przypisywać członków.",
+                title: t("ws.public"),
+                desc: t("wsSettings.publicDesc"),
               },
             ]
           ).map((opt) => {
@@ -132,7 +140,7 @@ export default function WorkspaceCreateScreen() {
         </View>
 
         <Button
-          label="Utwórz workspace"
+          label={t("wsCreate.title")}
           fullWidth
           loading={createWorkspace.isPending}
           onPress={handleSubmit(onSubmit)}

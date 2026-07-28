@@ -17,6 +17,7 @@
 import type { CalendarEvent } from "@/lib/types";
 import { parseApiDateTime } from "@/lib/utils";
 import { resolveEventColor, eventColorWithAlpha } from "@/lib/utils/eventColors";
+import { tr, getLocale, useLanguageStore } from "@/lib/i18n";
 
 export type PrintTheme = "classic" | "mono" | "grid";
 export type PrintViewType = "day" | "week" | "month";
@@ -62,7 +63,19 @@ const THEMES: Record<PrintTheme, ThemeTokens> = {
   },
 };
 
-const WEEK_DAYS_SHORT = ["Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd"];
+const WEEK_DAY_KEYS = [
+  "cal.wdMon",
+  "cal.wdTue",
+  "cal.wdWed",
+  "cal.wdThu",
+  "cal.wdFri",
+  "cal.wdSat",
+  "cal.wdSun",
+];
+
+function weekDaysShort(): string[] {
+  return WEEK_DAY_KEYS.map((k) => tr(k));
+}
 
 const HOUR_H = 42; // px per hour in the printed time grid
 const GUTTER = 52; // px width of the left hour-label column
@@ -247,10 +260,11 @@ function renderTimeGrid(
   maxHour = Math.min(24, Math.max(maxHour, minHour + 4));
   const totalH = (maxHour - minHour) * HOUR_H;
 
+  const weekDays = weekDaysShort();
   const dayHead = days
     .map((day) => {
       const dow = day.getDay();
-      const dayLabel = WEEK_DAYS_SHORT[dow === 0 ? 6 : dow - 1];
+      const dayLabel = weekDays[dow === 0 ? 6 : dow - 1];
       return `<div class="dhead${isToday(day) ? " today" : ""}">
         <span class="dhead-dow">${dayLabel}</span>
         <span class="dhead-date">${day.getDate()}.${day.getMonth() + 1}</span>
@@ -307,7 +321,7 @@ function renderTimeGrid(
     ${
       hasAllDay
         ? `<div class="row allday">
-        <div class="gutter lbl">cały dzień</div>
+        <div class="gutter lbl">${escapeHtml(tr("cal.allDay").toLowerCase())}</div>
         <div class="cells">${allDayRow}</div>
       </div>`
         : ""
@@ -355,7 +369,9 @@ function renderMonthGrid(
     selectedDate.getFullYear(),
     selectedDate.getMonth(),
   );
-  const head = WEEK_DAYS_SHORT.map((d) => `<th>${d}</th>`).join("");
+  const head = weekDaysShort()
+    .map((d) => `<th>${escapeHtml(d)}</th>`)
+    .join("");
   const rows = Array.from({ length: 6 }, (_, w) => {
     const cells = monthDays
       .slice(w * 7, w * 7 + 7)
@@ -405,7 +421,7 @@ export function buildCalendarPrintHtml(opts: {
 }): string {
   const tokens = THEMES[opts.theme];
   const events = opts.events ?? [];
-  const printedAt = new Date().toLocaleString("pl-PL");
+  const printedAt = new Date().toLocaleString(getLocale());
   const landscape = opts.viewType !== "day";
 
   const content =
@@ -494,12 +510,12 @@ export function buildCalendarPrintHtml(opts: {
   `;
 
   return `<!DOCTYPE html>
-<html lang="pl"><head><meta charset="utf-8" />
+<html lang="${useLanguageStore.getState().lang}"><head><meta charset="utf-8" />
 <title>${escapeHtml(opts.title)}</title>
 <style>${css}</style></head>
 <body>
   <h1>${escapeHtml(opts.title)}</h1>
-  <div class="subtitle">Wydrukowano: ${escapeHtml(printedAt)}</div>
+  <div class="subtitle">${escapeHtml(tr("cal.printedAt"))}: ${escapeHtml(printedAt)}</div>
   ${content}
 </body></html>`;
 }

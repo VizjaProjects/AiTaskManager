@@ -2,8 +2,13 @@ import { View, Text, TouchableOpacity } from "react-native";
 import type { Note } from "@/lib/types";
 import { getNoteThemeColors } from "@/lib/noteTheme";
 import { useThemeStore } from "@/lib/stores";
+import { useT, useLocale } from "@/lib/i18n";
 
-function relativeDate(iso: string): string {
+function relativeDate(
+  iso: string,
+  locale: string,
+  t: (key: string) => string,
+): string {
   const d = new Date(iso);
   const now = new Date();
   const startOfDay = (x: Date) =>
@@ -11,10 +16,10 @@ function relativeDate(iso: string): string {
   const diffDays = Math.round(
     (startOfDay(now) - startOfDay(d)) / (1000 * 60 * 60 * 24),
   );
-  if (diffDays <= 0) return "Dziś";
-  if (diffDays === 1) return "Wczoraj";
-  if (diffDays < 7) return d.toLocaleDateString("pl-PL", { weekday: "long" });
-  return d.toLocaleDateString("pl-PL", { day: "2-digit", month: "short" });
+  if (diffDays <= 0) return t("common.today");
+  if (diffDays === 1) return t("common.yesterday");
+  if (diffDays < 7) return d.toLocaleDateString(locale, { weekday: "long" });
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "short" });
 }
 
 interface NoteCardProps {
@@ -24,6 +29,8 @@ interface NoteCardProps {
 }
 
 export function NoteCard({ note, active, onPress }: NoteCardProps) {
+  const t = useT();
+  const locale = useLocale();
   const isDark = useThemeStore((state) => state.mode) === "dark";
   const noteTheme = getNoteThemeColors(note.noteColor, isDark);
   const preview = note.content.text;
@@ -48,7 +55,7 @@ export function NoteCard({ note, active, onPress }: NoteCardProps) {
         style={{ color: noteTheme.text }}
         numberOfLines={2}
       >
-        {note.title || "Bez tytułu"}
+        {note.title || t("taskModal.noteFallback")}
       </Text>
       {preview ? (
         <Text
@@ -63,14 +70,14 @@ export function NoteCard({ note, active, onPress }: NoteCardProps) {
           className="font-body text-sm italic"
           style={{ color: noteTheme.mutedText }}
         >
-          Pusta notatka
+          {t("notes.emptyNote")}
         </Text>
       )}
       <Text
         className="font-label text-xs mt-1"
         style={{ color: noteTheme.mutedText }}
       >
-        {relativeDate(note.updatedAt)}
+        {relativeDate(note.updatedAt, locale, t)}
       </Text>
     </TouchableOpacity>
   );
