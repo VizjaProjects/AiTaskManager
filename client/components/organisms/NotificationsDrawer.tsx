@@ -12,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Card, EmptyState } from "../atoms";
 import { useTasks, useEvents, useAiProposals } from "@/lib/hooks";
 import { isOverdue, isDueToday, formatDateTime } from "@/lib/utils";
+import { useT } from "@/lib/i18n";
 
 interface Notification {
   id: string;
@@ -33,6 +34,7 @@ interface NotificationsDrawerProps {
  * whether there is anything to show (the dot must not light up when empty).
  */
 export function useNotificationItems(): Notification[] {
+  const t = useT();
   const { data: tasks } = useTasks();
   const { data: events } = useEvents();
   const { data: proposals } = useAiProposals();
@@ -40,24 +42,24 @@ export function useNotificationItems(): Notification[] {
   return useMemo<Notification[]>(() => {
     const notifs: Notification[] = [];
 
-    (tasks ?? []).forEach((t) => {
-      if (isOverdue(t.dueDateTime)) {
+    (tasks ?? []).forEach((task) => {
+      if (isOverdue(task.dueDateTime)) {
         notifs.push({
-          id: `overdue-${t.taskId}`,
+          id: `overdue-${task.taskId}`,
           type: "overdue",
-          title: "Zadanie przeterminowane",
-          description: t.title,
-          timestamp: t.dueDateTime!,
+          title: t("notif.overdue"),
+          description: task.title,
+          timestamp: task.dueDateTime!,
           icon: "warning",
           color: "#C0392B",
         });
-      } else if (isDueToday(t.dueDateTime)) {
+      } else if (isDueToday(task.dueDateTime)) {
         notifs.push({
-          id: `today-${t.taskId}`,
+          id: `today-${task.taskId}`,
           type: "due_today",
-          title: "Zadanie na dziś",
-          description: t.title,
-          timestamp: t.dueDateTime!,
+          title: t("notif.dueToday"),
+          description: task.title,
+          timestamp: task.dueDateTime!,
           icon: "schedule",
           color: "#B7770D",
         });
@@ -72,7 +74,7 @@ export function useNotificationItems(): Notification[] {
         notifs.push({
           id: `event-${e.eventId}`,
           type: "event_soon",
-          title: "Nadchodzące wydarzenie",
+          title: t("notif.eventSoon"),
           description: e.title,
           timestamp: e.startDateTime,
           icon: "event",
@@ -86,8 +88,8 @@ export function useNotificationItems(): Notification[] {
       notifs.push({
         id: `ai-${p.taskId ?? i}`,
         type: "ai_proposal",
-        title: "Propozycja AI",
-        description: p.title ?? "Nowa propozycja zadania od AI",
+        title: t("notif.aiProposal"),
+        description: p.title ?? t("notif.aiProposalDesc"),
         timestamp: new Date().toISOString(),
         icon: "auto-awesome",
         color: "#006b58",
@@ -98,13 +100,14 @@ export function useNotificationItems(): Notification[] {
       (a, b) =>
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
     );
-  }, [tasks, events, proposals]);
+  }, [tasks, events, proposals, t]);
 }
 
 export function NotificationsDrawer({
   visible,
   onClose,
 }: NotificationsDrawerProps) {
+  const t = useT();
   const { width } = useWindowDimensions();
   const notifications = useNotificationItems();
 
@@ -127,7 +130,7 @@ export function NotificationsDrawer({
           {/* Header */}
           <View className="flex-row items-center justify-between px-5 py-4 border-b border-outline-variant/30">
             <Text className="text-on-surface font-headline text-lg">
-              Powiadomienia
+              {t("notif.title")}
             </Text>
             <TouchableOpacity className="p-2 rounded-full" onPress={onClose}>
               <MaterialIcons name="close" size={22} color="#6b6965" />
@@ -138,8 +141,8 @@ export function NotificationsDrawer({
           {notifications.length === 0 ? (
             <View className="flex-1 justify-center px-5">
               <EmptyState
-                title="Brak powiadomień"
-                description="Jesteś na bieżąco — nie masz żadnych nowych powiadomień"
+                title={t("notif.empty")}
+                description={t("notif.emptyDesc")}
               />
             </View>
           ) : (

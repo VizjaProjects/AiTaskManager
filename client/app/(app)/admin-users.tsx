@@ -17,13 +17,15 @@ import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
 import type { AdminUser } from "@/lib/types";
 import { useAdminUsers } from "@/lib/hooks";
+import { useT } from "@/lib/i18n";
 
 function PlanPill({ user }: { user: AdminUser }) {
+  const t = useT();
   if (!user.planName) {
     return (
       <View className="px-2.5 py-0.5 rounded-full bg-outline/15 self-start">
         <Text className="font-label text-[10px] uppercase tracking-wider text-text-tertiary">
-          No plan
+          {t("admin.noPlan")}
         </Text>
       </View>
     );
@@ -61,7 +63,14 @@ function UsageCell({ used, limit }: { used: number; limit: number }) {
 /* ───── Desktop table ───── */
 
 function TableHeader() {
-  const cols = ["User", "Plan", "AI / day", "Public WS", "Private WS"];
+  const t = useT();
+  const cols = [
+    t("admin.colUser"),
+    t("admin.colPlan"),
+    t("admin.colAiPerDay"),
+    t("admin.colPublicWs"),
+    t("admin.colPrivateWs"),
+  ];
   const widths = [3, 2, 1.4, 1.4, 1.4];
   return (
     <View className="flex-row items-center px-4 py-3 border-b border-outline-variant">
@@ -125,6 +134,7 @@ function TableRow({ user, last }: { user: AdminUser; last: boolean }) {
 /* ───── Mobile card ───── */
 
 function UserCard({ user }: { user: AdminUser }) {
+  const t = useT();
   return (
     <Card variant="elevated" className="gap-3">
       <View className="flex-row items-center gap-3">
@@ -149,21 +159,21 @@ function UserCard({ user }: { user: AdminUser }) {
       <View className="gap-3">
         <PlanUsageBar
           icon="auto-awesome"
-          label="AI calls / day"
+          label={t("admin.aiCallsPerDay")}
           used={user.aiTaskUsage}
           limit={user.aiTaskLimit}
           compact
         />
         <PlanUsageBar
           icon="public"
-          label="Public workspaces"
+          label={t("llm.publicWorkspaces")}
           used={user.publicWorkspaceUsage}
           limit={user.publicWorkspaceLimit}
           compact
         />
         <PlanUsageBar
           icon="lock"
-          label="Private workspaces"
+          label={t("llm.privateWorkspaces")}
           used={user.privateWorkspaceUsage}
           limit={user.privateWorkspaceLimit}
           compact
@@ -174,6 +184,7 @@ function UserCard({ user }: { user: AdminUser }) {
 }
 
 export default function AdminUsersScreen() {
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 1024;
@@ -210,22 +221,22 @@ export default function AdminUsersScreen() {
       >
         <View>
           <Text className="text-on-surface font-display text-headline-lg">
-            Users
+            {t("admin.users")}
           </Text>
           <Text className="text-on-surface-variant font-body text-body-lg mt-1">
-            Every account, its plan, and current usage.
+            {t("admin.usersSubtitle")}
           </Text>
         </View>
 
         {isLoading ? (
           <Text className="text-on-surface-variant font-body text-sm py-8 text-center">
-            Loading...
+            {t("common.loading")}
           </Text>
         ) : sorted.length === 0 ? (
           <Card variant="elevated" className="items-center py-10 gap-2">
             <MaterialIcons name="group" size={28} color="#9b9791" />
             <Text className="text-on-surface font-headline text-title-lg">
-              No users found
+              {t("admin.noUsers")}
             </Text>
           </Card>
         ) : isWide ? (

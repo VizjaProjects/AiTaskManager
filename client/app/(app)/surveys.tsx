@@ -21,6 +21,7 @@ import {
   useEditResponse,
 } from "@/lib/hooks";
 import type { UserResponseResultItem } from "@/lib/api/surveys";
+import { useT } from "@/lib/i18n";
 
 /* ─── Completed survey card — expandable answers with inline edit ─── */
 function CompletedSurveyCard({
@@ -36,6 +37,7 @@ function CompletedSurveyCard({
   responses: UserResponseResultItem[];
   total: number;
 }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -91,7 +93,7 @@ function CompletedSurveyCard({
           <View className="flex-row items-center gap-2">
             <View className="bg-green-500/15 px-2.5 py-1 rounded-full">
               <Text className="text-green-600 font-label text-[10px] font-bold">
-                Wypełniona
+                {t("surveys.completed")}
               </Text>
             </View>
             <MaterialIcons
@@ -108,7 +110,7 @@ function CompletedSurveyCard({
             <View className="h-full bg-green-500 rounded-full w-full" />
           </View>
           <Text className="text-on-surface-variant font-label text-[10px] mt-1.5">
-            {total} z {total} pytań · 100%
+            {t("surveys.progress", { answered: total, total, pct: 100 })}
           </Text>
         </View>
       </TouchableOpacity>
@@ -119,7 +121,7 @@ function CompletedSurveyCard({
           <View className="flex-row items-center gap-2 mb-3">
             <MaterialIcons name="quiz" size={16} color="#5b4ee0" />
             <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest font-bold">
-              Twoje odpowiedzi
+              {t("surveys.yourAnswers")}
             </Text>
           </View>
           <View className="gap-3">
@@ -172,7 +174,7 @@ function CompletedSurveyCard({
                             color="#5b4ee0"
                           />
                           <Text className="text-primary font-label text-[10px] font-bold uppercase">
-                            Zapisz
+                            {t("common.save")}
                           </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -185,7 +187,7 @@ function CompletedSurveyCard({
                             color="#6b6965"
                           />
                           <Text className="text-on-surface-variant font-label text-[10px] uppercase">
-                            Anuluj
+                            {t("common.cancel")}
                           </Text>
                         </TouchableOpacity>
                       </View>
@@ -219,6 +221,7 @@ function InProgressSurveyCard({
   answered: number;
   total: number;
 }) {
+  const t = useT();
   const router = useRouter();
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
@@ -257,11 +260,13 @@ function InProgressSurveyCard({
             <View className="bg-primary/10 px-2.5 py-1 rounded-full">
               <Text className="text-primary font-label text-[10px] font-bold">
                 {total - answered}{" "}
-                {total - answered === 1
-                  ? "pytanie"
-                  : total - answered < 5
-                    ? "pytania"
-                    : "pytań"}
+                {t(
+                  total - answered === 1
+                    ? "surveys.questionsOne"
+                    : total - answered < 5
+                      ? "surveys.questionsFew"
+                      : "surveys.questionsMany",
+                )}
               </Text>
             </View>
           ) : null}
@@ -277,7 +282,7 @@ function InProgressSurveyCard({
               />
             </View>
             <Text className="text-on-surface-variant font-label text-[10px] mt-1.5">
-              {answered} z {total} pytań · {pct}%
+              {t("surveys.progress", { answered, total, pct })}
             </Text>
           </View>
         )}
@@ -286,7 +291,7 @@ function InProgressSurveyCard({
         <View className="flex-row items-center gap-1.5 mt-3">
           <MaterialIcons name="arrow-forward" size={14} color="#5b4ee0" />
           <Text className="text-primary font-label text-xs">
-            {answered > 0 ? "Kontynuuj ankietę" : "Rozpocznij ankietę"}
+            {t(answered > 0 ? "surveys.continue" : "surveys.start")}
           </Text>
         </View>
       </Card>
@@ -349,6 +354,7 @@ function SurveyCardWrapper({
 
 /* ─── Main screen ─── */
 export default function SurveysScreen() {
+  const t = useT();
   const {
     data: surveys,
     isLoading,
@@ -391,8 +397,8 @@ export default function SurveysScreen() {
       <PageLayout>
         <EmptyState
           icon="assignment"
-          title="Brak aktywnych ankiet"
-          description="Nie ma jeszcze żadnych ankiet do wypełnienia."
+          title={t("surveys.emptyTitle")}
+          description={t("surveys.emptyDesc")}
         />
       </PageLayout>
     );
@@ -411,7 +417,7 @@ export default function SurveysScreen() {
         <View className="flex-row gap-4 mb-6">
           <View className="flex-1">
             <StatCard
-              label="Dostępne"
+              label={t("surveys.statAvailable")}
               value={surveys.length}
               icon="assignment"
               iconColor="#5b4ee0"
@@ -419,7 +425,7 @@ export default function SurveysScreen() {
           </View>
           <View className="flex-1">
             <StatCard
-              label="Ukończone"
+              label={t("surveys.statCompleted")}
               value={completedCount}
               icon="check-circle"
               iconColor="#16a34a"
@@ -427,7 +433,7 @@ export default function SurveysScreen() {
           </View>
           <View className="flex-1">
             <StatCard
-              label="Odpowiedzi"
+              label={t("surveys.statResponses")}
               value={allResponses.length}
               icon="question-answer"
               iconColor="#B7770D"

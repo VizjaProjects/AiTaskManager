@@ -13,8 +13,10 @@ import { StatCard } from "@/components/molecules/StatCard";
 import { EmptyState } from "@/components/atoms/EmptyState";
 import { useMyResponses, useActiveSurveys } from "@/lib/hooks";
 import type { UserResponseResultItem } from "@/lib/api/surveys";
+import { useT } from "@/lib/i18n";
 
 export default function MyResponsesScreen() {
+  const t = useT();
   const { data: responses, isLoading, refetch } = useMyResponses();
   const { data: surveys } = useActiveSurveys();
 
@@ -63,8 +65,8 @@ export default function MyResponsesScreen() {
       <PageLayout>
         <EmptyState
           icon="quiz"
-          title="Brak odpowiedzi"
-          description="Nie wypełniłeś jeszcze żadnej ankiety."
+          title={t("myResp.emptyTitle")}
+          description={t("myResp.emptyDesc")}
         />
       </PageLayout>
     );
@@ -83,7 +85,7 @@ export default function MyResponsesScreen() {
         <View className="flex-row gap-4 mb-6">
           <View className="flex-1">
             <StatCard
-              label="Ankiety"
+              label={t("myResp.statSurveys")}
               value={surveyCount}
               icon="assignment-turned-in"
               iconColor="#5b4ee0"
@@ -91,7 +93,7 @@ export default function MyResponsesScreen() {
           </View>
           <View className="flex-1">
             <StatCard
-              label="Odpowiedzi"
+              label={t("surveys.statResponses")}
               value={answerCount}
               icon="question-answer"
               iconColor="#16a34a"
@@ -103,7 +105,7 @@ export default function MyResponsesScreen() {
         <View className="gap-5">
           {grouped.map(({ surveyId, description, items }) => {
             const survey = surveys?.find((s) => s.surveyId === surveyId);
-            const title = survey?.title ?? "Ankieta";
+            const title = survey?.title ?? t("myResp.surveyFallback");
 
             return (
               <Card key={surveyId} variant="glass">
@@ -129,7 +131,11 @@ export default function MyResponsesScreen() {
                   <View className="bg-primary/10 px-2.5 py-1 rounded-full">
                     <Text className="text-primary font-label text-[10px] font-bold">
                       {items.length}{" "}
-                      {items.length === 1 ? "odpowiedź" : "odpowiedzi"}
+                      {t(
+                        items.length === 1
+                          ? "myResp.answerOne"
+                          : "myResp.answerMany",
+                      )}
                     </Text>
                   </View>
                 </View>
@@ -143,7 +149,10 @@ export default function MyResponsesScreen() {
                     />
                   </View>
                   <Text className="text-on-surface-variant font-label text-[10px] mt-1.5">
-                    Wypełniono {items.length} z {items.length} pytań
+                    {t("myResp.filled", {
+                      count: items.length,
+                      total: items.length,
+                    })}
                   </Text>
                 </View>
 

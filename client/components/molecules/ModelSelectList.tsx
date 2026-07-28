@@ -4,6 +4,7 @@ import { MinimalSelectDropdown } from "./MinimalSelectDropdown";
 import { getShortModelName } from "@/lib/utils/llmSettings";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 interface ModelSelectListProps {
   provider: string;
@@ -19,6 +20,7 @@ export function ModelSelectList({
   onChange,
   disabled = false,
 }: ModelSelectListProps) {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode === "dark");
   const ui = getUiTokens(isDark);
   const options = useMemo(
@@ -53,11 +55,11 @@ export function ModelSelectList({
 
   return (
     <MinimalSelectDropdown
-      label="Model"
+      label={t("llm.model")}
       value={models.includes(value) ? value : ""}
       options={options}
       onChange={onChange}
-      placeholder="Choose model..."
+      placeholder={t("llm.chooseModel")}
       searchable
       disabled={disabled}
       pinSelected

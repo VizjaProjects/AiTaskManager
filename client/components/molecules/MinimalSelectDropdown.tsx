@@ -13,6 +13,7 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE: TextStyle | undefined =
   Platform.OS === "web"
@@ -53,11 +54,12 @@ export function MinimalSelectDropdown({
   value,
   options,
   onChange,
-  placeholder = "Select...",
+  placeholder,
   searchable = false,
   disabled = false,
   pinSelected = true,
 }: MinimalSelectDropdownProps) {
+  const t = useT();
   const isDark = useThemeStore((s) => s.mode === "dark");
   const ui = getUiTokens(isDark);
   const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
@@ -112,7 +114,7 @@ export function MinimalSelectDropdown({
           style={{ color: selected ? inkColor : ui.textMuted }}
           numberOfLines={1}
         >
-          {selected?.label ?? placeholder}
+          {selected?.label ?? placeholder ?? t("select.placeholder")}
         </Text>
         <MaterialIcons name="expand-more" size={18} color={ui.textMuted} />
       </TouchableOpacity>
@@ -175,7 +177,7 @@ export function MinimalSelectDropdown({
                     <TextInput
                       value={query}
                       onChangeText={setQuery}
-                      placeholder="Search..."
+                      placeholder={t("common.search")}
                       placeholderTextColor={ui.textMuted}
                       className="flex-1 px-2 text-on-surface font-body text-sm"
                       style={[NO_OUTLINE, { borderWidth: 0 }]}
@@ -196,7 +198,7 @@ export function MinimalSelectDropdown({
                       className="font-body text-sm"
                       style={{ color: ui.textMuted }}
                     >
-                      No options found
+                      {t("select.noOptions")}
                     </Text>
                   </View>
                 ) : (

@@ -122,7 +122,7 @@ export default function RegisterScreen() {
                   <Input
                     label={t("auth.fullName")}
                     icon="person"
-                    placeholder="Jan Kowalski"
+                    placeholder={t("auth.namePlaceholder")}
                     autoCapitalize="words"
                     value={value}
                     onChangeText={onChange}
@@ -137,7 +137,7 @@ export default function RegisterScreen() {
                   <Input
                     label={t("auth.emailLabel")}
                     icon="email"
-                    placeholder="jan@example.com"
+                    placeholder={t("auth.emailPlaceholder")}
                     keyboardType="email-address"
                     autoCapitalize="none"
                     value={value}

@@ -226,7 +226,7 @@ export function buildEditorHtml(options: {
 </head>
 <body>
 <div id="editor" contenteditable="true" data-placeholder="${placeholder.replace(/"/g, "&quot;")}"></div>
-${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zaplanuj z AI</button>' : ""}
+${enableScheduleSelection ? `<button id="schedule-selection" type="button">${tr("notes.scheduleWithAi")}</button>` : ""}
 <div id="slash-menu" role="listbox"></div>
 <div id="img-resize-handle" contenteditable="false"></div>
 <script>
@@ -742,7 +742,7 @@ ${enableScheduleSelection ? '<button id="schedule-selection" type="button">Zapla
       });
       if (slashFiltered.length === 0) { hideSlash(); return; }
       if (slashActiveIndex >= slashFiltered.length) slashActiveIndex = 0;
-      var html = '<div class="slash-section">Bloki</div>';
+      var html = '<div class="slash-section">' + ${jsLabel("notes.slashSectionBlocks")} + '</div>';
       for (var i = 0; i < slashFiltered.length; i++) {
         var it = slashFiltered[i];
         var cls = "slash-item" + (i === slashActiveIndex ? " active" : "");

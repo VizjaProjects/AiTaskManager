@@ -2,8 +2,10 @@ import { View, Text, ActivityIndicator } from "react-native";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/stores";
+import { useT, tr } from "@/lib/i18n";
 
 export default function OAuthCallbackScreen() {
+  const t = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{
     token?: string;
@@ -20,14 +22,14 @@ export default function OAuthCallbackScreen() {
   useEffect(() => {
     async function completeLogin() {
       if (params.error) {
-        setError("Logowanie Google nie powiodło się. Spróbuj ponownie.");
+        setError(tr("oauth.failed"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
         return;
       }
 
       const { token, refreshToken, userId, email, fullName, role } = params;
       if (!token || !userId || !email || !fullName || !role) {
-        setError("Brak danych logowania w odpowiedzi OAuth.");
+        setError(tr("oauth.missingData"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
         return;
       }
@@ -43,7 +45,7 @@ export default function OAuthCallbackScreen() {
         );
         router.replace("/(app)/tasks");
       } catch {
-        setError("Nie udało się zakończyć logowania Google.");
+        setError(tr("oauth.completeFailed"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
       }
     }
@@ -59,7 +61,7 @@ export default function OAuthCallbackScreen() {
         <>
           <ActivityIndicator size="large" />
           <Text className="text-on-surface-variant font-body text-center">
-            Kończenie logowania Google…
+            {t("oauth.finishing")}
           </Text>
         </>
       )}

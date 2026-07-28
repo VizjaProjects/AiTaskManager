@@ -26,6 +26,7 @@ import {
 import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
 import { normalizeSurveyId } from "@/lib/surveys/utils";
+import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -51,8 +52,9 @@ function ProgressSidebar({
   savedQuestionIds: Set<string>;
   onSelectStep: (idx: number) => void;
 }) {
+  const t = useT();
   const stepLabels = questions.map((q, idx) => {
-    const fallback = `Question ${idx + 1}`;
+    const fallback = t("onboarding.questionN", { n: idx + 1 });
     const text = q.questionText?.trim() || fallback;
     return text.length > 28 ? `${text.slice(0, 28)}…` : text;
   });
@@ -60,7 +62,7 @@ function ProgressSidebar({
   return (
     <View className="w-72 shrink-0 rounded-2xl bg-surface-container-low border border-outline-variant p-5 gap-4">
       <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest">
-        Your progress
+        {t("onboarding.progress")}
       </Text>
 
       {stepLabels.map((label, idx) => {
@@ -113,7 +115,7 @@ function ProgressSidebar({
       <View className="flex-row items-start gap-2 pt-4 border-t border-outline-variant">
         <MaterialIcons name="verified-user" size={16} color="#9b9791" />
         <Text className="text-xs text-on-surface-variant flex-1 leading-4">
-          Your answers are encrypted and used only to personalize your workspace.
+          {t("onboarding.privacyNote")}
         </Text>
       </View>
     </View>
@@ -138,6 +140,7 @@ function ErrorView({
   message: string;
   onContinue: () => void;
 }) {
+  const t = useT();
   return (
     <View className="flex-1 items-center justify-center bg-background px-6">
       <MaterialIcons name="error-outline" size={48} color="#C0392B" />
@@ -145,13 +148,14 @@ function ErrorView({
         {message}
       </Text>
       <View className="mt-6">
-        <Button label="Go to app" onPress={onContinue} />
+        <Button label={t("onboarding.goToApp")} onPress={onContinue} />
       </View>
     </View>
   );
 }
 
 export default function SurveyOnboardingScreen() {
+  const t = useT();
   const router = useRouter();
   const { surveyId: paramSurveyId } = useLocalSearchParams<{
     surveyId?: string;
@@ -423,45 +427,45 @@ export default function SurveyOnboardingScreen() {
   }, []);
 
   if (user?.role === Role.ADMIN || (!gateLoading && !hasPendingSurvey)) {
-    return <LoadingView message="Redirecting to app…" />;
+    return <LoadingView message={t("onboarding.redirecting")} />;
   }
 
   if (isInitialLoading) {
-    return <LoadingView message="Loading survey…" />;
+    return <LoadingView message={t("onboarding.loadingSurvey")} />;
   }
 
   if (surveysError || responsesError) {
     return (
       <ErrorView
-        message="Could not connect to the server. Check that the backend is running."
+        message={t("onboarding.serverUnreachable")}
         onContinue={goToApp}
       />
     );
   }
 
   if (!surveys?.length) {
-    return <LoadingView message="No surveys — redirecting…" />;
+    return <LoadingView message={t("onboarding.noSurveys")} />;
   }
 
   if (questionsError) {
     return (
       <ErrorView
-        message="Could not load survey questions."
+        message={t("onboarding.questionsFailed")}
         onContinue={goToApp}
       />
     );
   }
 
   if (!questions.length) {
-    return <LoadingView message="No questions — redirecting…" />;
+    return <LoadingView message={t("onboarding.noQuestions")} />;
   }
 
   if (!currentQuestion) {
-    return <LoadingView message="Redirecting to app…" />;
+    return <LoadingView message={t("onboarding.redirecting")} />;
   }
 
   const sectionLabel =
-    survey?.title?.trim() || `Question ${safeStep + 1}`;
+    survey?.title?.trim() || t("onboarding.questionN", { n: safeStep + 1 });
 
   const questionContent = (
     <View className="flex-1">
@@ -486,7 +490,7 @@ export default function SurveyOnboardingScreen() {
 
       <TextInput
         className="rounded-xl p-4 min-h-[140px] text-base font-body text-on-surface border border-outline-variant bg-surface-container-lowest"
-        placeholder="Type your answer..."
+        placeholder={t("onboarding.answerPlaceholder")}
         placeholderTextColor="#9b9791"
         multiline
         textAlignVertical="top"
@@ -511,7 +515,7 @@ export default function SurveyOnboardingScreen() {
         >
           <MaterialIcons name="arrow-back" size={18} color="#9b9791" />
           <Text className="text-on-surface-variant font-headline text-sm">
-            Back
+            {t("onboarding.back")}
           </Text>
         </TouchableOpacity>
       ) : (
@@ -519,7 +523,9 @@ export default function SurveyOnboardingScreen() {
       )}
 
       <Button
-        label={safeStep === totalSteps - 1 ? "Finish" : "Next"}
+        label={t(
+          safeStep === totalSteps - 1 ? "onboarding.finish" : "onboarding.next",
+        )}
         loading={submitting}
         disabled={!canProceed}
         onPress={handleNext}

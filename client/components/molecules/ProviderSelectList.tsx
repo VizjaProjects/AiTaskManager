@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { ProviderBrandIcon } from "../atoms/ProviderBrandIcon";
 import { MinimalSelectDropdown } from "./MinimalSelectDropdown";
 import { CUSTOM_CONNECTION, formatProviderLabel } from "@/lib/utils/llmSettings";
+import { useT } from "@/lib/i18n";
 
 interface ProviderSelectListProps {
   providers: string[];
@@ -16,6 +17,7 @@ export function ProviderSelectList({
   onChange,
   includeCustom = true,
 }: ProviderSelectListProps) {
+  const t = useT();
   const options = useMemo(() => {
     const items = [
       ...providers.map((p) => ({
@@ -27,22 +29,22 @@ export function ProviderSelectList({
         ? [
             {
               value: CUSTOM_CONNECTION,
-              label: "Custom endpoint",
+              label: t("llm.customEndpoint"),
               icon: <ProviderBrandIcon provider={null} size="sm" />,
             },
           ]
         : []),
     ];
     return items;
-  }, [providers, includeCustom]);
+  }, [providers, includeCustom, t]);
 
   return (
     <MinimalSelectDropdown
-      label="Provider"
+      label={t("llm.provider")}
       value={value}
       options={options}
       onChange={onChange}
-      placeholder="Choose provider..."
+      placeholder={t("llm.chooseProvider")}
       searchable={options.length > 6}
       pinSelected
     />

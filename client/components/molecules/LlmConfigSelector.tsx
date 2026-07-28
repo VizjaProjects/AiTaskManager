@@ -6,12 +6,14 @@ import { OptionPicker } from "./OptionPicker";
 import { useLlmSettings } from "@/lib/hooks";
 import { useLlmSettingsSelectionStore } from "@/lib/stores";
 import { getLlmSettingsLabel } from "@/lib/utils/llmSettings";
+import { useT } from "@/lib/i18n";
 
 interface LlmConfigSelectorProps {
   compact?: boolean;
 }
 
 export function LlmConfigSelector({ compact = false }: LlmConfigSelectorProps) {
+  const t = useT();
   const router = useRouter();
   const { data: settings = [], isLoading } = useLlmSettings();
   const activeId = useLlmSettingsSelectionStore((s) => s.activeLlmSettingsId);
@@ -60,10 +62,10 @@ export function LlmConfigSelector({ compact = false }: LlmConfigSelectorProps) {
           </View>
           <View className="flex-1 gap-1">
             <Text className="text-on-surface font-headline text-title-lg">
-              No AI configuration yet
+              {t("llm.noConfigTitle")}
             </Text>
             <Text className="text-on-surface-variant font-body text-sm">
-              Add your provider and API key in Settings before generating a plan.
+              {t("llm.noConfigDesc")}
             </Text>
           </View>
         </View>
@@ -73,7 +75,7 @@ export function LlmConfigSelector({ compact = false }: LlmConfigSelectorProps) {
         >
           <MaterialIcons name="settings" size={16} color="#f0f0f0" />
           <Text className="text-on-action font-headline text-sm">
-            Configure AI
+            {t("llm.configureAi")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -90,24 +92,26 @@ export function LlmConfigSelector({ compact = false }: LlmConfigSelectorProps) {
         <View className="flex-row items-center gap-2 flex-1">
           <MaterialIcons name="tune" size={18} color="#9b9791" />
           <Text className="text-on-surface font-headline text-sm">
-            Active AI configuration
+            {t("llm.activeConfiguration")}
           </Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push("/(app)/profile?tab=ai")}
           className="flex-row items-center gap-1"
         >
-          <Text className="text-primary font-headline text-xs">Manage</Text>
+          <Text className="text-primary font-headline text-xs">
+            {t("llm.manage")}
+          </Text>
           <MaterialIcons name="open-in-new" size={14} color="#111111" />
         </TouchableOpacity>
       </View>
 
       <OptionPicker
-        label="Configuration"
+        label={t("llm.configuration")}
         value={activeId}
         options={options}
         onChange={setActiveId}
-        placeholder="Choose configuration..."
+        placeholder={t("llm.chooseConfiguration")}
         searchable={options.length > 6}
       />
     </View>

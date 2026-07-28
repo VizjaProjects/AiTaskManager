@@ -36,6 +36,7 @@ import {
 } from "@/lib/utils/llmSettings";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
+import { useT, tr } from "@/lib/i18n";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -79,12 +80,13 @@ function ApiKeyField({
   onChangeText: (v: string) => void;
   placeholder: string;
 }) {
+  const t = useT();
   const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const [hidden, setHidden] = useState(true);
 
   return (
     <View className="gap-2.5">
-      <SectionLabel>API key</SectionLabel>
+      <SectionLabel>{t("llm.apiKey")}</SectionLabel>
       <View
         className="flex-row items-center px-4 rounded-full bg-surface-container-lowest border border-outline-variant"
         style={{
@@ -110,7 +112,7 @@ function ApiKeyField({
         </TouchableOpacity>
       </View>
       <Text className="font-body text-xs" style={{ color: ui.textMuted }}>
-        Stored securely. Never shown again after saving.
+        {t("llm.apiKeyHint")}
       </Text>
     </View>
   );
@@ -125,6 +127,7 @@ function ConfigFormModal({
   editing: LlmSettings | null;
   onClose: () => void;
 }) {
+  const t = useT();
   const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: providers = [] } = useLlmProviders();
   const { data: models = [] } = useLlmModels();
@@ -216,7 +219,7 @@ function ConfigFormModal({
       };
     } else {
       if (!form.provider || !form.model) {
-        setError("Select provider and model.");
+        setError(t("llm.selectProviderAndModel"));
         return;
       }
       payload = {
@@ -254,7 +257,7 @@ function ConfigFormModal({
         >
           <View className="flex-row items-center justify-between px-5 py-4">
             <Text className="text-on-surface font-headline text-title-lg">
-              {editing ? "Edit model" : "Add model"}
+              {t(editing ? "llm.editModel" : "llm.addModel")}
             </Text>
             <TouchableOpacity onPress={onClose} hitSlop={8}>
               <MaterialIcons name="close" size={22} color={ui.textMuted} />
@@ -289,7 +292,7 @@ function ConfigFormModal({
             ) : (
               <View className="gap-4">
                 <View>
-                  <SectionLabel>Endpoint URL</SectionLabel>
+                  <SectionLabel>{t("llm.endpointUrl")}</SectionLabel>
                   <Input
                     value={form.customUrl}
                     onChangeText={(v) => patchForm({ customUrl: v })}
@@ -298,7 +301,7 @@ function ConfigFormModal({
                   />
                 </View>
                 <View>
-                  <SectionLabel>Model name</SectionLabel>
+                  <SectionLabel>{t("llm.modelName")}</SectionLabel>
                   <Input
                     value={form.customModel}
                     onChangeText={(v) => patchForm({ customModel: v })}
@@ -312,7 +315,9 @@ function ConfigFormModal({
             <ApiKeyField
               value={form.apiKey}
               onChangeText={(v) => patchForm({ apiKey: v })}
-              placeholder={editing ? "Re-enter key" : "sk-..."}
+              placeholder={t(
+                editing ? "llm.apiKeyReenter" : "llm.apiKeyPlaceholder",
+              )}
             />
 
             {error ? (
@@ -324,9 +329,13 @@ function ConfigFormModal({
             ) : null}
 
             <View className="flex-row gap-3 justify-end pt-1">
-              <Button variant="outline" label="Cancel" onPress={onClose} />
               <Button
-                label={editing ? "Save" : "Add"}
+                variant="outline"
+                label={t("common.cancel")}
+                onPress={onClose}
+              />
+              <Button
+                label={t(editing ? "common.save" : "llm.add")}
                 loading={saving}
                 onPress={handleSave}
               />
@@ -385,6 +394,7 @@ function ConfigRow({
 }
 
 function PlanUsageCard() {
+  const t = useT();
   const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: plan, isLoading } = useUserPlan();
 
@@ -395,13 +405,13 @@ function PlanUsageCard() {
       <View className="flex-row items-center justify-between mb-4">
         <View>
           <Text className="text-on-surface font-headline text-title-lg">
-            Your plan
+            {t("llm.yourPlan")}
           </Text>
           <Text
             className="font-body text-body-md mt-1"
             style={{ color: ui.textSecondary }}
           >
-            Usage resets daily for AI calls.
+            {t("llm.planHint")}
           </Text>
         </View>
         <View className="px-3 py-1 rounded-full bg-accent/10">
@@ -413,19 +423,19 @@ function PlanUsageCard() {
       <View className="gap-4">
         <PlanUsageBar
           icon="auto-awesome"
-          label="AI calls today"
+          label={t("aiLimit.callsToday")}
           used={plan.aiTaskUsage}
           limit={plan.aiTaskLimit}
         />
         <PlanUsageBar
           icon="public"
-          label="Public workspaces"
+          label={t("llm.publicWorkspaces")}
           used={plan.publicWorkspaceUsage}
           limit={plan.publicWorkspaceLimit}
         />
         <PlanUsageBar
           icon="lock"
-          label="Private workspaces"
+          label={t("llm.privateWorkspaces")}
           used={plan.privateWorkspaceUsage}
           limit={plan.privateWorkspaceLimit}
         />
@@ -435,6 +445,7 @@ function PlanUsageCard() {
 }
 
 export function LlmSettingsPanel() {
+  const t = useT();
   const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const { data: settings = [], isLoading } = useLlmSettings();
   const deleteSettings = useDeleteLlmSettings();
@@ -462,12 +473,16 @@ export function LlmSettingsPanel() {
       }
     };
     if (Platform.OS === "web") {
-      if (window.confirm("Remove this model configuration?")) void run();
+      if (window.confirm(tr("llm.removeConfirm"))) void run();
       return;
     }
-    Alert.alert("Remove model", "Remove this configuration?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => void run() },
+    Alert.alert(tr("llm.removeTitle"), tr("llm.removeConfirm"), [
+      { text: tr("common.cancel"), style: "cancel" },
+      {
+        text: tr("llm.remove"),
+        style: "destructive",
+        onPress: () => void run(),
+      },
     ]);
   }
 
@@ -476,13 +491,13 @@ export function LlmSettingsPanel() {
       <PlanUsageCard />
       <View>
         <Text className="text-on-surface font-headline text-title-lg">
-          Your models
+          {t("llm.yourModels")}
         </Text>
         <Text
           className="font-body text-body-md mt-1"
           style={{ color: ui.textSecondary }}
         >
-          Add an API key for the provider you want to use in AI Task.
+          {t("llm.yourModelsHint")}
         </Text>
       </View>
 
@@ -500,7 +515,7 @@ export function LlmSettingsPanel() {
             className="font-body text-sm py-6 text-center"
             style={{ color: ui.textMuted }}
           >
-            Loading...
+            {t("common.loading")}
           </Text>
         ) : settings.length === 0 ? (
           <View className="py-8 items-center gap-3">
@@ -511,7 +526,7 @@ export function LlmSettingsPanel() {
               className="font-body text-sm text-center"
               style={{ color: ui.textSecondary }}
             >
-              No models configured yet.
+              {t("llm.noModels")}
             </Text>
           </View>
         ) : (
@@ -542,7 +557,7 @@ export function LlmSettingsPanel() {
               className="font-body text-sm"
               style={{ color: ui.textSecondary }}
             >
-              Add model
+              {t("llm.addModel")}
             </Text>
           </TouchableOpacity>
         </View>

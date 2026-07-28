@@ -88,7 +88,7 @@ export default function ForgotPasswordScreen() {
                     <Input
                       label={t("auth.emailLabel")}
                       icon="email"
-                      placeholder="you@example.com"
+                      placeholder={t("auth.emailPlaceholder")}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       value={value}

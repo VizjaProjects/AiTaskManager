@@ -9,6 +9,7 @@ import {
   Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -29,11 +30,12 @@ export function OptionPicker({
   value,
   options,
   onChange,
-  placeholder = "Select...",
+  placeholder,
   searchable = false,
   disabled = false,
   error,
 }: OptionPickerProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -64,7 +66,7 @@ export function OptionPicker({
           }`}
           numberOfLines={1}
         >
-          {selected?.label ?? placeholder}
+          {selected?.label ?? placeholder ?? t("select.placeholder")}
         </Text>
         <MaterialIcons name="expand-more" size={22} color="#6b6965" />
       </TouchableOpacity>
@@ -89,7 +91,7 @@ export function OptionPicker({
                 <TextInput
                   value={query}
                   onChangeText={setQuery}
-                  placeholder="Search..."
+                  placeholder={t("common.search")}
                   placeholderTextColor="#9b9791"
                   className="rounded-xl h-11 px-4 border border-outline-variant bg-surface-container-low text-on-surface font-body text-sm"
                   style={NO_OUTLINE}
@@ -101,7 +103,7 @@ export function OptionPicker({
               {filtered.length === 0 ? (
                 <View className="px-5 py-8 items-center">
                   <Text className="text-on-surface-variant font-body text-sm">
-                    No options found
+                    {t("select.noOptions")}
                   </Text>
                 </View>
               ) : (

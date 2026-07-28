@@ -1,38 +1,47 @@
 import { z } from "zod";
 import { TaskPriority, TaskSource, ProposedBy, EventStatus } from "../types";
+import { tr } from "../i18n";
+
+/**
+ * Lazy message so these module-level schemas pick up the active language:
+ * a plain string would be frozen at import time.
+ */
+function m(key: string) {
+  return { error: () => tr(key) };
+}
 
 const passwordSchema = z
   .string()
-  .min(8, "Hasło musi mieć min. 8 znaków")
-  .regex(/[a-z]/, "Hasło musi zawierać małą literę")
-  .regex(/[A-Z]/, "Hasło musi zawierać wielką literę")
-  .regex(/[0-9]/, "Hasło musi zawierać cyfrę")
-  .regex(/[^A-Za-z0-9]/, "Hasło musi zawierać znak specjalny");
+  .min(8, m("valid.passwordMin"))
+  .regex(/[a-z]/, m("valid.passwordLower"))
+  .regex(/[A-Z]/, m("valid.passwordUpper"))
+  .regex(/[0-9]/, m("valid.passwordDigit"))
+  .regex(/[^A-Za-z0-9]/, m("valid.passwordSpecial"));
 
 export const loginSchema = z.object({
-  email: z.string().email("Podaj poprawny adres email"),
-  password: z.string().min(1, "Hasło jest wymagane"),
+  email: z.string().email(m("valid.emailInvalid")),
+  password: z.string().min(1, m("valid.passwordRequired")),
 });
 
 export const registerSchema = z
   .object({
-    fullName: z.string().min(2, "Imię i nazwisko musi mieć min. 2 znaki"),
-    email: z.string().email("Podaj poprawny adres email"),
+    fullName: z.string().min(2, m("valid.fullNameMin")),
+    email: z.string().email(m("valid.emailInvalid")),
     rawPassword: passwordSchema,
     confirmPassword: z.string(),
     termsAccepted: z.boolean(),
   })
   .refine((data) => data.rawPassword === data.confirmPassword, {
-    message: "Hasła nie są takie same",
+    ...m("valid.passwordsMismatch"),
     path: ["confirmPassword"],
   })
   .refine((data) => data.termsAccepted === true, {
-    message: "Zaakceptuj regulamin i politykę prywatności",
+    ...m("valid.acceptTerms"),
     path: ["termsAccepted"],
   });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Podaj poprawny adres email"),
+  email: z.string().email(m("valid.emailInvalid")),
 });
 
 export const setupPasswordSchema = z
@@ -41,7 +50,7 @@ export const setupPasswordSchema = z
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Hasła nie są takie same",
+    ...m("valid.passwordsMismatch"),
     path: ["confirmPassword"],
   });
 
@@ -53,65 +62,65 @@ export const resetPasswordSchema = z
     confirmPassword: z.string(),
   })
   .refine((data) => data.rawPassword === data.confirmPassword, {
-    message: "Hasła nie są takie same",
+    ...m("valid.passwordsMismatch"),
     path: ["confirmPassword"],
   });
 
 export const changePasswordSchema = z
   .object({
-    oldPassword: z.string().min(1, "Stare hasło jest wymagane"),
+    oldPassword: z.string().min(1, m("valid.oldPasswordRequired")),
     newPassword: passwordSchema,
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "Hasła nie są takie same",
+    ...m("valid.passwordsMismatch"),
     path: ["confirmPassword"],
   });
 
 export const changeFullNameSchema = z.object({
-  newFullName: z.string().min(2, "Imię i nazwisko musi mieć min. 2 znaki"),
+  newFullName: z.string().min(2, m("valid.fullNameMin")),
 });
 
 export const createTaskSchema = z.object({
-  title: z.string().min(1, "Tytuł jest wymagany"),
+  title: z.string().min(1, m("valid.titleRequired")),
   description: z.string().optional(),
   priority: z.nativeEnum(TaskPriority),
   categoryId: z.string().uuid().optional().nullable(),
   estimatedDuration: z.number().int().positive().optional(),
   dueDateTime: z.string().optional(),
-  statusId: z.string().uuid("Wybierz status"),
+  statusId: z.string().uuid(m("valid.statusRequired")),
   source: z.nativeEnum(TaskSource),
 });
 
 export const createCategorySchema = z.object({
-  name: z.string().min(1, "Nazwa jest wymagana"),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Podaj kolor w formacie HEX"),
+  name: z.string().min(1, m("valid.nameRequired")),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, m("valid.colorHex")),
 });
 
 export const createTaskStatusSchema = z.object({
-  name: z.string().min(1, "Nazwa jest wymagana"),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, "Podaj kolor w formacie HEX"),
+  name: z.string().min(1, m("valid.nameRequired")),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, m("valid.colorHex")),
 });
 
 export const createEventSchema = z.object({
-  title: z.string().min(1, "Tytuł jest wymagany"),
+  title: z.string().min(1, m("valid.titleRequired")),
   taskId: z.string().uuid().optional().nullable(),
-  startDateTime: z.string().min(1, "Data rozpoczęcia jest wymagana"),
-  endDateTime: z.string().min(1, "Data zakończenia jest wymagana"),
+  startDateTime: z.string().min(1, m("valid.startRequired")),
+  endDateTime: z.string().min(1, m("valid.endRequired")),
   allDay: z.boolean(),
   proposedBy: z.nativeEnum(ProposedBy),
 });
 
 export const editEventSchema = z.object({
-  title: z.string().min(1, "Tytuł jest wymagany"),
-  startDateTime: z.string().min(1, "Data rozpoczęcia jest wymagana"),
-  endDateTime: z.string().min(1, "Data zakończenia jest wymagana"),
+  title: z.string().min(1, m("valid.titleRequired")),
+  startDateTime: z.string().min(1, m("valid.startRequired")),
+  endDateTime: z.string().min(1, m("valid.endRequired")),
   allDay: z.boolean(),
   status: z.nativeEnum(EventStatus),
 });
 
 export const generateAiPlanSchema = z.object({
-  text: z.string().min(10, "Opis musi mieć min. 10 znaków"),
+  text: z.string().min(10, m("valid.aiTextMin")),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;

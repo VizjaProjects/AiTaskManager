@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/atoms/Skeleton";
 import { EmptyState } from "@/components/atoms/EmptyState";
 import { useAuthStore } from "@/lib/stores";
 import { Role } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 import {
   useSurveys,
   useSurveyQuestions,
@@ -23,6 +24,7 @@ function TextResponseItem({
   answer: string;
   index: number;
 }) {
+  const t = useT();
   return (
     <View className="border-l-4 border-primary/30 pl-4 py-3 mb-3">
       <View className="flex-row items-center gap-2 mb-1">
@@ -32,7 +34,7 @@ function TextResponseItem({
           </Text>
         </View>
         <Text className="text-on-surface-variant font-label text-xs">
-          Response
+          {t("results.response")}
         </Text>
       </View>
       <Text className="text-on-surface font-body text-sm leading-relaxed">
@@ -43,6 +45,7 @@ function TextResponseItem({
 }
 
 export default function AdminSurveyResponsesPage() {
+  const t = useT();
   const router = useRouter();
   const { surveyId } = useLocalSearchParams<{ surveyId: string }>();
   const user = useAuthStore((s) => s.user);
@@ -104,7 +107,7 @@ export default function AdminSurveyResponsesPage() {
             <MaterialIcons name="arrow-back" size={20} color="#464555" />
           </TouchableOpacity>
           <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-            Survey Results
+            {t("results.title")}
           </Text>
         </View>
 
@@ -124,10 +127,10 @@ export default function AdminSurveyResponsesPage() {
           </View>
         ) : !survey ? (
           <EmptyState
-            title="Survey not found"
-            description="This survey may have been removed."
+            title={t("results.notFound")}
+            description={t("results.notFoundDesc")}
             primaryAction={{
-              label: "Back to Surveys",
+              label: t("results.backToSurveys"),
               onPress: () => router.push("/(app)/admin-surveys" as never),
             }}
           />
@@ -147,14 +150,14 @@ export default function AdminSurveyResponsesPage() {
             <View className="flex-row gap-4 mb-8">
               <View className="flex-1">
                 <StatCard
-                  label="Total Responses"
+                  label={t("adminSurveys.statTotalResponses")}
                   value={totalResponseEntries}
                   icon="forum"
                 />
               </View>
               <View className="flex-1">
                 <StatCard
-                  label="Questions"
+                  label={t("adminSurveys.questions")}
                   value={questions?.length ?? 0}
                   icon="help-outline"
                   iconColor="#006b58"
@@ -162,8 +165,12 @@ export default function AdminSurveyResponsesPage() {
               </View>
               <View className="flex-1">
                 <StatCard
-                  label="Status"
-                  value={survey.isVisible ? "Active" : "Draft"}
+                  label={t("adminSurveys.colStatus")}
+                  value={t(
+                    survey.isVisible
+                      ? "results.statusActive"
+                      : "adminSurveys.draft",
+                  )}
                   icon={survey.isVisible ? "visibility" : "visibility-off"}
                   iconColor={survey.isVisible ? "#006b58" : "#6b6965"}
                 />
@@ -173,10 +180,10 @@ export default function AdminSurveyResponsesPage() {
             {/* Questions & Responses */}
             {!questions || questions.length === 0 ? (
               <EmptyState
-                title="No questions"
-                description="This survey doesn't have any questions yet."
+                title={t("results.noQuestions")}
+                description={t("results.noQuestionsDesc")}
                 primaryAction={{
-                  label: "Edit Survey",
+                  label: t("results.editSurvey"),
                   onPress: () =>
                     router.push(
                       `/(app)/admin-survey-builder?surveyId=${surveyId}` as never,
@@ -193,7 +200,7 @@ export default function AdminSurveyResponsesPage() {
                       <View className="flex-row items-center gap-3 mb-4">
                         <View className="px-3 py-1 rounded-full bg-primary-fixed/30">
                           <Text className="font-label text-[10px] uppercase tracking-widest font-bold text-primary">
-                            Open Text
+                            {t("results.openText")}
                           </Text>
                         </View>
                       </View>
@@ -205,7 +212,7 @@ export default function AdminSurveyResponsesPage() {
                       <View>
                         {answers.length === 0 ? (
                           <Text className="text-on-surface-variant font-body text-sm italic">
-                            No responses yet.
+                            {t("results.noResponses")}
                           </Text>
                         ) : (
                           answers.map((a, aIdx) => (

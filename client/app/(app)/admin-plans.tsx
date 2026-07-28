@@ -19,8 +19,10 @@ import { Role } from "@/lib/types";
 import type { Plan } from "@/lib/types";
 import { useAdminPlans, useCreatePlan } from "@/lib/hooks";
 import { getUiTokens } from "@/lib/utils/uiTokens";
+import { useT } from "@/lib/i18n";
 
 function PlanTile({ plan }: { plan: Plan }) {
+  const t = useT();
   return (
     <Card variant="elevated" className="flex-1 min-w-[260px] gap-4">
       <View className="flex-row items-center justify-between">
@@ -37,7 +39,7 @@ function PlanTile({ plan }: { plan: Plan }) {
               plan.isActive ? "text-[#2E7D52]" : "text-text-tertiary"
             }`}
           >
-            {plan.isActive ? "Active" : "Inactive"}
+            {t(plan.isActive ? "admin.planActive" : "admin.planInactive")}
           </Text>
         </View>
       </View>
@@ -45,19 +47,19 @@ function PlanTile({ plan }: { plan: Plan }) {
       <View className="gap-3">
         <LimitRow
           icon="auto-awesome"
-          label="AI calls / day"
+          label={t("admin.aiCallsPerDay")}
           value={plan.aiTaskLimit}
         />
         <View className="h-px bg-border-subtle" />
         <LimitRow
           icon="public"
-          label="Public workspaces"
+          label={t("llm.publicWorkspaces")}
           value={plan.publicWorkspaceLimit}
         />
         <View className="h-px bg-border-subtle" />
         <LimitRow
           icon="lock"
-          label="Private workspaces"
+          label={t("llm.privateWorkspaces")}
           value={plan.privateWorkspaceLimit}
         />
       </View>
@@ -105,6 +107,7 @@ const EMPTY_FORM: FormState = {
 };
 
 function CreatePlanForm({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const createPlan = useCreatePlan();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [error, setError] = useState<string | null>(null);
@@ -125,9 +128,9 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
     const pub = toInt(form.publicWorkspaceLimit);
     const priv = toInt(form.privateWorkspaceLimit);
 
-    if (!form.planName.trim()) return setError("Plan name is required.");
+    if (!form.planName.trim()) return setError(t("admin.planNameRequired"));
     if (ai === null || pub === null || priv === null)
-      return setError("All limits must be non-negative numbers.");
+      return setError(t("admin.limitsNonNegative"));
 
     try {
       await createPlan.mutateAsync({
@@ -142,7 +145,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
     } catch (e: unknown) {
       const message =
         (e as { response?: { data?: { detail?: string } } })?.response?.data
-          ?.detail ?? "Could not create the plan.";
+          ?.detail ?? t("admin.createPlanFailed");
       setError(message);
     }
   }
@@ -150,7 +153,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
   return (
     <Card variant="elevated" className="gap-4">
       <Text className="text-on-surface font-headline text-title-lg">
-        New plan
+        {t("admin.newPlan")}
       </Text>
 
       {error ? (
@@ -162,8 +165,8 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
       ) : null}
 
       <Input
-        label="Plan name"
-        placeholder="e.g. Pro"
+        label={t("admin.planName")}
+        placeholder={t("admin.planNamePlaceholder")}
         value={form.planName}
         onChangeText={(v) => set("planName", v)}
       />
@@ -171,7 +174,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
       <View className="flex-row gap-3 flex-wrap">
         <View className="flex-1 min-w-[140px]">
           <Input
-            label="AI calls / day"
+            label={t("admin.aiCallsPerDay")}
             placeholder="100"
             keyboardType="numeric"
             value={form.aiTaskLimit}
@@ -180,7 +183,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
         </View>
         <View className="flex-1 min-w-[140px]">
           <Input
-            label="Public workspaces"
+            label={t("llm.publicWorkspaces")}
             placeholder="5"
             keyboardType="numeric"
             value={form.publicWorkspaceLimit}
@@ -189,7 +192,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
         </View>
         <View className="flex-1 min-w-[140px]">
           <Input
-            label="Private workspaces"
+            label={t("llm.privateWorkspaces")}
             placeholder="3"
             keyboardType="numeric"
             value={form.privateWorkspaceLimit}
@@ -215,15 +218,19 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
           )}
         </View>
         <Text className="font-body text-body-md text-on-surface">
-          Active (available to users)
+          {t("admin.planActiveCheckbox")}
         </Text>
       </TouchableOpacity>
 
       <View className="flex-row gap-3 justify-end">
-        <Button variant="outline" label="Cancel" onPress={onClose} />
+        <Button
+          variant="outline"
+          label={t("common.cancel")}
+          onPress={onClose}
+        />
         <Button
           variant="primary"
-          label="Create plan"
+          label={t("admin.createPlan")}
           loading={createPlan.isPending}
           onPress={submit}
         />
@@ -233,6 +240,7 @@ function CreatePlanForm({ onClose }: { onClose: () => void }) {
 }
 
 export default function AdminPlansScreen() {
+  const t = useT();
   const user = useAuthStore((s) => s.user);
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 768;
@@ -271,17 +279,17 @@ export default function AdminPlansScreen() {
         <View className="flex-row items-start justify-between gap-4">
           <View className="flex-1">
             <Text className="text-on-surface font-display text-headline-lg">
-              Plans
+              {t("admin.plans")}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-lg mt-1">
-              Subscription tiers and their limits.
+              {t("admin.plansSubtitle")}
             </Text>
           </View>
           {!showForm && (
             <Button
               variant="primary"
               icon="add"
-              label="New plan"
+              label={t("admin.newPlan")}
               onPress={() => setShowForm(true)}
             />
           )}
@@ -291,16 +299,16 @@ export default function AdminPlansScreen() {
 
         {isLoading ? (
           <Text className="text-on-surface-variant font-body text-sm py-8 text-center">
-            Loading...
+            {t("common.loading")}
           </Text>
         ) : sorted.length === 0 ? (
           <Card variant="elevated" className="items-center py-10 gap-2">
             <MaterialIcons name="workspaces" size={28} color="#9b9791" />
             <Text className="text-on-surface font-headline text-title-lg">
-              No plans yet
+              {t("admin.noPlans")}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md text-center">
-              Create the first plan to start assigning limits.
+              {t("admin.noPlansDesc")}
             </Text>
           </Card>
         ) : (

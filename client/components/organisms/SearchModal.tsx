@@ -18,6 +18,7 @@ import { getCategoryDisplayColor, formatDateTime } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
 import type { Category } from "@/lib/types";
 import type { TextInput } from "react-native";
+import { useT } from "@/lib/i18n";
 
 interface SearchModalProps {
   visible: boolean;
@@ -25,6 +26,7 @@ interface SearchModalProps {
 }
 
 export function SearchModal({ visible, onClose }: SearchModalProps) {
+  const t = useT();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const isDark = useThemeStore((s) => s.mode) === "dark";
@@ -109,7 +111,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
               <SearchBar
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Szukaj zadań, wydarzeń..."
+                placeholder={t("search.placeholder")}
               />
             </View>
             <TouchableOpacity className="p-2 rounded-full" onPress={onClose}>
@@ -129,15 +131,15 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
           >
             {query.trim() && !hasResults && (
               <EmptyState
-                title="Brak wyników"
-                description={`Nie znaleziono wyników dla "${query}"`}
+                title={t("search.noResults")}
+                description={t("search.noResultsFor", { query })}
               />
             )}
 
             {results.tasks.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Zadania ({results.tasks.length})
+                  {t("search.tasksCount", { count: results.tasks.length })}
                 </Text>
                 {results.tasks.map((task) => (
                   <TaskCard
@@ -157,7 +159,7 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
             {results.events.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Wydarzenia ({results.events.length})
+                  {t("search.eventsCount", { count: results.events.length })}
                 </Text>
                 {results.events.map((event) => (
                   <TouchableOpacity
@@ -190,7 +192,9 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
             {results.categories.length > 0 && (
               <View className="gap-3">
                 <Text className="text-on-surface font-headline text-base">
-                  Kategorie ({results.categories.length})
+                  {t("search.categoriesCount", {
+                    count: results.categories.length,
+                  })}
                 </Text>
                 {results.categories.map((cat) => (
                   <View

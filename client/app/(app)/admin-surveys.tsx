@@ -27,12 +27,14 @@ import {
   useUserResponses,
 } from "@/lib/hooks";
 import type { Survey } from "@/lib/types";
+import { useT } from "@/lib/i18n";
 
 cssInterop(LinearGradient, { className: "style" });
 
 type FilterTab = "all" | "published" | "drafts";
 
 function StatusBadge({ isVisible }: { isVisible: boolean }) {
+  const t = useT();
   return (
     <View
       className={`self-start px-2.5 py-1 rounded-full ${
@@ -44,7 +46,7 @@ function StatusBadge({ isVisible }: { isVisible: boolean }) {
           isVisible ? "text-[#2E7D52]" : "text-text-tertiary"
         }`}
       >
-        {isVisible ? "Published" : "Draft"}
+        {t(isVisible ? "adminSurveys.published" : "adminSurveys.draft")}
       </Text>
     </View>
   );
@@ -67,6 +69,7 @@ function SurveyCard({
   onToggleVisibility: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -96,7 +99,11 @@ function SurveyCard({
               color="#464555"
             />
             <Text className="text-on-surface-variant font-body text-sm">
-              {survey.isVisible ? "Unpublish" : "Publish"}
+              {t(
+                survey.isVisible
+                  ? "adminSurveys.unpublish"
+                  : "adminSurveys.publish",
+              )}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -108,7 +115,7 @@ function SurveyCard({
           >
             <MaterialIcons name="edit" size={18} color="#464555" />
             <Text className="text-on-surface-variant font-body text-sm">
-              Edit
+              {t("common.edit")}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -119,7 +126,9 @@ function SurveyCard({
             }}
           >
             <MaterialIcons name="delete" size={18} color="#ba1a1a" />
-            <Text className="text-error font-body text-sm">Delete</Text>
+            <Text className="text-error font-body text-sm">
+              {t("common.delete")}
+            </Text>
           </TouchableOpacity>
         </View>
       )}
@@ -137,7 +146,7 @@ function SurveyCard({
       <View className="flex-row gap-3 mb-4">
         <View className="flex-1 bg-surface-container-low rounded-xl px-4 py-3">
           <Text className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">
-            Responses
+            {t("adminSurveys.colResponses")}
           </Text>
           <Text className="text-on-surface font-headline text-xl font-bold">
             {responseCount}
@@ -145,7 +154,7 @@ function SurveyCard({
         </View>
         <View className="flex-1 bg-surface-container-low rounded-xl px-4 py-3">
           <Text className="font-label text-[10px] uppercase tracking-widest text-on-surface-variant mb-1">
-            Questions
+            {t("adminSurveys.questions")}
           </Text>
           <Text className="text-on-surface font-headline text-xl font-bold">
             {questionCount}
@@ -160,13 +169,13 @@ function SurveyCard({
         >
           <MaterialIcons name="edit" size={16} color="#5b4ee0" />
           <Text className="text-primary font-label text-sm font-bold uppercase tracking-wider">
-            Edit
+            {t("common.edit")}
           </Text>
         </TouchableOpacity>
         <View className="flex-1" />
         <Button
           variant="primary"
-          label="View Results"
+          label={t("adminSurveys.viewResults")}
           onPress={onViewResults}
         />
       </View>
@@ -175,6 +184,7 @@ function SurveyCard({
 }
 
 function CreateSurveyCard({ onPress }: { onPress: () => void }) {
+  const t = useT();
   return (
     <TouchableOpacity onPress={onPress}>
       <View className="rounded-2xl border-2 border-dashed border-outline-variant/30 p-6 items-center justify-center min-h-[280px]">
@@ -182,10 +192,10 @@ function CreateSurveyCard({ onPress }: { onPress: () => void }) {
           <MaterialIcons name="add-circle-outline" size={28} color="#5b4ee0" />
         </View>
         <Text className="text-on-surface font-headline text-lg font-bold mb-1">
-          Create New Survey
+          {t("adminSurveys.createNew")}
         </Text>
         <Text className="text-on-surface-variant font-body text-sm text-center">
-          Build from scratch or use a template.
+          {t("adminSurveys.createNewDesc")}
         </Text>
       </View>
     </TouchableOpacity>
@@ -219,6 +229,7 @@ function SurveyCardSkeleton() {
 }
 
 export default function AdminSurveysPage() {
+  const t = useT();
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const { data: surveys, isLoading, refetch } = useSurveys();
@@ -268,13 +279,13 @@ export default function AdminSurveysPage() {
   const totalSurveys = surveys?.length ?? 0;
 
   const tabs: { key: FilterTab; label: string }[] = [
-    { key: "all", label: "All" },
-    { key: "published", label: "Published" },
-    { key: "drafts", label: "Drafts" },
+    { key: "all", label: t("adminSurveys.tabAll") },
+    { key: "published", label: t("adminSurveys.tabPublished") },
+    { key: "drafts", label: t("adminSurveys.tabDrafts") },
   ];
 
   return (
-    <PageLayout searchPlaceholder="Search surveys...">
+    <PageLayout searchPlaceholder={t("adminSurveys.searchPlaceholder")}>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -286,15 +297,15 @@ export default function AdminSurveysPage() {
         <View className="flex-row items-start justify-between mb-8">
           <View>
             <Text className="text-on-surface font-display text-headline-lg mb-1">
-              Survey Management
+              {t("adminSurveys.title")}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md">
-              Manage and analyze your feedback campaigns
+              {t("adminSurveys.subtitle")}
             </Text>
           </View>
           <Button
             variant="primary"
-            label="Create Survey"
+            label={t("adminSurveys.create")}
             onPress={() => router.push("/(app)/admin-survey-builder" as never)}
           />
         </View>
@@ -303,14 +314,14 @@ export default function AdminSurveysPage() {
         <View className="flex-row gap-4 mb-8">
           <View className="flex-1">
             <StatCard
-              label="Total Responses"
+              label={t("adminSurveys.statTotalResponses")}
               value={totalResponses}
               icon="forum"
             />
           </View>
           <View className="flex-1">
             <StatCard
-              label="Active Surveys"
+              label={t("adminSurveys.statActive")}
               value={activeSurveys}
               icon="poll"
               iconColor="#006b58"
@@ -318,7 +329,7 @@ export default function AdminSurveysPage() {
           </View>
           <View className="flex-1">
             <StatCard
-              label="Total Surveys"
+              label={t("adminSurveys.statTotal")}
               value={totalSurveys}
               icon="assignment"
             />
@@ -328,26 +339,26 @@ export default function AdminSurveysPage() {
         {/* Filter + Search Row */}
         <View className="flex-row items-center justify-between mb-6">
           <Text className="text-on-surface font-headline text-title-lg">
-            Existing Surveys
+            {t("adminSurveys.existing")}
           </Text>
           <View className="flex-row items-center gap-4">
             <View className="flex-row bg-surface-container-low rounded-xl overflow-hidden">
-              {tabs.map((t) => (
+              {tabs.map((tab) => (
                 <TouchableOpacity
-                  key={t.key}
-                  onPress={() => setFilter(t.key)}
+                  key={tab.key}
+                  onPress={() => setFilter(tab.key)}
                   className={`px-4 py-2 ${
-                    filter === t.key ? "bg-primary" : ""
+                    filter === tab.key ? "bg-primary" : ""
                   }`}
                 >
                   <Text
                     className={`font-label text-xs uppercase tracking-widest ${
-                      filter === t.key
+                      filter === tab.key
                         ? "text-white"
                         : "text-on-surface-variant"
                     }`}
                   >
-                    {t.label}
+                    {tab.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -357,7 +368,7 @@ export default function AdminSurveysPage() {
               <TextInput
                 value={search}
                 onChangeText={setSearch}
-                placeholder="Search surveys..."
+                placeholder={t("adminSurveys.searchPlaceholder")}
                 placeholderTextColor="#6b6965"
                 className="flex-1 ml-2 text-on-surface font-body text-sm outline-none"
               />
@@ -376,10 +387,10 @@ export default function AdminSurveysPage() {
           </View>
         ) : filtered.length === 0 && !search ? (
           <EmptyState
-            title="No surveys yet"
-            description="Create your first survey to start collecting feedback."
+            title={t("adminSurveys.emptyTitle")}
+            description={t("adminSurveys.emptyDesc")}
             primaryAction={{
-              label: "Create Survey",
+              label: t("adminSurveys.create"),
               onPress: () =>
                 router.push("/(app)/admin-survey-builder" as never),
             }}
@@ -388,16 +399,16 @@ export default function AdminSurveysPage() {
           <Card variant="elevated" className="p-0 overflow-hidden">
             <View className="flex-row px-4 py-3 bg-surface-container-low border-b border-outline-variant/30">
               <Text className="flex-[2] text-label-md font-headline uppercase text-on-surface-variant">
-                Survey Title
+                {t("adminSurveys.colTitle")}
               </Text>
               <Text className="flex-1 text-label-md font-headline uppercase text-on-surface-variant">
-                Status
+                {t("adminSurveys.colStatus")}
               </Text>
               <Text className="flex-1 text-label-md font-headline uppercase text-on-surface-variant">
-                Responses
+                {t("adminSurveys.colResponses")}
               </Text>
               <Text className="w-28 text-label-md font-headline uppercase text-on-surface-variant text-right">
-                Actions
+                {t("adminSurveys.colActions")}
               </Text>
             </View>
             {filtered.map((survey) => (

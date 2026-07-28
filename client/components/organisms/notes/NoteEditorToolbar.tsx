@@ -123,7 +123,7 @@ export function NoteEditorToolbar({ state, isDark, onCommand }: ToolbarProps) {
             }}
           />
           <ToolButton
-            label="Body"
+            label={t("notes.styleBody")}
             onPress={() => {
               onCommand({ command: "p" });
               close();

@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, OrdovitaLogo } from "@/components/atoms";
 import { useAuthStore } from "@/lib/stores";
+import { useT } from "@/lib/i18n";
 
 const WINDOWS_INSTALLER_URL = "/downloads/Ordovita-Setup.exe";
 const MACOS_INSTALLER_URL = "/downloads/Ordovita-macOS-arm64.dmg";
@@ -40,6 +41,7 @@ const cardShadow =
 const accentTint = (alpha: number) => `rgba(91,78,224,${alpha})`;
 
 export default function Index() {
+  const t = useT();
   const router = useRouter();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const isLoading = useAuthStore((s) => s.isLoading);
@@ -64,12 +66,12 @@ export default function Index() {
           <OrdovitaLogo size="md" showTagline={false} />
           <View className="flex-row items-center gap-3">
             <Button
-              label="Log In"
+              label={t("auth.login")}
               variant="outline"
               onPress={() => router.push("/(auth)/login")}
             />
             <Button
-              label="Sign Up"
+              label={t("auth.register")}
               icon="arrow-forward"
               onPress={() => router.push("/(auth)/register")}
             />
@@ -87,21 +89,20 @@ export default function Index() {
               className="font-label text-label-md"
               style={{ color: ACCENT }}
             >
-              Ordovita v2.0 is now live
+              {t("landing.versionBadge")}
             </Text>
           </View>
 
           <Text className="text-on-surface font-display text-headline-lg-mobile md:text-display-lg text-center max-w-3xl">
-            Your Premium{" "}
+            {t("landing.heroPrefix")}{" "}
             <Text className="font-display" style={{ color: ACCENT }}>
-              Workspace
+              {t("landing.heroAccent")}
             </Text>{" "}
-            for Ultimate Clarity.
+            {t("landing.heroSuffix")}
           </Text>
 
           <Text className="text-on-surface-variant font-body text-body-lg text-center max-w-2xl">
-            Minimalist task management. Reduce cognitive load, focus on what
-            matters, and organize your day with clarity.
+            {t("landing.heroSubtitle")}
           </Text>
 
           <View
@@ -109,12 +110,12 @@ export default function Index() {
           >
             <DownloadButton
               icon="desktop-windows"
-              label="Download for Windows"
+              label={t("landing.downloadWindows")}
               onPress={() => openDownload(WINDOWS_INSTALLER_URL)}
             />
             <DownloadButton
               icon="laptop-mac"
-              label="Download for macOS"
+              label={t("landing.downloadMac")}
               onPress={() => openDownload(MACOS_INSTALLER_URL)}
             />
           </View>
@@ -131,29 +132,28 @@ export default function Index() {
         {/* Features */}
         <View className="max-w-5xl w-full self-center px-6 pb-16 items-center gap-4">
           <Text className="text-on-surface font-display text-headline-md text-center">
-            Designed for Focus
+            {t("landing.featuresTitle")}
           </Text>
           <Text className="text-on-surface-variant font-body text-body-lg text-center max-w-xl">
-            Everything you need to manage complex workflows, without the visual
-            clutter.
+            {t("landing.featuresSubtitle")}
           </Text>
           <View
             className={`gap-4 mt-6 w-full ${isWide ? "flex-row" : "flex-col"}`}
           >
             <FocusCard
               icon="checklist"
-              title="Task Management"
-              desc="Kanban, filters, priorities — all in one place."
+              title={t("landing.featTasks")}
+              desc={t("landing.featTasksDesc")}
             />
             <FocusCard
               icon="calendar-today"
-              title="Smart Calendar"
-              desc="Plan your day with events and a clear month view."
+              title={t("landing.featCalendar")}
+              desc={t("landing.featCalendarDesc")}
             />
             <FocusCard
               icon="auto-awesome"
-              title="AI Planning"
-              desc="Natural-language task creation and smart suggestions."
+              title={t("landing.featAi")}
+              desc={t("landing.featAiDesc")}
             />
           </View>
         </View>
@@ -166,15 +166,15 @@ export default function Index() {
             </View>
             <View className="flex-row flex-wrap items-center gap-x-6 gap-y-2">
               <FooterLink
-                label="Log In"
+                label={t("auth.login")}
                 onPress={() => router.push("/(auth)/login")}
               />
               <FooterLink
-                label="Privacy Policy"
+                label={t("auth.privacy")}
                 onPress={() => router.push("/privacy-policy" as never)}
               />
               <FooterLink
-                label="Terms of Service"
+                label={t("auth.terms")}
                 onPress={() => router.push("/terms-of-service" as never)}
               />
               <FooterLink
@@ -235,6 +235,7 @@ function DownloadButton({
 }
 
 function LandingAppPreview() {
+  const t = useT();
   return (
     <View
       className="bg-surface-container-lowest rounded-3xl border border-outline-variant p-6 md:p-8 overflow-hidden"
@@ -244,7 +245,11 @@ function LandingAppPreview() {
         <View className="hidden md:flex w-44 gap-2">
           <OrdovitaLogo size="sm" showTagline />
           <View className="h-px bg-outline-variant my-1" />
-          {["Dashboard", "Tasks", "Calendar"].map((item, i) => (
+          {[
+            t("landing.navDashboard"),
+            t("landing.navTasks"),
+            t("landing.navCalendar"),
+          ].map((item, i) => (
             <View
               key={item}
               className="h-8 rounded-lg px-3 justify-center"
@@ -264,22 +269,22 @@ function LandingAppPreview() {
           <View className="flex-row items-center justify-between">
             <View>
               <Text className="text-on-surface font-display text-title-lg">
-                Good morning, Alex.
+                {t("landing.previewGreeting")}
               </Text>
               <Text className="text-on-surface-variant font-body text-body-md mt-0.5">
-                You have 5 tasks to complete today.
+                {t("landing.previewSummary")}
               </Text>
             </View>
             <Text className="text-text-tertiary font-body text-sm">
-              Mon, Oct 24
+              {t("landing.previewDate")}
             </Text>
           </View>
 
           <View className="flex-row gap-3">
             {[
-              { label: "Tasks Today", value: "5", color: INK },
-              { label: "Events", value: "2", color: DANGER },
-              { label: "Pending AI", value: "1", color: ACCENT },
+              { label: t("landing.previewTasksToday"), value: "5", color: INK },
+              { label: t("landing.previewEvents"), value: "2", color: DANGER },
+              { label: t("landing.previewPendingAi"), value: "1", color: ACCENT },
             ].map((s) => (
               <View
                 key={s.label}
@@ -303,16 +308,16 @@ function LandingAppPreview() {
 
           <View className="gap-2">
             <Text className="text-on-surface font-headline text-sm">
-              Today&apos;s Focus
+              {t("landing.previewTodaysFocus")}
             </Text>
             <View className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant flex-row items-center gap-3">
               <View className="w-4 h-4 rounded-full border-2 border-outline" />
               <View className="flex-1">
                 <Text className="text-on-surface font-headline text-sm">
-                  Review Q3 Marketing Strategy
+                  {t("landing.previewTaskTitle")}
                 </Text>
                 <Text className="text-on-surface-variant font-body text-xs">
-                  Due 10:00 AM
+                  {t("landing.previewTaskDue")}
                 </Text>
               </View>
             </View>
@@ -326,13 +331,15 @@ function LandingAppPreview() {
             >
               <MaterialIcons name="auto-awesome" size={16} color={ACCENT} />
               <Text className="text-on-surface font-headline text-sm flex-1">
-                AI Suggested: Weekly Sync
+                {t("landing.previewAiSuggestion")}
               </Text>
               <View
                 className="px-3 py-1 rounded-lg"
                 style={{ backgroundColor: ACCENT }}
               >
-                <Text className="text-white font-label text-[10px]">Add</Text>
+                <Text className="text-white font-label text-[10px]">
+                  {t("landing.previewAdd")}
+                </Text>
               </View>
             </View>
           </View>

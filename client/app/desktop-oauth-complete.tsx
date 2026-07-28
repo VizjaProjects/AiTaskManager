@@ -3,8 +3,10 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useEffect, useState } from "react";
 import { identityApi } from "@/lib/api";
 import { useAuthStore } from "@/lib/stores";
+import { useT, tr } from "@/lib/i18n";
 
 export default function DesktopOAuthCompleteScreen() {
+  const t = useT();
   const router = useRouter();
   const params = useLocalSearchParams<{ code?: string; error?: string }>();
   const completeOAuthLogin = useAuthStore((s) => s.completeOAuthLogin);
@@ -13,13 +15,13 @@ export default function DesktopOAuthCompleteScreen() {
   useEffect(() => {
     async function exchangeCode() {
       if (params.error) {
-        setError("Logowanie Google nie powiodło się. Spróbuj ponownie.");
+        setError(tr("oauth.failed"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
         return;
       }
 
       if (!params.code) {
-        setError("Brak kodu OAuth do wymiany.");
+        setError(tr("oauth.missingCode"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
         return;
       }
@@ -29,7 +31,7 @@ export default function DesktopOAuthCompleteScreen() {
         await completeOAuthLogin(data);
         router.replace("/(app)/tasks");
       } catch {
-        setError("Nie udało się wymienić kodu OAuth.");
+        setError(tr("oauth.exchangeFailed"));
         setTimeout(() => router.replace("/(auth)/login"), 3000);
       }
     }
@@ -45,7 +47,7 @@ export default function DesktopOAuthCompleteScreen() {
         <>
           <ActivityIndicator size="large" />
           <Text className="text-on-surface-variant font-body text-center">
-            Kończenie logowania w aplikacji desktopowej…
+            {t("oauth.finishingDesktop")}
           </Text>
         </>
       )}

@@ -1,8 +1,10 @@
 import { View, Text, TextInput } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Card } from "../atoms";
+import { useT } from "@/lib/i18n";
 
 export function AlexInsightWidget() {
+  const t = useT();
   return (
     <Card className="bg-primary-fixed/40 border-primary/10 gap-4">
       <View className="flex-row items-center gap-3">
@@ -14,17 +16,16 @@ export function AlexInsightWidget() {
             Alex (AI)
           </Text>
           <Text className="text-label-md font-label uppercase text-on-surface-variant">
-            Workspace Insights
+            {t("alex.title")}
           </Text>
         </View>
       </View>
       <Text className="text-on-surface-variant font-body text-body-md italic leading-6">
-        "Your focus blocks are well distributed this week. Consider batching
-        similar tasks on Wednesday afternoon for better flow."
+        {t("alex.sampleInsight")}
       </Text>
       <View className="flex-row items-center gap-2 bg-surface-container-lowest rounded-xl px-3 py-2 border border-outline-variant/30 opacity-60">
         <TextInput
-          placeholder="Ask Alex..."
+          placeholder={t("alex.placeholder")}
           placeholderTextColor="#6b6965"
           editable={false}
           className="flex-1 text-on-surface-variant font-body text-body-md"
@@ -32,7 +33,7 @@ export function AlexInsightWidget() {
         <MaterialIcons name="send" size={20} color="#331fc8" />
       </View>
       <Text className="text-on-surface-variant font-body text-xs text-center">
-        W przygotowaniu — czat z kuratorem AI
+        {t("alex.comingSoon")}
       </Text>
     </Card>
   );
