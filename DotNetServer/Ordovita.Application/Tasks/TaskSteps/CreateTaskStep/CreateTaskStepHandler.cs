@@ -60,6 +60,7 @@ public sealed class CreateTaskStepValidator : AbstractValidator<CreateTaskStepCo
         RuleFor(command => command.WorkspaceId).NotEmpty();
         RuleFor(command => command.TaskId).NotEmpty();
         RuleFor(command => command.Title).NotEmpty().MaximumLength(WorkTask.StepTitleMaxLength);
-        RuleFor(command => command.AssignedUserId).NotEqual(Guid.Empty).When(command => command.AssignedUserId.HasValue);
+        RuleFor(command => command.AssignedUserId).NotEqual(Guid.Empty)
+            .When(command => command.AssignedUserId.HasValue);
     }
 }

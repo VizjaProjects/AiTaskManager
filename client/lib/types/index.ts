@@ -146,6 +146,17 @@ export interface CreateTaskStepInput {
   assignedUserId?: UUID;
 }
 
+export interface TaskComment {
+  commentId: UUID;
+  taskId: UUID;
+  authorId: UUID;
+  authorName: string;
+  authorEmail: string | null;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Category {
   categoryId: UUID;
   workspaceId?: UUID;

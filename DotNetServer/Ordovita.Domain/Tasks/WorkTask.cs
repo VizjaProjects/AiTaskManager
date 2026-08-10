@@ -10,9 +10,11 @@ public sealed class WorkTask : AggregateRoot<TaskId>
 {
     public const int MaxSteps = 20;
     public const int StepTitleMaxLength = 200;
+    public const int CommentMaxLength = 2000;
 
     private readonly HashSet<WorkTaskAssignee> _assignedUsers = [];
     private readonly List<TaskStep> _steps = [];
+    private readonly List<TaskComment> _comments = [];
     public WorkspaceId WorkspaceId { get; private set; }
     public UserId CreatedBy { get; private set; }
     public string Title { get; private set; } = null!;
@@ -30,6 +32,7 @@ public sealed class WorkTask : AggregateRoot<TaskId>
     public IReadOnlyCollection<WorkTaskAssignee> AssignedUsers => _assignedUsers;
     public IReadOnlyCollection<UserId> AssignedUserIds => _assignedUsers.Select(a => a.UserId).ToList();
     public IReadOnlyCollection<TaskStep> Steps => _steps;
+    public IReadOnlyCollection<TaskComment> Comments => _comments;
 
     private WorkTask()
     {
@@ -234,5 +237,45 @@ public sealed class WorkTask : AggregateRoot<TaskId>
     {
         for (var index = 0; index < _steps.Count; index++)
             _steps[index].SetPosition(index);
+    }
+
+    public Result<TaskComment> AddComment(UserId authorId, string content)
+    {
+        var result = TaskComment.Create(Id, authorId, content);
+        if (result.IsFailure || result.Value is null)
+            return Result.Failure<TaskComment>(result.Error);
+
+        _comments.Add(result.Value);
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success(result.Value);
+    }
+
+    public Result<TaskComment> EditComment(CommentId commentId, UserId requester, string content)
+    {
+        var comment = _comments.FirstOrDefault(candidate => candidate.Id == commentId);
+        if (comment is null)
+            return Result.Failure<TaskComment>(TaskCommentExceptions.NotFound);
+        if (comment.AuthorId != requester)
+            return Result.Failure<TaskComment>(TaskCommentExceptions.NotAuthor);
+
+        var result = comment.Edit(content);
+        if (result.IsFailure)
+            return Result.Failure<TaskComment>(result.Error);
+
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success(comment);
+    }
+
+    public Result RemoveComment(CommentId commentId, UserId requester)
+    {
+        var comment = _comments.FirstOrDefault(candidate => candidate.Id == commentId);
+        if (comment is null)
+            return Result.Failure(TaskCommentExceptions.NotFound);
+        if (comment.AuthorId != requester)
+            return Result.Failure(TaskCommentExceptions.NotAuthor);
+
+        _comments.Remove(comment);
+        UpdatedAt = DateTime.UtcNow;
+        return Result.Success();
     }
 }

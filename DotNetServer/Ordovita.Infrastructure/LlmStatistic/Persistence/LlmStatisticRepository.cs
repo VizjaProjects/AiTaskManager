@@ -7,7 +7,8 @@ namespace Ordovita.Infrastructure.LlmStatistic.Persistence;
 
 public class LlmStatisticRepository(AppDbContext context) : ILlmStatisticRepository
 {
-    public async Task AddAsync(Domain.LlmStatistic.LlmStatistic llmStatistic, CancellationToken cancellationToken = default)
+    public async Task AddAsync(Domain.LlmStatistic.LlmStatistic llmStatistic,
+        CancellationToken cancellationToken = default)
     {
         await context.AddAsync(llmStatistic, cancellationToken);
     }

@@ -77,21 +77,24 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: true,
 
   login: async (email, password) => {
-    set({ isLoading: true });
+    // Do NOT flip global isLoading during the credential check: it gates the
+    // app-wide loading screen in AuthGate, which would unmount the login form
+    // and drop its error state on a wrong password. Enter global loading only
+    // after authentication succeeds (for the transition to the app).
+    const { data } = await identityApi.login({ email, password });
+    await setAccessToken(data.accessToken);
+    await setRefreshToken(data.refreshToken);
+
+    const user: User = {
+      userId: data.userId,
+      email: data.email,
+      fullName: data.fullName,
+      role: data.role as Role,
+    };
+
+    storeUser(user);
+    set({ user, isAuthenticated: true, isLoading: true });
     try {
-      const { data } = await identityApi.login({ email, password });
-      await setAccessToken(data.accessToken);
-      await setRefreshToken(data.refreshToken);
-
-      const user: User = {
-        userId: data.userId,
-        email: data.email,
-        fullName: data.fullName,
-        role: data.role as Role,
-      };
-
-      storeUser(user);
-      set({ user, isAuthenticated: true });
       await useWorkspaceStore.getState().fetchWorkspaces();
     } finally {
       set({ isLoading: false });

@@ -19,7 +19,6 @@ internal static class AiPlanResponseParser
             return null;
 
         foreach (var candidate in ExtractJsonCandidates(content))
-        {
             try
             {
                 using var document = JsonDocument.Parse(candidate, DocumentOptions);
@@ -31,7 +30,6 @@ internal static class AiPlanResponseParser
             {
                 // Try the next complete JSON fragment from the response.
             }
-        }
 
         return null;
     }
@@ -53,14 +51,12 @@ internal static class AiPlanResponseParser
         if (!hasTasks && !hasEvents)
         {
             foreach (var wrapperName in new[] { "plan", "result", "response", "data" })
-            {
                 if (TryGetProperty(root, out var wrapped, wrapperName))
                 {
                     var wrappedPlan = ParseRoot(wrapped);
                     if (wrappedPlan is not null)
                         return wrappedPlan;
                 }
-            }
 
             if (TryGetProperty(root, out _, "title"))
             {
@@ -255,17 +251,13 @@ internal static class AiPlanResponseParser
     private static bool TryGetProperty(JsonElement element, out JsonElement value, params string[] names)
     {
         if (element.ValueKind == JsonValueKind.Object)
-        {
             foreach (var property in element.EnumerateObject())
             foreach (var name in names)
-            {
                 if (string.Equals(property.Name, name, StringComparison.OrdinalIgnoreCase))
                 {
                     value = property.Value;
                     return true;
                 }
-            }
-        }
 
         value = default;
         return false;
@@ -382,14 +374,22 @@ internal sealed record AiPlanJson(
 
 internal sealed record AiTaskJson(
     [property: JsonPropertyName("title")] string? Title,
-    [property: JsonPropertyName("description")] string? Description,
-    [property: JsonPropertyName("priority")] string? Priority,
-    [property: JsonPropertyName("categoryId")] Guid? CategoryId,
-    [property: JsonPropertyName("statusId")] Guid? StatusId,
-    [property: JsonPropertyName("estimatedDuration")] int? EstimatedDuration,
-    [property: JsonPropertyName("dueDateTime")] DateTime? DueDateTime,
-    [property: JsonPropertyName("newCategoryName")] string? NewCategoryName,
-    [property: JsonPropertyName("newCategoryColor")] string? NewCategoryColor,
+    [property: JsonPropertyName("description")]
+    string? Description,
+    [property: JsonPropertyName("priority")]
+    string? Priority,
+    [property: JsonPropertyName("categoryId")]
+    Guid? CategoryId,
+    [property: JsonPropertyName("statusId")]
+    Guid? StatusId,
+    [property: JsonPropertyName("estimatedDuration")]
+    int? EstimatedDuration,
+    [property: JsonPropertyName("dueDateTime")]
+    DateTime? DueDateTime,
+    [property: JsonPropertyName("newCategoryName")]
+    string? NewCategoryName,
+    [property: JsonPropertyName("newCategoryColor")]
+    string? NewCategoryColor,
     [property: JsonPropertyName("steps")] IReadOnlyList<AiTaskStepJson>? Steps);
 
 internal sealed record AiTaskStepJson(
@@ -397,6 +397,8 @@ internal sealed record AiTaskStepJson(
 
 internal sealed record AiEventJson(
     [property: JsonPropertyName("title")] string? Title,
-    [property: JsonPropertyName("startDateTime")] DateTime? StartDateTime,
-    [property: JsonPropertyName("endDateTime")] DateTime? EndDateTime,
+    [property: JsonPropertyName("startDateTime")]
+    DateTime? StartDateTime,
+    [property: JsonPropertyName("endDateTime")]
+    DateTime? EndDateTime,
     [property: JsonPropertyName("allDay")] bool? AllDay);

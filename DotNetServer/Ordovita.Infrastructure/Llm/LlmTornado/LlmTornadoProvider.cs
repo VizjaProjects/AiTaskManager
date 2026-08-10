@@ -22,7 +22,8 @@ public class LlmTornadoProvider(
     IUserRepository userRepository,
     ICryptoService cryptoService,
     ILlmStatisticRepository llmStatisticRepository,
-    IUserContext context,IUnitOfWork uow) : IAiClient
+    IUserContext context,
+    IUnitOfWork uow) : IAiClient
 {
     public async Task<Result<AiResponse>> AskAsync(
         AiRequest request,
@@ -59,21 +60,22 @@ public class LlmTornadoProvider(
                 "ordovita_ai_plan", request.ResponseSchema, true);
 
         var result = await api.Chat.CreateChatCompletion(chatRequest);
-        
+
 
         var content = result?.Choices?[0].Message?.Content;
 
         if (content is null)
             return Result.Failure<AiResponse>(Error.NotFound("AskAsync", "Message is empty!"));
-        
+
         var inputTokens = result?.Usage?.PromptTokens;
         var outputTokens = result?.Usage?.CompletionTokens;
         var totalToken = result?.Usage?.TotalTokens;
         var domainRequestType = Enum.Parse<Ordovita.Domain.LlmStatistic.RequestType>(requestType.ToString());
 
-        var llmStatistic = Domain.LlmStatistic.LlmStatistic.Create(request.AuditPrompt, outputTokens!.Value, inputTokens!.Value,
+        var llmStatistic = Domain.LlmStatistic.LlmStatistic.Create(request.AuditPrompt, outputTokens!.Value,
+            inputTokens!.Value,
             totalToken!.Value, user.Id, domainRequestType);
-        
+
         await llmStatisticRepository.AddAsync(llmStatistic.Value!, ct);
         await uow.SaveChangesAsync(ct);
 
@@ -84,7 +86,6 @@ public class LlmTornadoProvider(
     private (TornadoApi Api, ChatModel Model, RequestType requestType, bool SupportsStructuredOutput)
         ResolveApiAndModel(Domain.LlmSettings.LlmSettings? llmSettings)
     {
- 
         if (llmSettings is null)
             return (GetTornadoApi("Groq", configuration.ApiKey), ChatModel.Groq.OpenAi.GptOss120B,
                 RequestType.Standard, true);

@@ -7,6 +7,7 @@ import {
   Modal,
   Pressable,
   Platform,
+  Alert,
   useWindowDimensions,
 } from "react-native";
 import { useState, useMemo, useEffect } from "react";
@@ -54,10 +55,16 @@ import {
   useTasks,
   useNotes,
   useSyncEntityNoteLinks,
+  useTaskComments,
+  useAddComment,
+  useEditComment,
+  useDeleteComment,
 } from "@/lib/hooks";
 import { useThemeStore } from "@/lib/stores/theme";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
-import { useT, useLocale } from "@/lib/i18n";
+
+import { useAuthStore } from "@/lib/stores/auth";
+import { useT } from "@/lib/i18n";
 
 type TaskSaveData = {
   title: string;
@@ -69,7 +76,7 @@ type TaskSaveData = {
   dueDateTime?: string;
 };
 
-type TaskDetailTab = "details" | "steps" | "links";
+type TaskDetailTab = "details" | "steps" | "links" | "comments";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -155,6 +162,17 @@ export function TaskDetailModal({
     if (!taskProp) return null;
     return liveTasks?.find((t) => t.taskId === taskProp.taskId) ?? taskProp;
   }, [taskProp, liveTasks]);
+
+  const commentsEnabled = !onSaveCustom && !!task && task.accepted;
+  const detailTabs: [
+    TaskDetailTab,
+    keyof typeof MaterialIcons.glyphMap,
+    string,
+  ][] = [
+    ["details", "info-outline", t("taskModal.tabDetails")],
+    ["steps", "checklist", `${t("taskModal.tabSteps")} (${task?.steps.length ?? 0})`],
+    ["links", "link", t("taskModal.tabLinks")],
+  ];
 
   useEffect(() => {
     if (visible && task) {
@@ -520,17 +538,7 @@ export function TaskDetailModal({
               )}
 
               <View className="px-6 border-b border-outline-variant flex-row gap-1">
-                {(
-                  [
-                    ["details", "info-outline", t("taskModal.tabDetails")],
-                    [
-                      "steps",
-                      "checklist",
-                      `${t("taskModal.tabSteps")} (${task.steps.length})`,
-                    ],
-                    ["links", "link", t("taskModal.tabLinks")],
-                  ] as const
-                ).map(([tabId, icon, label]) => {
+                {detailTabs.map(([tabId, icon, label]) => {
                   const selected = activeTab === tabId;
                   return (
                     <TouchableOpacity
@@ -1139,6 +1147,17 @@ export function TaskDetailModal({
                 </View>
               )}
 
+              {activeTab === "details" && commentsEnabled && (
+                <View className="px-6 pt-2 pb-4">
+                  <View className="border-t border-outline-variant pt-5">
+                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
+                      {t("comments.title")}
+                    </Text>
+                    <TaskCommentsSection taskId={task.taskId} isDark={isDark} />
+                  </View>
+                </View>
+              )}
+
             </ScrollView>
 
               {/* Action buttons */}
@@ -1646,5 +1665,204 @@ export function CreateTaskModal({
         </Pressable>
       </Pressable>
     </Modal>
+  );
+}
+
+function TaskCommentsSection({
+  taskId,
+  isDark,
+}: {
+  taskId: string;
+  isDark: boolean;
+}) {
+  const t = useT();
+  const currentUser = useAuthStore((s) => s.user);
+  const { data: comments, isLoading } = useTaskComments(taskId);
+  const addComment = useAddComment();
+  const editComment = useEditComment();
+  const deleteComment = useDeleteComment();
+  const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+
+  const accent = isDark ? "#9b8cff" : "#5b4ee0";
+  const list = comments ?? [];
+
+  function submit() {
+    const content = draft.trim();
+    if (!content || addComment.isPending) return;
+    addComment.mutate(
+      { taskId, content },
+      { onSuccess: () => setDraft("") },
+    );
+  }
+
+  function saveEdit(commentId: string) {
+    const content = editDraft.trim();
+    if (!content) return;
+    editComment.mutate(
+      { taskId, commentId, content },
+      { onSuccess: () => setEditingId(null) },
+    );
+  }
+
+  function confirmDelete(commentId: string) {
+    const run = () => deleteComment.mutate({ taskId, commentId });
+    if (Platform.OS === "web") {
+      if (typeof window !== "undefined" && window.confirm(t("comments.deleteConfirm")))
+        run();
+    } else {
+      Alert.alert("", t("comments.deleteConfirm"), [
+        { text: t("comments.cancel"), style: "cancel" },
+        { text: t("comments.delete"), style: "destructive", onPress: run },
+      ]);
+    }
+  }
+
+  return (
+    <View className="gap-4">
+      {/* Composer */}
+      <View className="flex-row items-start gap-3">
+        <Avatar fullName={currentUser?.fullName ?? "?"} size="sm" />
+        <View className="flex-1">
+          <TextInput
+            className="bg-surface-container-lowest rounded-xl px-4 py-3 text-on-surface font-body text-sm border border-outline-variant"
+            style={[{ minHeight: 44 }, NO_OUTLINE]}
+            multiline
+            value={draft}
+            onChangeText={setDraft}
+            placeholder={t("comments.placeholder")}
+            placeholderTextColor="#6b6965"
+          />
+          <View className="flex-row justify-end mt-2">
+            <TouchableOpacity
+              onPress={submit}
+              disabled={!draft.trim() || addComment.isPending}
+              className="flex-row items-center gap-1.5 px-4 py-2 rounded-full"
+              style={{
+                backgroundColor: draft.trim() ? accent : "#3a3a42",
+                opacity: draft.trim() ? 1 : 0.5,
+              }}
+            >
+              <MaterialIcons name="send" size={15} color="#ffffff" />
+              <Text className="text-white font-label text-xs">
+                {t("comments.send")}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {/* Thread */}
+      {isLoading ? (
+        <Text className="text-on-surface-variant font-body text-sm">…</Text>
+      ) : list.length === 0 ? (
+        <View className="items-center py-6 gap-2">
+          <MaterialIcons
+            name="chat-bubble-outline"
+            size={28}
+            color={isDark ? "#4a4a52" : "#c8c4bd"}
+          />
+          <Text className="text-on-surface-variant font-body text-sm text-center">
+            {t("comments.empty")}
+          </Text>
+        </View>
+      ) : (
+        <View className="gap-3">
+          {list.map((c) => {
+            const mine = c.authorId === currentUser?.userId;
+            const isEditing = editingId === c.commentId;
+            const edited = c.updatedAt !== c.createdAt;
+            return (
+              <View key={c.commentId} className="flex-row items-start gap-3">
+                <Avatar fullName={c.authorName || "?"} size="sm" />
+                <View className="flex-1 bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant">
+                  <View className="flex-row items-center gap-2 mb-1">
+                    <Text
+                      className="text-on-surface font-headline text-sm flex-shrink"
+                      numberOfLines={1}
+                    >
+                      {c.authorName || "?"}
+                    </Text>
+                    <Text className="text-on-surface-variant font-body text-xs">
+                      {formatDateTime(c.createdAt)}
+                    </Text>
+                    {edited && (
+                      <Text className="text-on-surface-variant font-body text-xs italic">
+                        ({t("comments.edited")})
+                      </Text>
+                    )}
+                    {mine && !isEditing && (
+                      <View className="flex-row items-center gap-1 ml-auto">
+                        <TouchableOpacity
+                          onPress={() => {
+                            setEditingId(c.commentId);
+                            setEditDraft(c.content);
+                          }}
+                          hitSlop={8}
+                        >
+                          <MaterialIcons
+                            name="edit"
+                            size={15}
+                            color="#9b9791"
+                          />
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => confirmDelete(c.commentId)}
+                          hitSlop={8}
+                        >
+                          <MaterialIcons
+                            name="delete-outline"
+                            size={16}
+                            color="#C0392B"
+                          />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                  {isEditing ? (
+                    <View className="gap-2">
+                      <TextInput
+                        className="bg-surface-container-lowest rounded-lg px-3 py-2 text-on-surface font-body text-sm border border-outline-variant"
+                        style={[{ minHeight: 40 }, NO_OUTLINE]}
+                        multiline
+                        value={editDraft}
+                        onChangeText={setEditDraft}
+                        autoFocus
+                        placeholderTextColor="#6b6965"
+                      />
+                      <View className="flex-row justify-end gap-2">
+                        <TouchableOpacity
+                          onPress={() => setEditingId(null)}
+                          className="px-3 py-1.5 rounded-full border border-outline-variant"
+                        >
+                          <Text className="text-on-surface-variant font-label text-xs">
+                            {t("comments.cancel")}
+                          </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          onPress={() => saveEdit(c.commentId)}
+                          disabled={!editDraft.trim() || editComment.isPending}
+                          className="px-3 py-1.5 rounded-full"
+                          style={{ backgroundColor: accent }}
+                        >
+                          <Text className="text-white font-label text-xs">
+                            {t("comments.save")}
+                          </Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ) : (
+                    <Text className="text-on-surface font-body text-sm leading-5">
+                      {c.content}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
   );
 }

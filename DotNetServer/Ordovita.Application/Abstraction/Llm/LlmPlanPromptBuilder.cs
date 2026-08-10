@@ -46,10 +46,10 @@ public static class LlmPlanPromptBuilder
         var recoveryUserPrompt = original.UserPrompt +
                                  $"""
 
-                                 <NIEPOPRAWNA_ODPOWIEDŹ_AI długość="{invalidResponse.Length}">
-                                 {responseData}
-                                 </NIEPOPRAWNA_ODPOWIEDŹ_AI>
-                                 """;
+                                  <NIEPOPRAWNA_ODPOWIEDŹ_AI długość="{invalidResponse.Length}">
+                                  {responseData}
+                                  </NIEPOPRAWNA_ODPOWIEDŹ_AI>
+                                  """;
 
         return new LlmPlanPrompt(recoverySystemPrompt, recoveryUserPrompt, original.ResponseSchema);
     }
@@ -264,7 +264,8 @@ public static class LlmPlanPromptBuilder
                 tasks = new
                 {
                     type = "array",
-                    description = "Niezależne rezultaty do osobnego planowania; zależne czynności umieszczaj w steps rodzica.",
+                    description =
+                        "Niezależne rezultaty do osobnego planowania; zależne czynności umieszczaj w steps rodzica.",
                     items = new
                     {
                         type = "object",
@@ -309,7 +310,8 @@ public static class LlmPlanPromptBuilder
                                             type = "string",
                                             minLength = 1,
                                             maxLength = 200,
-                                            description = "Konkretna czynność wspierająca rezultat rodzica, nie osobny rezultat."
+                                            description =
+                                                "Konkretna czynność wspierająca rezultat rodzica, nie osobny rezultat."
                                         }
                                     }
                                 }

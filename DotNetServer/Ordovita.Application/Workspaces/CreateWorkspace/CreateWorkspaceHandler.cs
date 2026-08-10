@@ -29,13 +29,10 @@ public sealed class CreateWorkspaceHandler(
         var assignedUsers = command.AssignedUserIds?
             .Select(UserId.From)
             .ToList();
-        
+
         var limitCheckResult = await CheckLimits(command.Visibility, ct);
 
-        if (limitCheckResult.IsFailure)
-        {
-            return Result.Failure<WorkspaceDto>(limitCheckResult.Error);
-        }
+        if (limitCheckResult.IsFailure) return Result.Failure<WorkspaceDto>(limitCheckResult.Error);
 
         var workspaceResult = Workspace.Create(
             command.WorkspaceName, assignedUsers, userResult.Value!.Id, command.Visibility);
@@ -44,14 +41,10 @@ public sealed class CreateWorkspaceHandler(
 
         var creator = await userRepository.GetAsyncById(workspaceResult.Value!.CreatedBy, ct);
         if (creator is null)
-        {
             return Result.Failure<WorkspaceDto>(Error.NotFound("User.NotFound", "Workspace creator not found."));
-        }
 
         if (creator.DefaultWorkspaceId is null || creator.DefaultWorkspaceId.Value.Value == Guid.Empty)
-        {
             creator.SetupDefaultWorkspace(workspaceResult.Value.Id);
-        }
 
         var workspace = workspaceResult.Value!;
         await workspaceRepository.AddAsync(workspace, ct);
@@ -69,23 +62,21 @@ public sealed class CreateWorkspaceHandler(
             var limitCheckResult = await planLimitChecker.Check(Action.CreatePrivateWorkspace, ct);
 
             if (limitCheckResult.IsFailure || !limitCheckResult.Value)
-            {
-                return Result.Failure(Error.LimitExceeded("Workspace.PrivateLimitExceeded", "Private workspace limit exceeded for your current plan."));
-            }
-        
+                return Result.Failure(Error.LimitExceeded("Workspace.PrivateLimitExceeded",
+                    "Private workspace limit exceeded for your current plan."));
+
             return Result.Success();
         }
-    
+
         if (visibility == WorkspaceVisibility.Public)
         {
             var limitCheckResult = await planLimitChecker.Check(Action.CreatePublicWorkspace, ct);
 
             if (limitCheckResult.IsFailure || !limitCheckResult.Value)
-            {
-                return Result.Failure(Error.LimitExceeded("Workspace.PublicLimitExceeded", "Public workspace limit exceeded for your current plan."));
-            }
-        
-            return Result.Success(); 
+                return Result.Failure(Error.LimitExceeded("Workspace.PublicLimitExceeded",
+                    "Public workspace limit exceeded for your current plan."));
+
+            return Result.Success();
         }
 
         return Result.Failure(Error.NotFound("CreateWorkspaceHandler", "WorkspaceVisibility not found."));

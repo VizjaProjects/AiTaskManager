@@ -21,7 +21,6 @@ public sealed class PlanLimitChecker(
     ILlmStatisticRepository llmStatisticRepository,
     IUserRepository userRepository)
 {
-
     public async Task<Result<bool>> Check(Action action, CancellationToken ct)
     {
         if (context.UserId == null)

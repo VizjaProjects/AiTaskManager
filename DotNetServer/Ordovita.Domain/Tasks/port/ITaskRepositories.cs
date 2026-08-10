@@ -58,3 +58,10 @@ public interface IWorkspaceTaskInitializer
 {
     Task InitializeAsync(WorkspaceId workspaceId, UserId createdBy, CancellationToken ct = default);
 }
+
+public interface ITaskHistoryRepository
+{
+    Task AddAsync(TaskHistory history, CancellationToken ct = default);
+    Task<IReadOnlyList<TaskHistory>> GetByTaskIdAsync(TaskId taskId, CancellationToken ct = default);
+    Task<short> GetNextVersionAsync(TaskId taskId, CancellationToken ct = default);
+}

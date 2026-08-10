@@ -39,7 +39,7 @@ public sealed record Error(string Code, string Description, ErrorType Type = Err
     {
         return new Error(code, description, ErrorType.Unauthorized);
     }
-    
+
     public static Error LimitExceeded(string code, string description)
     {
         return new Error(code, description, ErrorType.LimitExceeded);

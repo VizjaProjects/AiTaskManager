@@ -618,6 +618,94 @@ namespace Ordovita.Infrastructure.Migrations
                     b.ToTable("Tasks.Categories", (string)null);
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskComment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("AuthorId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId", "CreatedAt");
+
+                    b.ToTable("Tasks.TaskComments", (string)null);
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<DateTime>("HistoryDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<short>("VersionNumber")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId", "HistoryDate");
+
+                    b.ToTable("Tasks.TaskHistories", (string)null);
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskHistoryRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("NextValue")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<string>("PrevValue")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
+                    b.Property<Guid>("TaskHistoryId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskHistoryId");
+
+                    b.ToTable("Tasks.TaskHistoryRecords", (string)null);
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Tasks.TaskStep", b =>
                 {
                     b.Property<Guid>("Id")
@@ -999,6 +1087,24 @@ namespace Ordovita.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskComment", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Tasks.WorkTask", null)
+                        .WithMany("Comments")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskHistoryRecord", b =>
+                {
+                    b.HasOne("Ordovita.Domain.Tasks.TaskHistory", null)
+                        .WithMany("Records")
+                        .HasForeignKey("TaskHistoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Tasks.TaskStep", b =>
                 {
                     b.HasOne("Ordovita.Domain.Tasks.WorkTask", null)
@@ -1054,9 +1160,16 @@ namespace Ordovita.Infrastructure.Migrations
                     b.Navigation("TaskLinks");
                 });
 
+            modelBuilder.Entity("Ordovita.Domain.Tasks.TaskHistory", b =>
+                {
+                    b.Navigation("Records");
+                });
+
             modelBuilder.Entity("Ordovita.Domain.Tasks.WorkTask", b =>
                 {
                     b.Navigation("AssignedUsers");
+
+                    b.Navigation("Comments");
 
                     b.Navigation("Steps");
                 });

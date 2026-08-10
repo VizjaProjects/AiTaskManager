@@ -85,6 +85,11 @@ using Ordovita.Application.Tasks.TaskSteps.DeleteTaskStep;
 using Ordovita.Application.Tasks.TaskSteps.EditTaskStep;
 using Ordovita.Application.Tasks.TaskSteps.ReorderTaskSteps;
 using Ordovita.Application.Tasks.TaskSteps.SetTaskStepCompletion;
+using Ordovita.Application.Tasks.Comments.AddComment;
+using Ordovita.Application.Tasks.Comments.DeleteComment;
+using Ordovita.Application.Tasks.Comments.EditComment;
+using Ordovita.Application.Tasks.Comments.GetTaskComments;
+using Ordovita.Application.Tasks.History.GetTaskHistory;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
@@ -246,7 +251,17 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<DeleteTaskStepCommand, Unit>, DeleteTaskStepHandler>();
         services.AddScoped<ICommandHandler<EditTaskStepCommand, TaskStepDto>, EditTaskStepHandler>();
         services.AddScoped<ICommandHandler<SetTaskStepCompletionCommand, TaskStepDto>, SetTaskStepCompletionHandler>();
-        services.AddScoped<ICommandHandler<ReorderTaskStepsCommand, IReadOnlyList<TaskStepDto>>, ReorderTaskStepsHandler>();
+        services
+            .AddScoped<ICommandHandler<ReorderTaskStepsCommand, IReadOnlyList<TaskStepDto>>, ReorderTaskStepsHandler>();
+
+        services.AddScoped<ICommandHandler<AddCommentCommand, TaskCommentDto>, AddCommentHandler>();
+        services.AddScoped<ICommandHandler<EditCommentCommand, TaskCommentDto>, EditCommentHandler>();
+        services.AddScoped<ICommandHandler<DeleteCommentCommand, Unit>, DeleteCommentHandler>();
+        services
+            .AddScoped<IQueryHandler<GetTaskCommentsQuery, IReadOnlyList<TaskCommentDto>>, GetTaskCommentsHandler>();
+
+        services
+            .AddScoped<IQueryHandler<GetTaskHistoryQuery, IReadOnlyList<TaskHistoryDto>>, GetTaskHistoryHandler>();
 
         return services;
     }

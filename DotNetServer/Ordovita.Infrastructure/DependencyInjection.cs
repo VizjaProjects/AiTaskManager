@@ -85,6 +85,7 @@ public static class DependencyInjection
         services.AddScoped<IWorkTaskStatusRepository, WorkTaskStatusRepository>();
         services.AddScoped<IWorkCalendarRepository, WorkCalendarRepository>();
         services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+        services.AddScoped<ITaskHistoryRepository, TaskHistoryRepository>();
         services.AddScoped<IWorkspaceTaskInitializer, WorkspaceTaskInitializer>();
         services.AddScoped<ILlmSettingsRepository, LlmSettingsRepository>();
         services.AddScoped<ICryptoService, CryptoService>();

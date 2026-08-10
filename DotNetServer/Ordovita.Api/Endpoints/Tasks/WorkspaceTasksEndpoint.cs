@@ -5,6 +5,11 @@ using Ordovita.Application.Tasks.Categories.CreateTaskCategory;
 using Ordovita.Application.Tasks.Categories.DeleteTaskCategory;
 using Ordovita.Application.Tasks.Categories.EditTaskCategory;
 using Ordovita.Application.Tasks.Categories.GetWorkspaceCategories;
+using Ordovita.Application.Tasks.Comments.AddComment;
+using Ordovita.Application.Tasks.Comments.DeleteComment;
+using Ordovita.Application.Tasks.Comments.EditComment;
+using Ordovita.Application.Tasks.Comments.GetTaskComments;
+using Ordovita.Application.Tasks.History.GetTaskHistory;
 using Ordovita.Application.Tasks.Events.CreateCalendarEvent;
 using Ordovita.Application.Tasks.Events.DeleteCalendarEvent;
 using Ordovita.Application.Tasks.Events.EditCalendarEvent;
@@ -46,6 +51,13 @@ public static class WorkspaceTasksEndpoint
             .WithName("SetTaskStepCompletion");
         g.MapPut("/task/{taskId:guid}/steps/order", ReorderTaskSteps).WithName("ReorderTaskSteps");
         g.MapDelete("/task/{taskId:guid}/steps/{stepId:guid}", DeleteTaskStep).WithName("DeleteTaskStep");
+
+        g.MapGet("/task/{taskId:guid}/comments", GetTaskComments).WithName("GetTaskComments");
+        g.MapPost("/task/{taskId:guid}/comments", AddComment).WithName("AddTaskComment");
+        g.MapPut("/task/{taskId:guid}/comments/{commentId:guid}", EditComment).WithName("EditTaskComment");
+        g.MapDelete("/task/{taskId:guid}/comments/{commentId:guid}", DeleteComment).WithName("DeleteTaskComment");
+
+        g.MapGet("/task/{taskId:guid}/history", GetTaskHistory).WithName("GetTaskHistory");
 
         g.MapPost("/event", CreateEvent).WithName("CreateCalendarEvent");
         g.MapPut("/event", EditEvent).WithName("EditCalendarEvent");
@@ -113,7 +125,8 @@ public static class WorkspaceTasksEndpoint
         var result = await sender.Send(
             new CreateTaskStepCommand(workspaceId, taskId, request.Title, request.AssignedUserId), ct);
         return result.IsSuccess
-            ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{taskId}/steps/{result.Value!.StepId}", result.Value)
+            ? Results.Created($"/api/v1/workspace/{workspaceId}/task/{taskId}/steps/{result.Value!.StepId}",
+                result.Value)
             : result.Error.ToProblem();
     }
 
@@ -147,6 +160,44 @@ public static class WorkspaceTasksEndpoint
     {
         var result = await sender.Send(new DeleteTaskStepCommand(workspaceId, taskId, stepId), ct);
         return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetTaskComments(
+        Guid workspaceId, Guid taskId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetTaskCommentsQuery(workspaceId, taskId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> AddComment(
+        Guid workspaceId, Guid taskId, AddCommentRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new AddCommentCommand(workspaceId, taskId, request.Content), ct);
+        return result.IsSuccess
+            ? Results.Created(
+                $"/api/v1/workspace/{workspaceId}/task/{taskId}/comments/{result.Value!.CommentId}", result.Value)
+            : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> EditComment(
+        Guid workspaceId, Guid taskId, Guid commentId, EditCommentRequest request, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new EditCommentCommand(workspaceId, taskId, commentId, request.Content), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> DeleteComment(
+        Guid workspaceId, Guid taskId, Guid commentId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new DeleteCommentCommand(workspaceId, taskId, commentId), ct);
+        return result.IsSuccess ? Results.NoContent() : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetTaskHistory(
+        Guid workspaceId, Guid taskId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetTaskHistoryQuery(workspaceId, taskId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private static async Task<IResult> CreateEvent(
@@ -253,9 +304,16 @@ public static class WorkspaceTasksEndpoint
         IReadOnlyList<CreateTaskStepInput>? Steps);
 
     private sealed record CreateTaskStepRequest(string Title, Guid? AssignedUserId);
+
     private sealed record EditTaskStepRequest(string Title, Guid? AssignedUserId);
+
     private sealed record SetTaskStepCompletionRequest(bool Completed);
+
     private sealed record ReorderTaskStepsRequest(IReadOnlyList<Guid>? StepIds);
+
+    private sealed record AddCommentRequest(string Content);
+
+    private sealed record EditCommentRequest(string Content);
 
     private sealed record EditTaskRequest(
         Guid TaskId,

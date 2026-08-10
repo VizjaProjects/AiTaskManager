@@ -106,12 +106,26 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Auth endpoints must NOT go through the token-refresh flow: a 401 here means
+// bad credentials / invalid input, not an expired token. Otherwise a wrong
+// password triggers a bogus refresh that logs the user out and reloads the page.
+const AUTH_PATHS = ["/identity/login", "/identity/register", "/identity/refresh"];
+
+function isAuthRequest(url?: string): boolean {
+  if (!url) return false;
+  return AUTH_PATHS.some((p) => url.includes(p));
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 ||
+      originalRequest._retry ||
+      isAuthRequest(originalRequest?.url)
+    ) {
       return Promise.reject(error);
     }
 

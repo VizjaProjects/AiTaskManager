@@ -404,6 +404,74 @@ export function useDeleteTaskStep() {
   });
 }
 
+export function useTaskComments(taskId: string | null) {
+  const workspaceId = useWorkspaceId();
+  return useQuery({
+    queryKey: ["taskComments", workspaceId, taskId],
+    queryFn: () =>
+      taskApi.getComments(requireWorkspaceId(workspaceId), taskId as string),
+    enabled: !!workspaceId && !!taskId,
+  });
+}
+
+export function useAddComment() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ taskId, content }: { taskId: string; content: string }) =>
+      taskApi.addComment(requireWorkspaceId(workspaceId), taskId, content),
+    onSuccess: (_data, { taskId }) =>
+      qc.invalidateQueries({
+        queryKey: ["taskComments", workspaceId, taskId],
+      }),
+  });
+}
+
+export function useEditComment() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      commentId,
+      content,
+    }: {
+      taskId: string;
+      commentId: string;
+      content: string;
+    }) =>
+      taskApi.editComment(
+        requireWorkspaceId(workspaceId),
+        taskId,
+        commentId,
+        content,
+      ),
+    onSuccess: (_data, { taskId }) =>
+      qc.invalidateQueries({
+        queryKey: ["taskComments", workspaceId, taskId],
+      }),
+  });
+}
+
+export function useDeleteComment() {
+  const workspaceId = useWorkspaceId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      taskId,
+      commentId,
+    }: {
+      taskId: string;
+      commentId: string;
+    }) =>
+      taskApi.deleteComment(requireWorkspaceId(workspaceId), taskId, commentId),
+    onSuccess: (_data, { taskId }) =>
+      qc.invalidateQueries({
+        queryKey: ["taskComments", workspaceId, taskId],
+      }),
+  });
+}
+
 export function useCategories() {
   const workspaceId = useWorkspaceId();
   return useQuery({

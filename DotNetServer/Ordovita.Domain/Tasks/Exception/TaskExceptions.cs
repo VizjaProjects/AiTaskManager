@@ -111,3 +111,54 @@ public static class TaskStepExceptions
         Error.Validation("TaskStep.PendingTaskCannotBeCompleted",
             "A step cannot be completed before its AI task proposal is accepted.");
 }
+
+public static class TaskCommentExceptions
+{
+    public static readonly Error NotFound =
+        Error.NotFound("TaskComment.NotFound", "Comment was not found.");
+
+    public static readonly Error MissingContent =
+        Error.Validation("TaskComment.MissingContent", "Comment content is required.");
+
+    public static readonly Error ContentTooLong =
+        Error.Validation("TaskComment.ContentTooLong", "Comment cannot exceed 2000 characters.");
+
+    public static readonly Error NotAuthor =
+        Error.Validation("TaskComment.NotAuthor", "You can only modify your own comments.");
+}
+
+public static class TaskHistoryRecordExceptions
+{
+    public static readonly Error NotFound =
+        Error.NotFound("TaskHistoryRecord.NotFound", "TaskHistoryRecord was not found.");
+
+    public static readonly Error MissingTaskHistoryId =
+        Error.Validation("TaskHistoryRecord.MissingTaskHistoryId", "TaskHistoryId content is required.");
+
+    public static readonly Error MissingPrevValue =
+        Error.Validation("TaskHistoryRecord.MissingPrevValue", "PrevValue content is required.");
+
+    public static readonly Error MissingNextValue =
+        Error.Validation("TaskHistoryRecord.MissingNextValue", "NextValue content is required.");
+
+    public static readonly Error MissingField =
+        Error.Validation("TaskHistoryRecord.MissingField", "Field is missing.");
+}
+
+public static class TaskHistoryExceptions
+{
+    public static readonly Error NotFound =
+        Error.NotFound("TaskHistory.NotFound", "TaskHistory was not found.");
+
+    public static readonly Error MissingTaskHistoryRecords =
+        Error.Validation("TaskHistory.MissingTaskHistoryRecords", "Records are missing.");
+
+    public static readonly Error MissingHistoryDate =
+        Error.Validation("TaskHistory.MissingHistoryDate", "HistoryDate is required.");
+
+    public static readonly Error MissingUserId =
+        Error.Validation("TaskHistory.MissingUserId", "UserId is missing.");
+
+    public static readonly Error MissingField =
+        Error.Validation("TaskHistory.MissingField", "Fiels is missing.");
+}

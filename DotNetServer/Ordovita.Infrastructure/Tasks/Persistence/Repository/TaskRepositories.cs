@@ -18,6 +18,7 @@ public sealed class WorkTaskRepository(AppDbContext context) : IWorkTaskReposito
         return await context.WorkTasks
             .Include(t => t.AssignedUsers)
             .Include(t => t.Steps)
+            .Include(t => t.Comments)
             .FirstOrDefaultAsync(t => t.Id == id, ct);
     }
 
@@ -173,5 +174,33 @@ public sealed class CalendarEventRepository(AppDbContext context) : ICalendarEve
     public void Delete(CalendarEvent calendarEvent)
     {
         context.CalendarEvents.Remove(calendarEvent);
+    }
+}
+
+public sealed class TaskHistoryRepository(AppDbContext context) : ITaskHistoryRepository
+{
+    public async Task AddAsync(TaskHistory history, CancellationToken ct = default)
+    {
+        await context.TaskHistories.AddAsync(history, ct);
+    }
+
+    public async Task<IReadOnlyList<TaskHistory>> GetByTaskIdAsync(TaskId taskId, CancellationToken ct = default)
+    {
+        return await context.TaskHistories
+            .AsNoTracking()
+            .Include(history => history.Records)
+            .Where(history => history.TaskId == taskId)
+            .OrderByDescending(history => history.HistoryDate)
+            .ToListAsync(ct);
+    }
+
+    public async Task<short> GetNextVersionAsync(TaskId taskId, CancellationToken ct = default)
+    {
+        var maxVersion = await context.TaskHistories
+            .Where(history => history.TaskId == taskId)
+            .Select(history => (short?)history.VersionNumber)
+            .MaxAsync(ct);
+
+        return (short)((maxVersion ?? 0));
     }
 }

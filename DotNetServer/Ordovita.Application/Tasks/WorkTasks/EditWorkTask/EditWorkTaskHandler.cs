@@ -1,6 +1,7 @@
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Domain.Common;
+using Ordovita.Domain.Identity;
 using Ordovita.Domain.Tasks;
 using Ordovita.Domain.Tasks.Exception;
 using Ordovita.Domain.Tasks.port;
@@ -26,6 +27,7 @@ public sealed class EditWorkTaskHandler(
     ICalendarEventRepository eventRepository,
     IWorkTaskStatusRepository statusRepository,
     ITaskCategoryRepository categoryRepository,
+    ITaskHistoryRepository historyRepository,
     IUnitOfWork uow) : ICommandHandler<EditWorkTaskCommand, EditWorkTaskResult>
 {
     public async Task<Result<EditWorkTaskResult>> Handle(EditWorkTaskCommand command, CancellationToken ct)
@@ -45,6 +47,14 @@ public sealed class EditWorkTaskHandler(
 
         var categoryForEdit = await ResolveCategoryForEditAsync(
             command.CategoryId, task.CategoryId, workspaceId, categoryRepository, ct);
+
+        var oldTitle = task.Title;
+        var oldDescription = task.Description ?? string.Empty;
+        var oldPriority = task.Priority;
+        var oldEstimated = task.EstimatedDuration;
+        var oldDueDate = task.DueDateTime;
+        var oldStatusId = task.StatusId;
+        var oldCategoryId = task.CategoryId;
 
         var previousDueDate = task.DueDateTime;
         var editResult = task.Edit(
@@ -93,8 +103,79 @@ public sealed class EditWorkTaskHandler(
             }
         }
 
+        await RecordHistoryAsync(
+            task,
+            access.Value.User.Id,
+            oldTitle,
+            oldDescription,
+            oldPriority,
+            oldEstimated,
+            oldDueDate,
+            oldStatusId,
+            oldCategoryId,
+            status,
+            categoryForEdit,
+            ct);
+
         await uow.SaveChangesAsync(ct);
         return Result.Success(new EditWorkTaskResult(task.Id.Value, task.UpdatedAt));
+    }
+
+    private async Task RecordHistoryAsync(
+        WorkTask task,
+        UserId userId,
+        string oldTitle,
+        string oldDescription,
+        TaskPriority oldPriority,
+        int oldEstimated,
+        DateTime? oldDueDate,
+        TaskStatusId oldStatusId,
+        TaskCategoryId? oldCategoryId,
+        WorkTaskStatus newStatus,
+        TaskCategoryId? newCategoryId,
+        CancellationToken ct)
+    {
+        var changes = new List<TaskHistoryChange>();
+
+        if (oldTitle != task.Title)
+            changes.Add(new TaskHistoryChange("Title", oldTitle, task.Title));
+        if (oldDescription != (task.Description ?? string.Empty))
+            changes.Add(new TaskHistoryChange("Description", oldDescription, task.Description ?? string.Empty));
+        if (oldPriority != task.Priority)
+            changes.Add(new TaskHistoryChange("Priority", oldPriority.ToString(), task.Priority.ToString()));
+        if (oldEstimated != task.EstimatedDuration)
+            changes.Add(new TaskHistoryChange(
+                "EstimatedDuration", oldEstimated.ToString(), task.EstimatedDuration.ToString()));
+        if (oldDueDate != task.DueDateTime)
+            changes.Add(new TaskHistoryChange(
+                "DueDateTime",
+                oldDueDate?.ToString("o") ?? string.Empty,
+                task.DueDateTime?.ToString("o") ?? string.Empty));
+
+        if (oldStatusId != newStatus.Id)
+        {
+            var oldStatus = await statusRepository.GetByIdAsync(oldStatusId, ct);
+            changes.Add(new TaskHistoryChange("Status", oldStatus?.Name ?? string.Empty, newStatus.Name));
+        }
+
+        if (oldCategoryId != newCategoryId)
+        {
+            var oldName = oldCategoryId is { } oldCat
+                ? (await categoryRepository.GetByIdAsync(oldCat, ct))?.Name ?? string.Empty
+                : string.Empty;
+            var newName = newCategoryId is { } newCat
+                ? (await categoryRepository.GetByIdAsync(newCat, ct))?.Name ?? string.Empty
+                : string.Empty;
+            changes.Add(new TaskHistoryChange("Category", oldName, newName));
+        }
+
+        if (changes.Count == 0)
+            return;
+
+        var version = await historyRepository.GetNextVersionAsync(task.Id, ct);
+        var historyResult = TaskHistory.Create(task.Id, userId, HistoryAction.UPDATE, version, changes);
+        if (historyResult.IsSuccess && historyResult.Value is not null)
+            await historyRepository.AddAsync(historyResult.Value, ct);
     }
 
     private static async Task<TaskCategoryId?> ResolveCategoryForEditAsync(

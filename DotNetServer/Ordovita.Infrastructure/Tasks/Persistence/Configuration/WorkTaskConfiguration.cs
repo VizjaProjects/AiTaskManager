@@ -55,6 +55,12 @@ public sealed class WorkTaskConfiguration : IEntityTypeConfiguration<WorkTask>
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(t => t.Steps).HasField("_steps");
 
+        builder.HasMany(t => t.Comments)
+            .WithOne()
+            .HasForeignKey(comment => comment.TaskId)
+            .OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(t => t.Comments).HasField("_comments");
+
         builder.Ignore(t => t.DomainEvents);
     }
 }

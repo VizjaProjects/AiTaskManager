@@ -8,6 +8,7 @@ import {
   mapStatusDto,
   mapTaskDto,
   mapTaskStepDto,
+  mapCommentDto,
   normalizeArray,
 } from "./adapters";
 import type {
@@ -114,6 +115,43 @@ export const taskApi = {
   deleteStep: (workspaceId: string, taskId: string, stepId: string) =>
     api.delete(
       `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/steps/${encodeURIComponent(stepId)}`,
+    ),
+
+  getComments: async (workspaceId: string, taskId: string) => {
+    const { data } = await api.get(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/comments`,
+    );
+    return normalizeArray(data, mapCommentDto);
+  },
+
+  addComment: async (workspaceId: string, taskId: string, content: string) => {
+    const { data } = await api.post<Record<string, unknown>>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/comments`,
+      { content },
+    );
+    return mapCommentDto(data);
+  },
+
+  editComment: async (
+    workspaceId: string,
+    taskId: string,
+    commentId: string,
+    content: string,
+  ) => {
+    const { data } = await api.put<Record<string, unknown>>(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(commentId)}`,
+      { content },
+    );
+    return mapCommentDto(data);
+  },
+
+  deleteComment: (
+    workspaceId: string,
+    taskId: string,
+    commentId: string,
+  ) =>
+    api.delete(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/comments/${encodeURIComponent(commentId)}`,
     ),
 };
 

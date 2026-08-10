@@ -27,6 +27,7 @@ public sealed class CreateWorkTaskHandler(
     ICalendarEventRepository eventRepository,
     IWorkTaskStatusRepository statusRepository,
     ITaskCategoryRepository categoryRepository,
+    ITaskHistoryRepository historyRepository,
     IUnitOfWork uow) : ICommandHandler<CreateWorkTaskCommand, CreateWorkTaskResult>
 {
     public async Task<Result<CreateWorkTaskResult>> Handle(CreateWorkTaskCommand command, CancellationToken ct)
@@ -40,11 +41,13 @@ public sealed class CreateWorkTaskHandler(
         if (status is null || !status.BelongsToWorkspace(workspaceId))
             return Result.Failure<CreateWorkTaskResult>(TaskStatusExceptions.NotFound);
 
+        string? categoryName = null;
         if (command.CategoryId is { } categoryIdValue)
         {
             var category = await categoryRepository.GetByIdAsync(TaskCategoryId.From(categoryIdValue), ct);
             if (category is null || !category.BelongsToWorkspace(workspaceId))
                 return Result.Failure<CreateWorkTaskResult>(CategoryExceptions.NotFound);
+            categoryName = category.Name;
         }
 
         var taskResult = WorkTask.Create(
@@ -105,6 +108,27 @@ public sealed class CreateWorkTaskHandler(
 
             await eventRepository.AddAsync(eventResult.Value!, ct);
         }
+
+        var createdTask = taskResult.Value!;
+        var historyChanges = new List<TaskHistoryChange>
+        {
+            new("Title", string.Empty, createdTask.Title),
+            new("Priority", string.Empty, createdTask.Priority.ToString()),
+            new("Status", string.Empty, status.Name),
+            new("EstimatedDuration", string.Empty, createdTask.EstimatedDuration.ToString())
+        };
+        if (!string.IsNullOrWhiteSpace(createdTask.Description))
+            historyChanges.Add(new TaskHistoryChange("Description", string.Empty, createdTask.Description!));
+        if (categoryName is not null)
+            historyChanges.Add(new TaskHistoryChange("Category", string.Empty, categoryName));
+        if (createdTask.DueDateTime is { } createdDue)
+            historyChanges.Add(new TaskHistoryChange("DueDateTime", string.Empty, createdDue.ToString("o")));
+
+        var historyResult = TaskHistory.Create(
+            createdTask.Id, access.Value.User.Id, HistoryAction.CREATE, 1, historyChanges);
+        if (historyResult.IsFailure || historyResult.Value is null)
+            return Result.Failure<CreateWorkTaskResult>(historyResult.Error);
+        await historyRepository.AddAsync(historyResult.Value, ct);
 
         await uow.SaveChangesAsync(ct);
         return Result.Success(new CreateWorkTaskResult(taskResult.Value!.Id.Value, taskResult.Value.CreatedAt));

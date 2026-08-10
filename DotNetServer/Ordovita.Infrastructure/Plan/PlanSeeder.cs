@@ -3,6 +3,7 @@ using Ordovita.Domain.Plan;
 using Ordovita.Infrastructure.Persistence;
 
 namespace Ordovita.Infrastructure.Plan;
+
 public static class PlanSeeder
 {
     public static async Task SeedAsync(AppDbContext db, CancellationToken ct = default)
@@ -16,7 +17,7 @@ public static class PlanSeeder
                 PlanDefaults.FreeAiTaskLimit,
                 PlanDefaults.FreePublicWorkspaceLimit,
                 PlanDefaults.FreePrivateWorkspaceLimit,
-                isActive: true);
+                true);
 
             await db.Plans.AddAsync(free, ct);
             await db.SaveChangesAsync(ct);

@@ -10,6 +10,7 @@ import {
   type Survey,
   type Task,
   type TaskStep,
+  type TaskComment,
   type TaskStatus,
 } from "../types";
 import { parseApiDateTime, toLocalDateTimeString } from "../utils";
@@ -77,6 +78,19 @@ export function mapTaskStepDto(raw: Record<string, unknown>): TaskStep {
     assignedUserId: (raw.assignedUserId as string) ?? null,
     createdBy: raw.createdBy as string,
     source: raw.source as TaskStep["source"],
+    createdAt: new Date(raw.createdAt as string).toISOString(),
+    updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}
+
+export function mapCommentDto(raw: Record<string, unknown>): TaskComment {
+  return {
+    commentId: raw.commentId as string,
+    taskId: raw.taskId as string,
+    authorId: raw.authorId as string,
+    authorName: (raw.authorName as string) ?? "",
+    authorEmail: (raw.authorEmail as string) ?? null,
+    content: raw.content as string,
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
   };
