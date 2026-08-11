@@ -1702,7 +1702,14 @@ function TaskCommentsSection({
   const [editDraft, setEditDraft] = useState("");
 
   const accent = isDark ? "#9b8cff" : "#5b4ee0";
-  const list = comments ?? [];
+  const list = useMemo(
+    () =>
+      [...(comments ?? [])].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
+    [comments],
+  );
 
   function submit() {
     const content = draft.trim();
