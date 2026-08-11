@@ -125,7 +125,7 @@ public sealed class CreateWorkTaskHandler(
             historyChanges.Add(new TaskHistoryChange("DueDateTime", string.Empty, createdDue.ToString("o")));
 
         var historyResult = TaskHistory.Create(
-            createdTask.Id, access.Value.User.Id, HistoryAction.CREATE, 1, historyChanges);
+            createdTask.Id, access.Value.User.Id, HistoryAction.CREATE, 0, historyChanges);
         if (historyResult.IsFailure || historyResult.Value is null)
             return Result.Failure<CreateWorkTaskResult>(historyResult.Error);
         await historyRepository.AddAsync(historyResult.Value, ct);
