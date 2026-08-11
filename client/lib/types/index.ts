@@ -357,6 +357,7 @@ export interface CreateEventRequest {
   endDateTime: string;
   allDay: boolean;
   proposedBy: ProposedBy;
+  color?: string;
 }
 
 export interface EditEventRequest {

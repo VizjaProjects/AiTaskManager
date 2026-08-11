@@ -30,7 +30,8 @@ public sealed class CalendarEvent : Entity<EventId>
         DateTime endDateTime,
         bool allDay,
         ProposedBy proposedBy,
-        CalendarId calendarId)
+        CalendarId calendarId,
+        string? color = null)
     {
         if (string.IsNullOrWhiteSpace(title))
             return Result.Failure<CalendarEvent>(EventExceptions.MissingTitle);
@@ -43,7 +44,7 @@ public sealed class CalendarEvent : Entity<EventId>
             Id = EventId.New(),
             TaskId = taskId,
             Title = title,
-            Color = DefaultColor,
+            Color = string.IsNullOrWhiteSpace(color) ? DefaultColor : color,
             StartDateTime = startDateTime,
             EndDateTime = endDateTime,
             AllDay = allDay,

@@ -16,7 +16,8 @@ public sealed record CreateCalendarEventCommand(
     DateTime StartDateTime,
     DateTime EndDateTime,
     bool AllDay,
-    ProposedBy ProposedBy) : ICommand<CreateCalendarEventResult>;
+    ProposedBy ProposedBy,
+    string? Color = null) : ICommand<CreateCalendarEventResult>;
 
 public sealed class CreateCalendarEventHandler(
     WorkspaceAccessGuard accessGuard,
@@ -53,7 +54,8 @@ public sealed class CreateCalendarEventHandler(
             command.EndDateTime,
             command.AllDay,
             command.ProposedBy,
-            calendar.Id);
+            calendar.Id,
+            command.Color);
 
         if (eventResult.IsFailure)
             return Result.Failure<CreateCalendarEventResult>(eventResult.Error);

@@ -205,7 +205,7 @@ public static class WorkspaceTasksEndpoint
     {
         var result = await sender.Send(new CreateCalendarEventCommand(
             workspaceId, request.TaskId, request.Title, request.StartDateTime,
-            request.EndDateTime, request.AllDay, request.ProposedBy), ct);
+            request.EndDateTime, request.AllDay, request.ProposedBy, request.Color), ct);
         return result.IsSuccess
             ? Results.Created($"/api/v1/workspace/{workspaceId}/event/{result.Value!.EventId}", result.Value)
             : result.Error.ToProblem();
@@ -333,7 +333,8 @@ public static class WorkspaceTasksEndpoint
         DateTime StartDateTime,
         DateTime EndDateTime,
         bool AllDay,
-        ProposedBy ProposedBy);
+        ProposedBy ProposedBy,
+        string? Color = null);
 
     private sealed record EditEventRequest(
         Guid EventId,

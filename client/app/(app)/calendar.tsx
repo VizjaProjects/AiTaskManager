@@ -147,6 +147,41 @@ function getMonthDays(year: number, month: number) {
   return days;
 }
 
+function EventColorPicker({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (color: string) => void;
+}) {
+  const t = useT();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
+  // Pierścień musi kontrastować z tłem modala, nie z próbką — stąd on-surface.
+  const ring = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
+  return (
+    <View className="gap-2">
+      <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
+        {t("cal.color")}
+      </Text>
+      <View className="flex-row flex-wrap gap-2">
+        {EVENT_COLOR_OPTIONS.map((c) => (
+          <TouchableOpacity
+            key={c}
+            onPress={() => onChange(c)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: value === c }}
+            className="w-8 h-8 rounded-full border-2"
+            style={{
+              backgroundColor: c,
+              borderColor: value === c ? ring : "transparent",
+            }}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function CreateEventModal({
   visible,
   onClose,
@@ -173,6 +208,7 @@ function CreateEventModal({
   const [endHour, setEndHour] = useState("10");
   const [endMin, setEndMin] = useState("00");
   const [allDay, setAllDay] = useState(false);
+  const [color, setColor] = useState<string>(DEFAULT_EVENT_COLOR);
 
   useEffect(() => {
     if (visible) {
@@ -182,6 +218,7 @@ function CreateEventModal({
       setEndHour(initialEndHour ?? "10");
       setEndMin(initialEndMin ?? "00");
       setAllDay(false);
+      setColor(DEFAULT_EVENT_COLOR);
     }
   }, [
     visible,
@@ -205,6 +242,7 @@ function CreateEventModal({
         endDateTime: toLocalDateTimeString(end),
         allDay,
         proposedBy: ProposedBy.USER,
+        color,
       },
       {
         onSuccess: () => {
@@ -218,7 +256,7 @@ function CreateEventModal({
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View className="flex-1 bg-black/50 items-center justify-center p-6">
-        <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
+        <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
               {t("cal.newEvent")}
@@ -227,6 +265,11 @@ function CreateEventModal({
               <MaterialIcons name="close" size={24} color="#6b6965" />
             </TouchableOpacity>
           </View>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ gap: 16 }}
+            keyboardShouldPersistTaps="handled"
+          >
           <Input
             label={t("cal.eventTitle")}
             value={title}
@@ -307,6 +350,10 @@ function CreateEventModal({
               {t("cal.allDay")}
             </Text>
           </TouchableOpacity>
+
+          <EventColorPicker value={color} onChange={setColor} />
+          </ScrollView>
+
           <View className="flex-row gap-3 justify-end mt-2">
             <Button
               variant="outline"
@@ -566,24 +613,7 @@ function EditCalendarEventModal({
                 </Text>
               </TouchableOpacity>
 
-              <View className="gap-2">
-                <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
-                  {t("cal.color")}
-                </Text>
-                <View className="flex-row flex-wrap gap-2">
-                  {EVENT_COLOR_OPTIONS.map((c) => (
-                    <TouchableOpacity
-                      key={c}
-                      onPress={() => setColor(c)}
-                      className="w-8 h-8 rounded-full border-2"
-                      style={{
-                        backgroundColor: c,
-                        borderColor: color === c ? "#111827" : "transparent",
-                      }}
-                    />
-                  ))}
-                </View>
-              </View>
+              <EventColorPicker value={color} onChange={setColor} />
 
               <View className="gap-2">
                 <View className="flex-row items-center justify-between">
