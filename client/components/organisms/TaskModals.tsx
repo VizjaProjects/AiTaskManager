@@ -64,7 +64,7 @@ import { useThemeStore } from "@/lib/stores/theme";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 
 import { useAuthStore } from "@/lib/stores/auth";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 
 type TaskSaveData = {
   title: string;
