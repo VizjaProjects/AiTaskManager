@@ -18,11 +18,21 @@ import {
   useCreateWorkspace,
   useSetActiveWorkspace,
 } from "@/lib/hooks";
-import { useWorkspaceStore } from "@/lib/stores";
+import { useWorkspaceStore, useThemeStore } from "@/lib/stores";
 import type { Workspace, WorkspaceVisibility } from "@/lib/types";
 import { useT } from "@/lib/i18n";
 
 type CreateForm = { workspaceName: string };
+
+/** Odpowiedniki tokenów z global.css dla inline'owych propów `color` MaterialIcons. */
+function iconColors(isDark: boolean) {
+  return {
+    accent: isDark ? "#9b8cff" : "#5b4ee0",
+    onSurface: isDark ? "rgba(255,255,255,0.88)" : "#1a1a18",
+    onSurfaceVariant: isDark ? "rgba(255,255,255,0.5)" : "#6b6965",
+    inverseOnSurface: isDark ? "#1a1a18" : "#ffffff",
+  };
+}
 
 function SectionLabel({
   icon,
@@ -56,6 +66,8 @@ function WorkspaceRow({
   onManage: () => void;
 }) {
   const t = useT();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
+  const c = iconColors(isDark);
   const isPublic = ws.visibility === "Public";
   return (
     <View
@@ -75,7 +87,7 @@ function WorkspaceRow({
           <MaterialIcons
             name={isPublic ? "group" : "lock"}
             size={18}
-            color={isActive ? "#ffffff" : "#9b9791"}
+            color={isActive ? c.inverseOnSurface : "#9b9791"}
           />
         </View>
         <View className="flex-1 min-w-0">
@@ -92,7 +104,7 @@ function WorkspaceRow({
           </Text>
         </View>
         {isActive && (
-          <MaterialIcons name="check-circle" size={20} color="#111111" />
+          <MaterialIcons name="check-circle" size={20} color={c.onSurface} />
         )}
       </TouchableOpacity>
       <TouchableOpacity
@@ -119,6 +131,8 @@ export function WorkspaceModal({
 }: WorkspaceModalProps) {
   const t = useT();
   const router = useRouter();
+  const isDark = useThemeStore((s) => s.mode) === "dark";
+  const c = iconColors(isDark);
   const { workspaces, isLoading } = useWorkspaces();
   const activeWorkspaceId = useWorkspaceStore((s) => s.activeWorkspaceId);
   const setActive = useSetActiveWorkspace();
@@ -312,7 +326,7 @@ export function WorkspaceModal({
                 onPress={() => setMode("create")}
                 className="flex-row items-center justify-center gap-2 mt-4 py-3.5 rounded-xl bg-inverse-surface"
               >
-                <MaterialIcons name="add" size={20} color="#ffffff" />
+                <MaterialIcons name="add" size={20} color={c.inverseOnSurface} />
                 <Text className="text-inverse-on-surface font-headline text-sm">
                   {t("wsCreate.title")}
                 </Text>
@@ -384,7 +398,7 @@ export function WorkspaceModal({
                       <MaterialIcons
                         name={opt.icon}
                         size={20}
-                        color={selected ? "#5b4ee0" : "#6b6965"}
+                        color={selected ? c.accent : c.onSurfaceVariant}
                       />
                       <View className="flex-1 min-w-0">
                         <Text className="text-on-surface font-body text-body-md">
@@ -401,7 +415,7 @@ export function WorkspaceModal({
                             : "radio-button-unchecked"
                         }
                         size={20}
-                        color={selected ? "#5b4ee0" : "#9b9791"}
+                        color={selected ? c.accent : "#9b9791"}
                       />
                     </TouchableOpacity>
                   );
