@@ -109,6 +109,7 @@ Expo Router (file-based routing) + React Native Web. Jeden codebase → web, des
 
 #### Klucze React Query (cache)
 Zakresowane po workspace: `["tasks", wsId]`, `["events", wsId]`, `["categories", wsId]`, `["taskStatuses", wsId]`, `["notes", wsId]`, `["noteFolders", wsId]`, `["aiProposals", wsId]`.
+Zakresowane po workspace + zadaniu: `["taskComments", wsId, taskId]`, `["taskHistory", wsId, taskId]`.
 Globalne: `["userPlan"]`, `["adminPlans"]`, `["adminUsers"]`, `["llmSettings"]`, `["llmProviders"]`, `["llmModels"]`, `["aiStatistics"]`, `["surveys"]`, `["active-surveys"]`, `["survey-questions", surveyId]`, `["question-options", questionId]`, `["user-responses"]`, `["survey-responses", surveyId]`, `["my-responses"]`.
 
 Zasady utrzymane w hookach (trzymaj je przy dopisywaniu nowych):
@@ -116,6 +117,7 @@ Zasady utrzymane w hookach (trzymaj je przy dopisywaniu nowych):
 - Mutacje edycyjne robią **optimistic update**: `onMutate` → snapshot → `onError` rollback → `onSettled` invalidate.
 - Zmiana taska unieważnia też `events` i odwrotnie (task ↔ powiązane wydarzenie są sprzężone).
 - `useGenerateAiPlan` unieważnia `["userPlan"]` (każda generacja zjada limit).
+- `useEditTask` unieważnia też `["taskHistory", wsId]` (każda edycja dopisuje wersję).
 - Zmiana aktywnego workspace / widoczności / usunięcie workspace robi `qc.invalidateQueries()` bez klucza (globalny reset).
 
 ### Stan globalny — Zustand ([client/lib/stores/](client/lib/stores/))
@@ -219,7 +221,7 @@ Wszystko pod `/api/v1`. Wszystko `RequireAuthorization()` poza `/identity/*`, `/
 | *(poza `/api/v1`)* | `GET /oauth2/authorization/google`, `GET /health` |
 | `/user` | `GET me`, `POST fullname`, `PUT defaultWorkspace/{workspaceId}`, `GET delete` ⚠️ (usuwa konto GET-em) |
 | `/workspace` | `POST create`, `GET all`, `GET {workspaceId}`, `POST {workspaceId}/assignUsers`, `POST {workspaceId}/assignUsersByEmail`, `PATCH {workspaceId}/removeUsers`, `PUT {workspaceId}/visibility`, `DELETE delete/{workspaceId}` |
-| `/workspace/{workspaceId}` — taski | `GET/POST/PUT task`, `DELETE task/{taskId}`, `PUT task/{taskId}/assignees`, `POST task/{taskId}/steps`, `PUT/DELETE task/{taskId}/steps/{stepId}`, `PUT task/{taskId}/steps/{stepId}/completion`, `PUT task/{taskId}/steps/order` |
+| `/workspace/{workspaceId}` — taski | `GET/POST/PUT task`, `DELETE task/{taskId}`, `PUT task/{taskId}/assignees`, `POST task/{taskId}/steps`, `PUT/DELETE task/{taskId}/steps/{stepId}`, `PUT task/{taskId}/steps/{stepId}/completion`, `PUT task/{taskId}/steps/order`, `GET/POST task/{taskId}/comments`, `PUT/DELETE task/{taskId}/comments/{commentId}`, `GET task/{taskId}/history` |
 | `/workspace/{workspaceId}` — wydarzenia | `GET/POST/PUT event`, `DELETE event/{eventId}` |
 | `/workspace/{workspaceId}` — słowniki | `GET/POST/PUT category`, `DELETE category/{categoryId}`, `GET/POST/PUT task-status`, `DELETE task-status/{statusId}` |
 | `/workspace/{workspaceId}/ai` | `POST plan` |
@@ -279,8 +281,14 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 20. **`PageLayout` NIE scrolluje — każdy ekran musi dać własny `ScrollView`.** Kontener treści w [PageLayout.tsx](client/components/organisms/PageLayout.tsx) to `flex-1 … overflow-hidden`, więc treść wyższa niż viewport jest po prostu **ucinana bez paska przewijania** (nie ma przepełnienia body — layout jest na sztywno wysoki). Objaw jest mylący: strona wygląda na kompletną, po prostu urywa się na dole. Wyjątek: ekrany celowo wypełniające viewport (`flex-1 justify-center`, np. [statistics.tsx](client/app/%28app%29/statistics.tsx)) — tam `ScrollView` jest zbędny.
     **Dolny odstęp dawaj w `contentContainerStyle={{ paddingBottom: … }}` ScrollView-a, nigdy na kontenerze `PageLayout`** — padding na kontenerze przycinającym odsuwa scrollport od dołu ekranu i tworzy martwy pas z twardą linią ucięcia w połowie karty (tak było do 2026-07-28: `paddingBottom` 48 px desktop / 44 px mobile web).
 
+21. **`HistoryDate` to jedyna data z backendu w UTC — reszta to lokalny wall-clock.** `TaskHistory.HistoryDate` zapisuje `DateTime.UtcNow`, ale serializuje się **bez offsetu**, więc wygląda identycznie jak `dueDateTime`. Puszczenie jej przez `parseApiDateTime` (pułapka 9) przesunęłoby czas o strefę. Dlatego `mapTaskHistoryDto` zostawia surowy string, a [TaskHistorySection.tsx](client/components/molecules/TaskHistorySection.tsx) dokłada `Z` (`parseUtcDateTime`). Uwaga: `DueDateTime` **wewnątrz** rekordu historii jest już zwykłym wall-clockiem (`ToString("o")` z domeny) — tam `new Date()` jest poprawne.
+
+22. **Numer wersji historii nadaje domena — handler przekazuje wersję POPRZEDNIĄ.** `TaskHistory.Create(..., short version, ...)` robi wewnątrz `version++`, więc argument to „ostatnia istniejąca wersja", nie „wersja, którą chcę zapisać". `CreateWorkTaskHandler` przekazuje `0` (brak historii), `EditWorkTaskHandler` — wynik `GetNextVersionAsync`, które mimo nazwy zwraca **aktualne maksimum**, nie następny numer. ⚠️ Zadania utworzone przed 2026-08-11 mają wpis `CREATE` pod numerem 2 — każda historia jest wewnętrznie spójna, ale między starymi a nowymi zadaniami numeracja startuje inaczej. Front pokazuje `versionNumber` wprost z DTO i tak ma zostać; nie kompensuj tego odejmowaniem.
+
+23. **Historia obejmuje 7 pól i nic więcej.** `RecordHistoryAsync` w [EditWorkTaskHandler.cs](DotNetServer/Ordovita.Application/Tasks/WorkTasks/EditWorkTask/EditWorkTaskHandler.cs) loguje Title, Description, Priority, EstimatedDuration, DueDateTime, Status, Category. Kroki, komentarze, przypisania i powiązania z notatkami **nie są wersjonowane** — nie obiecuj tego w UI. `TaskHistoryDto` nie zwraca nazwy autora (tylko `UserId`), więc front rozwiązuje ją z `assignedUsers` workspace'u; autor usunięty z workspace'u pokaże się jako „Nieznany użytkownik".
+
 ### Proces
-21. **Branch:** pracuj na feature branchach (repo bywa na `frontend/...`), nie commituj do `main` bez prośby. Commity tworzyć tylko gdy użytkownik o to poprosi. Push do `main` **odpala deploy produkcyjny**.
+24. **Branch:** pracuj na feature branchach (repo bywa na `frontend/...`), nie commituj do `main` bez prośby. Commity tworzyć tylko gdy użytkownik o to poprosi. Push do `main` **odpala deploy produkcyjny**.
 
 ---
 
@@ -290,6 +298,7 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 |---|---|---|
 | Zadania (kanban/lista, filtry, assignee) | [tasks.tsx](client/app/%28app%29/tasks.tsx), [TaskModals.tsx](client/components/organisms/TaskModals.tsx), [TaskCard.tsx](client/components/molecules/TaskCard.tsx) | [WorkspaceTasksEndpoint.cs](DotNetServer/Ordovita.Api/Endpoints/Tasks/WorkspaceTasksEndpoint.cs), `Application/Tasks/WorkTasks/*` |
 | Kroki zadań (subtaski) | [TaskStepsSection.tsx](client/components/molecules/TaskStepsSection.tsx), [CompactTaskSteps.tsx](client/components/molecules/CompactTaskSteps.tsx) | `Application/Tasks/TaskSteps/*`, [TaskStep.cs](DotNetServer/Ordovita.Domain/Tasks/TaskStep.cs) |
+| Historia zmian zadania (read-only) | [TaskHistorySection.tsx](client/components/molecules/TaskHistorySection.tsx) — zakładka „Historia" w [TaskModals.tsx](client/components/organisms/TaskModals.tsx) | `Application/Tasks/History/*`, [TaskHistory.cs](DotNetServer/Ordovita.Domain/Tasks/TaskHistory.cs) |
 | Kalendarz (dzień/tydzień/miesiąc, drag, druk, „dziś") | [calendar.tsx](client/app/%28app%29/calendar.tsx), [calendarPrint.ts](client/lib/utils/calendarPrint.ts), [eventColors.ts](client/lib/utils/eventColors.ts) | `Application/Tasks/Events/*` (endpointy `event` w WorkspaceTasksEndpoint) |
 | Notatki (rich text, obrazki, linki do task/event) | [notes/](client/components/organisms/notes/) | [NoteEndpoint.cs](DotNetServer/Ordovita.Api/Endpoints/Note/NoteEndpoint.cs), `Application/Note/*` |
 | AI planowanie + propozycje | [ai-task.tsx](client/app/%28app%29/ai-task.tsx), [AiProposedCard.tsx](client/components/atoms/AiProposedCard.tsx), [AiChatConfigButton.tsx](client/components/molecules/AiChatConfigButton.tsx) | `Application/Tasks/Ai/*`, `Application/Tasks/Proposals/*`, `Infrastructure/Llm/*` |
@@ -314,6 +323,7 @@ Wiedza nieoczywista — czytaj zanim zaczniesz zmieniać te obszary.
 
 > Dopisuj na górze: `YYYY-MM-DD — co i gdzie`. Krótko.
 
+- **2026-08-11** — Zakładka „Historia" w modalu zadania (read-only: oś czasu wersji, wiersz „pole: stara → nowa wartość", bez podglądu/porównywania/przywracania). Frontend-only — backend (`GET /task/{taskId}/history`, `GetTaskHistoryHandler`, agregat `TaskHistory`) już istniał i jest zarejestrowany. Nowe: [TaskHistorySection.tsx](client/components/molecules/TaskHistorySection.tsx), typy `TaskHistoryEntry`/`TaskHistoryRecord`/`HistoryAction`, `mapTaskHistoryDto`, `taskApi.getHistory`, hook `useTaskHistory`, klucz `["taskHistory", wsId, taskId]`, i18n `history.*` + `priority.*` (683 klucze × 2 języki, parytet OK). Zakładka widoczna tylko dla zapisanych, zaakceptowanych zadań. Nowe pułapki 21–23. Czas względny liczony ręcznie z kluczy i18n, bo `Intl.RelativeTimeFormat` nie jest gwarantowany w Hermesie.
 - **2026-08-11** — Fix: numeracja wersji historii zaczyna się od v1. `CreateWorkTaskHandler` przekazywał do `TaskHistory.Create` wersję `1`, a domena robi `version++` — wpis `CREATE` zapisywał się więc jako `VersionNumber = 2` i żadne zadanie nie miało v1. Zmienione na `0`; logika inkrementacji celowo zostaje w domenie. Zadania sprzed poprawki zachowują start od v2.
 - **2026-08-11** — Fix regresji z 2026-07-29: [TaskModals.tsx](client/components/organisms/TaskModals.tsx) wołał `useLocale()` bez importu — cofnięcie omyłkowej zmiany nazwy komponentu zabrało też linię importu. `tsc` to zgłaszał, ale zmiana poszła na `main` bez ponownego sprawdzenia, a Metro nie typechecku­je, więc na produkcji otwarcie szczegółów zadania rzucało `ReferenceError`.
 - **2026-08-04** — Komentarze do tasków (sekcja „Komentarze” **w zakładce Szczegóły** modala [TaskModals.tsx](client/components/organisms/TaskModals.tsx), komponent `TaskCommentsSection`; dodawanie/edycja/usuwanie — edytować/usuwać może tylko autor, dodać każdy z dostępem do workspace). Backend: encja `TaskComment` (agregat `WorkTask`), migracja `AddTaskComments`, endpointy `GET/POST/PUT/DELETE /task/{id}/comments` w [WorkspaceTasksEndpoint.cs](DotNetServer/Ordovita.Api/Endpoints/Tasks/WorkspaceTasksEndpoint.cs), CQRS w `Application/Tasks/Comments/*`. ⚠️ Handlery CQRS rejestruje się **ręcznie** w [DependencyInjection.cs](DotNetServer/Ordovita.Application/DependencyInjection.cs) (brak auto-scanu) — pominięcie = 500 „No service for type IQueryHandler…”. Frontend: `taskApi.get/add/edit/deleteComment`, hooki `useTaskComments/useAddComment/useEditComment/useDeleteComment`, typ `TaskComment`, i18n `comments.*`. **Fix logowania (2 przyczyny):** (1) interceptor axios ([client.ts](client/lib/api/client.ts)) pomija flow refresh tokenu dla `/identity/*`; (2) `login` w [auth.ts](client/lib/stores/auth.ts) NIE ustawia już globalnego `isLoading` podczas sprawdzania hasła — wcześniej `AuthGate` odmontowywał formularz i pokazywał loader, gubiąc błąd. Globalny loader włącza się dopiero po udanym uwierzytelnieniu.

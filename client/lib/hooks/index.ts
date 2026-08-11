@@ -233,6 +233,8 @@ export function useEditTask() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["tasks", workspaceId] });
       qc.invalidateQueries({ queryKey: ["events", workspaceId] });
+      // Każda edycja dopisuje wersję do historii.
+      qc.invalidateQueries({ queryKey: ["taskHistory", workspaceId] });
     },
   });
 }
@@ -410,6 +412,16 @@ export function useTaskComments(taskId: string | null) {
     queryKey: ["taskComments", workspaceId, taskId],
     queryFn: () =>
       taskApi.getComments(requireWorkspaceId(workspaceId), taskId as string),
+    enabled: !!workspaceId && !!taskId,
+  });
+}
+
+export function useTaskHistory(taskId: string | null) {
+  const workspaceId = useWorkspaceId();
+  return useQuery({
+    queryKey: ["taskHistory", workspaceId, taskId],
+    queryFn: () =>
+      taskApi.getHistory(requireWorkspaceId(workspaceId), taskId as string),
     enabled: !!workspaceId && !!taskId,
   });
 }

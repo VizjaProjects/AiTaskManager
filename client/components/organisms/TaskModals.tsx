@@ -20,6 +20,7 @@ import { Avatar } from "../atoms/Avatar";
 import {
   DraftTaskStepsEditor,
   LinkCheckboxModal,
+  TaskHistorySection,
   TaskStepsSection,
 } from "../molecules";
 import type {
@@ -76,7 +77,7 @@ type TaskSaveData = {
   dueDateTime?: string;
 };
 
-type TaskDetailTab = "details" | "steps" | "links" | "comments";
+type TaskDetailTab = "details" | "steps" | "links" | "comments" | "history";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -164,6 +165,8 @@ export function TaskDetailModal({
   }, [taskProp, liveTasks]);
 
   const commentsEnabled = !onSaveCustom && !!task && task.accepted;
+  // Propozycje AI nie mają jeszcze wpisów historii — zakładka tylko dla zapisanych.
+  const historyEnabled = !onSaveCustom && !!task && task.accepted;
   const detailTabs: [
     TaskDetailTab,
     keyof typeof MaterialIcons.glyphMap,
@@ -172,6 +175,13 @@ export function TaskDetailModal({
     ["details", "info-outline", t("taskModal.tabDetails")],
     ["steps", "checklist", `${t("taskModal.tabSteps")} (${task?.steps.length ?? 0})`],
     ["links", "link", t("taskModal.tabLinks")],
+    ...(historyEnabled
+      ? ([["history", "history", t("taskModal.tabHistory")]] as [
+          TaskDetailTab,
+          keyof typeof MaterialIcons.glyphMap,
+          string,
+        ][])
+      : []),
   ];
 
   useEffect(() => {
@@ -579,6 +589,12 @@ export function TaskDetailModal({
                     editable={editing}
                     allowCompletion={task.accepted}
                   />
+                </View>
+              ) : null}
+
+              {activeTab === "history" ? (
+                <View className="px-6">
+                  <TaskHistorySection taskId={task.taskId} />
                 </View>
               ) : null}
 

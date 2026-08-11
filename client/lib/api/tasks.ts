@@ -9,6 +9,7 @@ import {
   mapTaskDto,
   mapTaskStepDto,
   mapCommentDto,
+  mapTaskHistoryDto,
   normalizeArray,
 } from "./adapters";
 import type {
@@ -122,6 +123,13 @@ export const taskApi = {
       `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/comments`,
     );
     return normalizeArray(data, mapCommentDto);
+  },
+
+  getHistory: async (workspaceId: string, taskId: string) => {
+    const { data } = await api.get(
+      `${ws(workspaceId)}/task/${encodeURIComponent(taskId)}/history`,
+    );
+    return normalizeArray(data, mapTaskHistoryDto);
   },
 
   addComment: async (workspaceId: string, taskId: string, content: string) => {

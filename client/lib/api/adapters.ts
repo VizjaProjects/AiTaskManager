@@ -11,6 +11,8 @@ import {
   type Task,
   type TaskStep,
   type TaskComment,
+  type TaskHistoryEntry,
+  type HistoryAction,
   type TaskStatus,
 } from "../types";
 import { parseApiDateTime, toLocalDateTimeString } from "../utils";
@@ -93,6 +95,32 @@ export function mapCommentDto(raw: Record<string, unknown>): TaskComment {
     content: raw.content as string,
     createdAt: new Date(raw.createdAt as string).toISOString(),
     updatedAt: new Date(raw.updatedAt as string).toISOString(),
+  };
+}
+
+export function mapTaskHistoryDto(
+  raw: Record<string, unknown>,
+): TaskHistoryEntry {
+  const records = Array.isArray(raw.records) ? raw.records : [];
+  return {
+    historyId: raw.historyId as string,
+    taskId: raw.taskId as string,
+    userId: raw.userId as string,
+    action: (raw.action as HistoryAction) ?? "UPDATE",
+    versionNumber: Number(raw.versionNumber ?? 0),
+    // HistoryDate przychodzi bez offsetu, ale JEST w UTC — zostawiamy surową
+    // wartość, komponent dokłada „Z”. Nie używamy parseApiDateTime (ono
+    // traktuje brak offsetu jako czas lokalny — patrz CLAUDE.md, pułapka 9).
+    historyDate: String(raw.historyDate ?? ""),
+    records: records.map((r) => {
+      const rec = r as Record<string, unknown>;
+      return {
+        recordId: rec.recordId as string,
+        field: String(rec.field ?? ""),
+        prevValue: String(rec.prevValue ?? ""),
+        nextValue: String(rec.nextValue ?? ""),
+      };
+    }),
   };
 }
 

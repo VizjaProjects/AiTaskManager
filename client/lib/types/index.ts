@@ -157,6 +157,26 @@ export interface TaskComment {
   updatedAt: string;
 }
 
+export type HistoryAction = "CREATE" | "UPDATE";
+
+export interface TaskHistoryRecord {
+  recordId: UUID;
+  field: string;
+  prevValue: string;
+  nextValue: string;
+}
+
+export interface TaskHistoryEntry {
+  historyId: UUID;
+  taskId: UUID;
+  userId: UUID;
+  action: HistoryAction;
+  versionNumber: number;
+  /** UTC (DateTime.UtcNow z domeny) — parsowane jawnie jako UTC, nie parseApiDateTime. */
+  historyDate: string;
+  records: TaskHistoryRecord[];
+}
+
 export interface Category {
   categoryId: UUID;
   workspaceId?: UUID;
