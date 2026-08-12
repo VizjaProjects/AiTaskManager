@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Mvc;
 using Ordovita.Api.Common;
+using Ordovita.Application.Abstraction.Workspace;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Workspaces;
 using Ordovita.Application.Workspaces.AssignUsersByEmail;
@@ -8,6 +10,7 @@ using Ordovita.Application.Workspaces.CreateWorkspace;
 using Ordovita.Application.Workspaces.DeleteWorkspace;
 using Ordovita.Application.Workspaces.GetMyWorkspaces;
 using Ordovita.Application.Workspaces.GetWorkspaceById;
+using Ordovita.Application.Workspaces.GetWorkspaceUsers;
 using Ordovita.Application.Workspaces.RemoveUsersFromWorkspace;
 using Ordovita.Domain.Workspace;
 
@@ -67,6 +70,11 @@ public static class WorkspaceEndpoint
             .Produces(204)
             .Produces(401)
             .Produces(404);
+
+        g.MapGet("/allWorkspaceUsers/{workspaceId:guid}", GetWorkspaceUsers)
+            .WithName("GetWorkspaceUsers")
+            .Produces<IReadOnlyList<UserWorkspace>>(200)
+            .Produces(401);
 
         return g;
     }
@@ -134,6 +142,12 @@ public static class WorkspaceEndpoint
         return Enum.TryParse<WorkspaceVisibility>(value, true, out var parsed)
             ? parsed
             : WorkspaceVisibility.Private;
+    }
+
+    private static async Task<IResult> GetWorkspaceUsers(Guid workspaceId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetWorkspaceUsersQuery(workspaceId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 
     private sealed record CreateWorkspaceRequest(

@@ -1,4 +1,5 @@
 using FluentValidation;
+using Ordovita.Application.Abstraction.Jobs;
 using Ordovita.Application.Abstraction.Persistance;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Domain.Common;
@@ -17,7 +18,8 @@ public sealed record AddCommentCommand(
 public sealed class AddCommentHandler(
     WorkspaceAccessGuard accessGuard,
     IWorkTaskRepository taskRepository,
-    IUnitOfWork uow) : ICommandHandler<AddCommentCommand, TaskCommentDto>
+    IUnitOfWork uow,
+    IBackgroundJobScheduler jobs) : ICommandHandler<AddCommentCommand, TaskCommentDto>
 {
     public async Task<Result<TaskCommentDto>> Handle(AddCommentCommand command, CancellationToken ct)
     {
@@ -29,13 +31,23 @@ public sealed class AddCommentHandler(
         if (task is null || !task.BelongsToWorkspace(WorkspaceId.From(command.WorkspaceId)))
             return Result.Failure<TaskCommentDto>(TaskExceptions.NotFound);
 
-        var result = task.AddComment(access.Value.User.Id, command.Content);
+        var author = access.Value.User;
+        var result = task.AddComment(author.Id, command.Content);
         if (result.IsFailure || result.Value is null)
             return Result.Failure<TaskCommentDto>(result.Error);
 
         await uow.SaveChangesAsync(ct);
 
-        var author = access.Value.User;
+        foreach (var recipientId in task.AssignedUserIds.Where(id => id != author.Id))
+        {
+            jobs.EnqueueCommentMentionEmail(
+                command.WorkspaceId,
+                command.TaskId,
+                result.Value.Id.Value,
+                recipientId.Value,
+                author.Id.Value);
+        }
+
         return Result.Success(TaskCommentMapper.ToDto(result.Value, author.FullName, author.Email.Value));
     }
 }

@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Ordovita.Api.Common;
+using Ordovita.Application.Abstraction.Jobs;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Identity.ConfirmUserEmail;
 using Ordovita.Application.Identity.RegisterUser;
@@ -40,7 +41,7 @@ public static class AspIdentityEndpoint
                 [FromServices] ISender sender,
                 [FromServices] UserManager<AspIdentityUser> userManager,
                 [FromServices] LinkGenerator linkGenerator,
-                [FromServices] IEmailSender<AspIdentityUser> emailSender,
+                [FromServices] IBackgroundJobScheduler jobs,
                 CancellationToken ct) =>
             {
                 var result = await sender.Send(
@@ -54,8 +55,7 @@ public static class AspIdentityEndpoint
                     if (!await userManager.IsInRoleAsync(user, Role.USER.ToString()))
                         await userManager.AddToRoleAsync(user, Role.USER.ToString());
 
-                    await SendConfirmationEmailAsync(user, userManager, context, request.Email, linkGenerator,
-                        emailSender);
+                    await SendConfirmationEmailAsync(user, userManager, context, request.Email, linkGenerator, jobs);
                 }
 
                 return Results.Created(string.Empty, new RegisterResponse(result.Value));
@@ -193,20 +193,19 @@ public static class AspIdentityEndpoint
             HttpContext context,
             [FromServices] UserManager<AspIdentityUser> userManager,
             [FromServices] LinkGenerator linkGenerator,
-            [FromServices] IEmailSender<AspIdentityUser> emailSender) =>
+            [FromServices] IBackgroundJobScheduler jobs) =>
         {
             if (await userManager.FindByEmailAsync(resendRequest.Email) is not { } user)
                 return TypedResults.Ok();
 
-            await SendConfirmationEmailAsync(user, userManager, context, resendRequest.Email, linkGenerator,
-                emailSender);
+            await SendConfirmationEmailAsync(user, userManager, context, resendRequest.Email, linkGenerator, jobs);
             return TypedResults.Ok();
         });
 
         routeGroup.MapPost("/forgotPassword", async Task<Results<Ok, ValidationProblem>> (
             [FromBody] ForgotPasswordRequest resetRequest,
             [FromServices] UserManager<AspIdentityUser> userManager,
-            [FromServices] IEmailSender<AspIdentityUser> emailSender) =>
+            [FromServices] IBackgroundJobScheduler jobs) =>
         {
             var user = await userManager.FindByEmailAsync(resetRequest.Email);
 
@@ -215,8 +214,7 @@ public static class AspIdentityEndpoint
                 var code = await userManager.GeneratePasswordResetTokenAsync(user);
                 code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
-                await emailSender.SendPasswordResetCodeAsync(user, resetRequest.Email,
-                    HtmlEncoder.Default.Encode(code));
+                jobs.EnqueueSendPasswordResetEmail(user.Id, resetRequest.Email, HtmlEncoder.Default.Encode(code));
             }
 
             return TypedResults.Ok();
@@ -285,7 +283,7 @@ public static class AspIdentityEndpoint
             HttpContext context,
             string email,
             LinkGenerator linkGenerator,
-            IEmailSender<AspIdentityUser> emailSender,
+            IBackgroundJobScheduler jobs,
             bool isChange = false)
         {
             if (confirmEmailEndpointName is null)
@@ -312,7 +310,7 @@ public static class AspIdentityEndpoint
                                       $"Could not find endpoint named '{confirmEmailEndpointName}'.");
 
 
-            await emailSender.SendConfirmationLinkAsync(user, email, confirmEmailUrl);
+            jobs.EnqueueSendConfirmationEmail(user.Id, email, confirmEmailUrl);
         }
     }
 

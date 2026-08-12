@@ -201,6 +201,6 @@ public sealed class TaskHistoryRepository(AppDbContext context) : ITaskHistoryRe
             .Select(history => (short?)history.VersionNumber)
             .MaxAsync(ct);
 
-        return (short)((maxVersion ?? 0));
+        return (short)(maxVersion ?? 0);
     }
 }

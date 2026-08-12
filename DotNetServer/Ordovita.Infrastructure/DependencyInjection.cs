@@ -1,4 +1,6 @@
 using System.Net.Http.Headers;
+using Hangfire;
+using Hangfire.MySql;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -7,9 +9,11 @@ using Microsoft.Extensions.Options;
 using Ordovita.Application.Abstraction.Crypto;
 using Ordovita.Application.Abstraction.Email;
 using Ordovita.Application.Abstraction.Identity;
+using Ordovita.Application.Abstraction.Jobs;
 using Ordovita.Application.Abstraction.Llm;
 using Ordovita.Application.Abstraction.LlmSettings;
 using Ordovita.Application.Abstraction.Persistance;
+using Ordovita.Application.Abstraction.Workspace;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Surveys.GetUserAnswers;
 using Ordovita.Domain.Identity;
@@ -22,6 +26,7 @@ using Ordovita.Infrastructure.Cqrs;
 using Ordovita.Infrastructure.Email;
 using Ordovita.Infrastructure.Identity;
 using Ordovita.Infrastructure.Identity.Persistence;
+using Ordovita.Infrastructure.Jobs;
 using Ordovita.Infrastructure.Persistence;
 using Ordovita.Domain.Surveys.port;
 using Ordovita.Domain.Tasks.port;
@@ -40,6 +45,7 @@ using Ordovita.Infrastructure.Survey.Persistence.Repository;
 using Ordovita.Infrastructure.Tasks;
 using Ordovita.Infrastructure.Tasks.Persistence.Repository;
 using Ordovita.Infrastructure.Workspace.Persistance;
+using UserWorkspace = Ordovita.Infrastructure.Workspace.UserWorkspace;
 
 namespace Ordovita.Infrastructure;
 
@@ -53,11 +59,31 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString)));
 
+        var hangfireConnectionString =
+            connectionString.Contains("Allow User Variables", StringComparison.OrdinalIgnoreCase)
+                ? connectionString
+                : connectionString.TrimEnd(';') + ";Allow User Variables=True";
+
+        services.AddHangfire(config => config
+            .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+            .UseSimpleAssemblyNameTypeSerializer()
+            .UseRecommendedSerializerSettings()
+            .UseStorage(new MySqlStorage(hangfireConnectionString, new MySqlStorageOptions
+            {
+                TablesPrefix = "Hangfire",
+                PrepareSchemaIfNecessary = true
+            })));
+        services.AddHangfireServer();
+        services.AddScoped<IBackgroundJobScheduler, HangfireBackgroundJobScheduler>();
+        services.AddScoped<IdentityEmailJob>();
+        services.AddScoped<CommentMentionEmailJob>();
+
         services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
         services.Configure<GroqConfiguration>(configuration.GetSection(GroqConfiguration.SectionName));
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<GroqConfiguration>>().Value);
         services.AddTransient<IEmailSender<AspIdentityUser>, SmtpIdentityEmailSender>();
         services.AddScoped<IEmailTemplateRenderer, EmailTemplateRenderer>();
+        services.AddScoped<ISendEmailAsync, SendEmailAsync>();
 
         services.AddScoped<IAiClient, LlmTornadoProvider>();
 
@@ -101,6 +127,7 @@ public static class DependencyInjection
         services.AddScoped<IPlanRepository, PlanRepository>();
 
         services.AddScoped<ILlmStatisticRepository, LlmStatisticRepository>();
+        services.AddScoped<IUserWorkspace, UserWorkspace>();
 
 
         return services;

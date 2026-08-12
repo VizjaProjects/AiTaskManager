@@ -33,7 +33,7 @@ public sealed class TaskHistory : AggregateRoot<TaskHistoryId>
             return Result.Failure<TaskHistory>(TaskHistoryExceptions.MissingTaskHistoryRecords);
 
         version++;
-        
+
         var history = new TaskHistory
         {
             Id = TaskHistoryId.New(),
@@ -56,6 +56,4 @@ public sealed class TaskHistory : AggregateRoot<TaskHistoryId>
 
         return Result.Success(history);
     }
-
-
 }

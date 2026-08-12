@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Ordovita.Application.Abstraction.Llm;
+using Ordovita.Application.Abstraction.Workspace;
 using Ordovita.Application.Common.Behaviors;
 using Ordovita.Application.Common.Cqrs;
 using Ordovita.Application.Tasks.Ai.GenerateAiPlan;
@@ -89,6 +90,7 @@ using Ordovita.Application.Tasks.Comments.AddComment;
 using Ordovita.Application.Tasks.Comments.DeleteComment;
 using Ordovita.Application.Tasks.Comments.EditComment;
 using Ordovita.Application.Tasks.Comments.GetTaskComments;
+using Ordovita.Application.Tasks.Comments.SendEmailNotification;
 using Ordovita.Application.Tasks.History.GetTaskHistory;
 using Ordovita.Application.Tasks.WorkTasks.CreateWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.DeleteWorkTask;
@@ -96,6 +98,7 @@ using Ordovita.Application.Tasks.WorkTasks.EditWorkTask;
 using Ordovita.Application.Tasks.WorkTasks.AssignUsersToTask;
 using Ordovita.Application.Tasks.WorkTasks.GetWorkspaceTasks;
 using Ordovita.Application.Workspaces.AssignUsersByEmail;
+using Ordovita.Application.Workspaces.GetWorkspaceUsers;
 
 namespace Ordovita.Application;
 
@@ -257,11 +260,15 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<AddCommentCommand, TaskCommentDto>, AddCommentHandler>();
         services.AddScoped<ICommandHandler<EditCommentCommand, TaskCommentDto>, EditCommentHandler>();
         services.AddScoped<ICommandHandler<DeleteCommentCommand, Unit>, DeleteCommentHandler>();
+        services.AddScoped<ICommandHandler<SendEmailNotificationCommand, Unit>, SendEmailNotificationHandler>();
         services
             .AddScoped<IQueryHandler<GetTaskCommentsQuery, IReadOnlyList<TaskCommentDto>>, GetTaskCommentsHandler>();
 
         services
             .AddScoped<IQueryHandler<GetTaskHistoryQuery, IReadOnlyList<TaskHistoryDto>>, GetTaskHistoryHandler>();
+
+        services
+            .AddScoped<IQueryHandler<GetWorkspaceUsersQuery, IReadOnlyList<UserWorkspace>>, GetWorkspaceUsersHandler>();
 
         return services;
     }
