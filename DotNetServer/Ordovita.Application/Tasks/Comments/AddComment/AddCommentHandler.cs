@@ -39,14 +39,12 @@ public sealed class AddCommentHandler(
         await uow.SaveChangesAsync(ct);
 
         foreach (var recipientId in task.AssignedUserIds.Where(id => id != author.Id))
-        {
             jobs.EnqueueCommentMentionEmail(
                 command.WorkspaceId,
                 command.TaskId,
                 result.Value.Id.Value,
                 recipientId.Value,
                 author.Id.Value);
-        }
 
         return Result.Success(TaskCommentMapper.ToDto(result.Value, author.FullName, author.Email.Value));
     }

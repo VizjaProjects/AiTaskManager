@@ -16,9 +16,17 @@ import { getApiBaseUrl } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { Role } from "@/lib/types";
 
+// Dashboard Hangfire jest poza /api/v1, więc backend nie widzi nagłówka Authorization.
+// Autoryzuje po cookie "hangfire" z access tokenem (odszyfrowywanym przez BearerTokenProtector),
+// więc przed nawigacją zapisujemy token do cookie na wspólnym originie front↔backend.
 function openHangfireDashboard() {
   const url = `${getApiBaseUrl()}/hangfire`;
   if (Platform.OS === "web" && typeof window !== "undefined") {
+    const token = window.localStorage.getItem("accessToken");
+    if (token) {
+      const secure = window.location.protocol === "https:" ? "; Secure" : "";
+      document.cookie = `hangfire=${token}; path=/; SameSite=Lax${secure}`;
+    }
     window.open(url, "_blank", "noopener,noreferrer");
     return;
   }

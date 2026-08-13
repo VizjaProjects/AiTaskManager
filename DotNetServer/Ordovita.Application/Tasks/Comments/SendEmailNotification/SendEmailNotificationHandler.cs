@@ -60,7 +60,9 @@ public sealed class SendEmailNotificationHandler(
             "notifcation-command-email.html",
             new Dictionary<string, string>
             {
-                ["fullName"] = string.IsNullOrWhiteSpace(targetUser.FullName) ? "" : $" {WebUtility.HtmlEncode(targetUser.FullName)}",
+                ["fullName"] = string.IsNullOrWhiteSpace(targetUser.FullName)
+                    ? ""
+                    : $" {WebUtility.HtmlEncode(targetUser.FullName)}",
                 ["mentionedByName"] = WebUtility.HtmlEncode(mentionedBy.FullName),
                 ["taskTitle"] = WebUtility.HtmlEncode(task.Title),
                 ["commentContent"] = WebUtility.HtmlEncode(comment.Content),

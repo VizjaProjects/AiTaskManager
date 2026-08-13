@@ -13,7 +13,8 @@ public sealed class SendEmailAsync(IOptions<EmailOptions> emailOptions) : ISendE
     {
         using var client = new SmtpClient();
         client.CheckCertificateRevocation = false;
-        await client.ConnectAsync(_emailOptions.Host, _emailOptions.Port, MailKit.Security.SecureSocketOptions.Auto, cancellationToken);
+        await client.ConnectAsync(_emailOptions.Host, _emailOptions.Port, MailKit.Security.SecureSocketOptions.Auto,
+            cancellationToken);
         if (!string.IsNullOrEmpty(_emailOptions.Username))
             await client.AuthenticateAsync(_emailOptions.Username, _emailOptions.Password, cancellationToken);
 
