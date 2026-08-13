@@ -46,7 +46,7 @@ import type {
   AcceptAiEventRequest,
   QuestionType,
 } from "../types";
-import type { WorkspaceVisibility } from "../types";
+import type { WorkspaceMember, WorkspaceVisibility } from "../types";
 import type { CreatePlanRequest } from "../types";
 
 function useWorkspaceId() {
@@ -414,6 +414,33 @@ export function useTaskComments(taskId: string | null) {
       taskApi.getComments(requireWorkspaceId(workspaceId), taskId as string),
     enabled: !!workspaceId && !!taskId,
   });
+}
+
+export function useWorkspaceUsers() {
+  const workspaceId = useWorkspaceId();
+  const workspace = useWorkspaceStore((s) => s.getActiveWorkspace());
+  const currentUserId = useAuthStore((s) => s.user?.userId);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["workspaceUsers", workspaceId],
+    queryFn: () => workspaceApi.getUsers(requireWorkspaceId(workspaceId)),
+    enabled: !!workspaceId,
+  });
+
+  // Endpoint polyka bledy SQL (`catch { return []; }`), wiec pusta odpowiedz
+  // jest nieodroznialna od awarii — wtedy schodzimy do listy ze store'u.
+  const members = useMemo<WorkspaceMember[]>(() => {
+    if (data?.length) return data;
+    return (workspace?.assignedUsers ?? [])
+      .filter((u) => !!u.fullName && u.userId !== currentUserId)
+      .map((u) => ({
+        userId: u.userId,
+        fullName: u.fullName as string,
+        email: u.email ?? "",
+      }));
+  }, [data, workspace, currentUserId]);
+
+  return { data: members, isLoading };
 }
 
 export function useTaskHistory(taskId: string | null) {

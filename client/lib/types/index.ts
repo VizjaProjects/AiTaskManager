@@ -49,6 +49,12 @@ export interface WorkspaceUser {
   assignedAt: string;
 }
 
+export interface WorkspaceMember {
+  userId: UUID;
+  fullName: string;
+  email: string;
+}
+
 export interface Workspace {
   workspaceId: UUID;
   workspaceName: string;

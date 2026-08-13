@@ -28,6 +28,7 @@ export const translations: Record<Lang, Dict> = {
     "nav.surveysAdmin": "Ankiety",
     "nav.plansAdmin": "Plany",
     "nav.usersAdmin": "Użytkownicy",
+    "nav.backgroundJobs": "Zadania w tle",
 
     // search
     "search.placeholder": "Szukaj zadań, wydarzeń…",
@@ -223,6 +224,11 @@ export const translations: Record<Lang, Dict> = {
     "comments.save": "Zapisz",
     "comments.cancel": "Anuluj",
     "comments.deleteConfirm": "Usunąć ten komentarz?",
+    "comments.mentionHint": "Osoby w tym workspace",
+    "comments.mentionInsert": "Oznacz osobę",
+    "comments.mentionTip": "Wpisz @, aby kogoś oznaczyć",
+    "comments.mentionWillAssign":
+      "Zostaną przypisani do zadania i dostaną powiadomienie: {names}",
     "taskModal.tabHistory": "Historia",
     "history.summary":
       "Wersje: {versions} · Zmiany pól: {changes} · Ostatnia: {last}",
@@ -259,6 +265,8 @@ export const translations: Record<Lang, Dict> = {
     "taskModal.description": "Opis zadania",
     "taskModal.descPlaceholder": "Opis zadania…",
     "taskModal.noDescription": "Brak opisu",
+    "taskModal.showFullDescription": "Pokaż pełny opis",
+    "taskModal.showLess": "Zwiń opis",
     "taskModal.category": "Kategoria",
     "taskModal.none": "Brak",
     "taskModal.status": "Status",
@@ -812,6 +820,7 @@ export const translations: Record<Lang, Dict> = {
     "nav.surveysAdmin": "Surveys",
     "nav.plansAdmin": "Plans",
     "nav.usersAdmin": "Users",
+    "nav.backgroundJobs": "Background jobs",
 
     // search
     "search.placeholder": "Search tasks, events…",
@@ -1003,6 +1012,11 @@ export const translations: Record<Lang, Dict> = {
     "comments.save": "Save",
     "comments.cancel": "Cancel",
     "comments.deleteConfirm": "Delete this comment?",
+    "comments.mentionHint": "People in this workspace",
+    "comments.mentionInsert": "Mention someone",
+    "comments.mentionTip": "Type @ to mention someone",
+    "comments.mentionWillAssign":
+      "Will be assigned to the task and notified: {names}",
     "taskModal.tabHistory": "History",
     "history.summary":
       "Versions: {versions} · Field changes: {changes} · Last: {last}",
@@ -1039,6 +1053,8 @@ export const translations: Record<Lang, Dict> = {
     "taskModal.description": "Task description",
     "taskModal.descPlaceholder": "Task description…",
     "taskModal.noDescription": "No description",
+    "taskModal.showFullDescription": "Show full description",
+    "taskModal.showLess": "Show less",
     "taskModal.category": "Category",
     "taskModal.none": "None",
     "taskModal.status": "Status",

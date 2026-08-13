@@ -2,7 +2,7 @@ using Ordovita.Domain.Workspace;
 
 namespace Ordovita.Application.Abstraction.Workspace;
 
-public record UserWorkspace(string FullName, string Email);
+public record UserWorkspace(Guid UserId, string FullName, string Email);
 
 public interface IUserWorkspace
 {

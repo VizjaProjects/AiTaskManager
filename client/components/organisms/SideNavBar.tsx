@@ -1,12 +1,29 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  Platform,
+  Linking,
+} from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { NavItem } from "../molecules/NavItem";
 import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
+import { getApiBaseUrl } from "@/lib/api/client";
 import { useT } from "@/lib/i18n";
 import { Role } from "@/lib/types";
+
+function openHangfireDashboard() {
+  const url = `${getApiBaseUrl()}/hangfire`;
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.open(url, "_blank", "noopener,noreferrer");
+    return;
+  }
+  Linking.openURL(url);
+}
 
 const NAV_ITEMS: Array<{
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -138,6 +155,14 @@ export function SideNavBar() {
                 label={t("nav.usersAdmin")}
                 active={pathname.includes("admin-users")}
                 onPress={() => router.push("/(app)/admin-users" as never)}
+              />
+            )}
+            {user?.role === Role.ADMIN && (
+              <NavItem
+                icon="schedule"
+                label={t("nav.backgroundJobs")}
+                active={false}
+                onPress={openHangfireDashboard}
               />
             )}
             {user?.role === Role.USER && (

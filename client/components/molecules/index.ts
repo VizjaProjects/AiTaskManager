@@ -27,3 +27,4 @@ export { AiChatConfigButton } from "./AiChatConfigButton";
 export { PlanUsageBar } from "./PlanUsageBar";
 export { AiLimitInfo } from "./AiLimitInfo";
 export { TaskHistorySection } from "./TaskHistorySection";
+export { MentionInput, type MentionInputHandle } from "./MentionInput";

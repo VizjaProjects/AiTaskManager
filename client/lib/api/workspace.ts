@@ -1,5 +1,9 @@
 import { api } from "./client";
-import type { Workspace, WorkspaceVisibility } from "../types";
+import type {
+  Workspace,
+  WorkspaceMember,
+  WorkspaceVisibility,
+} from "../types";
 
 function mapWorkspace(raw: Record<string, unknown>): Workspace {
   const assignedUsers =
@@ -31,6 +35,19 @@ export const workspaceApi = {
       `/workspace/${encodeURIComponent(workspaceId)}`,
     );
     return mapWorkspace(data);
+  },
+
+  getUsers: async (workspaceId: string) => {
+    const { data } = await api.get<Record<string, unknown>[]>(
+      `/workspace/allWorkspaceUsers/${encodeURIComponent(workspaceId)}`,
+    );
+    return (Array.isArray(data) ? data : [])
+      .map((u) => ({
+        userId: (u.userId as string) ?? "",
+        fullName: (u.fullName as string) ?? "",
+        email: (u.email as string) ?? "",
+      }))
+      .filter((u): u is WorkspaceMember => !!u.userId && !!u.fullName);
   },
 
   create: async (

@@ -10,16 +10,17 @@ import {
   Alert,
   useWindowDimensions,
 } from "react-native";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, Input } from "../atoms";
-import { PriorityBadge, ColorBadge } from "../atoms";
 import { InlineDatePicker } from "../atoms";
 import { Avatar } from "../atoms/Avatar";
+import { MentionText } from "../atoms/MentionText";
 import {
   DraftTaskStepsEditor,
   LinkCheckboxModal,
+  MentionInput,
   TaskHistorySection,
   TaskStepsSection,
 } from "../molecules";
@@ -29,6 +30,7 @@ import type {
   TaskStatus,
   CalendarEvent,
   CreateTaskStepInput,
+  WorkspaceMember,
 } from "@/lib/types";
 import { TaskPriority, TaskSource, EventStatus } from "@/lib/types";
 import {
@@ -44,7 +46,9 @@ import {
   normalizeDueDateTime,
   getEffectiveTaskDueDateTime,
   resolveTaskDueDateTimeForSave,
+  getInitials,
 } from "@/lib/utils";
+import { getUiTokens } from "@/lib/utils/uiTokens";
 import {
   useEditTask,
   useDeleteTask,
@@ -60,7 +64,9 @@ import {
   useAddComment,
   useEditComment,
   useDeleteComment,
+  useWorkspaceUsers,
 } from "@/lib/hooks";
+import { extractMentionedMembers } from "@/lib/utils/mentions";
 import { useThemeStore } from "@/lib/stores/theme";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 
@@ -97,6 +103,131 @@ interface TaskDetailModalProps {
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
+
+/** Width of the property rail on wide screens. */
+const RAIL_WIDTH = 288;
+/** Above this length the description is clamped behind a "show more" toggle. */
+const DESCRIPTION_CLAMP_CHARS = 200;
+
+const PRIORITY_ICON: Record<TaskPriority, keyof typeof MaterialIcons.glyphMap> =
+  {
+    [TaskPriority.CRITICAL]: "keyboard-double-arrow-up",
+    [TaskPriority.HIGH]: "keyboard-arrow-up",
+    [TaskPriority.MEDIUM]: "remove",
+    [TaskPriority.LOW]: "keyboard-arrow-down",
+  };
+
+const PRIORITY_LABEL_KEY: Record<TaskPriority, string> = {
+  [TaskPriority.CRITICAL]: "priority.critical",
+  [TaskPriority.HIGH]: "priority.high",
+  [TaskPriority.MEDIUM]: "priority.medium",
+  [TaskPriority.LOW]: "priority.low",
+};
+
+/** One `label ······ value` line of the property rail. */
+function RailRow({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress?: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <View className="flex-row items-center justify-between gap-3 py-[7px]">
+      <Text className="text-on-surface-variant font-body text-xs">{label}</Text>
+      {onPress ? (
+        <TouchableOpacity
+          onPress={onPress}
+          activeOpacity={0.7}
+          className="flex-row items-center gap-1.5 flex-shrink px-2 py-1 rounded-md"
+          style={{ marginRight: -8, minWidth: 0 }}
+        >
+          {children}
+        </TouchableOpacity>
+      ) : (
+        <View
+          className="flex-row items-center gap-1.5 flex-shrink"
+          style={{ minWidth: 0 }}
+        >
+          {children}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Inline option list that unfolds under a rail row instead of a popover. */
+function RailPicker({ children }: { children: ReactNode }) {
+  return (
+    <View className="rounded-lg border border-outline-variant bg-surface-container-lowest p-1 mb-1.5 gap-0.5">
+      {children}
+    </View>
+  );
+}
+
+function RailOption({
+  active,
+  onPress,
+  children,
+}: {
+  active: boolean;
+  onPress: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className={`flex-row items-center gap-2 px-2 py-1.5 rounded-md ${
+        active ? "bg-surface-container-low" : ""
+      }`}
+    >
+      {children}
+    </TouchableOpacity>
+  );
+}
+
+function RailDivider() {
+  return <View className="h-px bg-border-subtle my-2.5" />;
+}
+
+/** 24px avatar used in the rail's overlapping assignee stack. */
+function RailAvatar({
+  name,
+  overlap,
+  isDark,
+}: {
+  name: string;
+  overlap: boolean;
+  isDark: boolean;
+}) {
+  return (
+    <View
+      className="rounded-full items-center justify-center bg-primary-fixed"
+      style={{
+        width: 24,
+        height: 24,
+        marginLeft: overlap ? -6 : 0,
+        borderWidth: 1,
+        borderColor: isDark ? "#1c1c1c" : "#ffffff",
+      }}
+    >
+      <Text className="font-label text-primary" style={{ fontSize: 10 }}>
+        {getInitials(name)}
+      </Text>
+    </View>
+  );
+}
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <Text className="text-text-tertiary font-label text-[11px] uppercase tracking-widest">
+      {children}
+    </Text>
+  );
+}
 
 export function TaskDetailModal({
   task: taskProp,
@@ -149,7 +280,13 @@ export function TaskDetailModal({
   const [noteLinkOpen, setNoteLinkOpen] = useState(false);
   const [draftLinkedNoteIds, setDraftLinkedNoteIds] = useState<string[]>([]);
   const [activeTab, setActiveTab] = useState<TaskDetailTab>("details");
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [railPicker, setRailPicker] = useState<
+    "status" | "priority" | "assignees" | null
+  >(null);
   const syncEntityNoteLinks = useSyncEntityNoteLinks();
+  const ui = getUiTokens(isDark);
+  const accent = isDark ? "#9b8cff" : "#5b4ee0";
 
   function toggleAssignee(userId: string) {
     setAssigneeIds((prev) =>
@@ -167,22 +304,9 @@ export function TaskDetailModal({
   const commentsEnabled = !onSaveCustom && !!task && task.accepted;
   // Propozycje AI nie mają jeszcze wpisów historii — zakładka tylko dla zapisanych.
   const historyEnabled = !onSaveCustom && !!task && task.accepted;
-  const detailTabs: [
-    TaskDetailTab,
-    keyof typeof MaterialIcons.glyphMap,
-    string,
-  ][] = [
-    ["details", "info-outline", t("taskModal.tabDetails")],
-    ["steps", "checklist", `${t("taskModal.tabSteps")} (${task?.steps.length ?? 0})`],
-    ["links", "link", t("taskModal.tabLinks")],
-    ...(historyEnabled
-      ? ([["history", "history", t("taskModal.tabHistory")]] as [
-          TaskDetailTab,
-          keyof typeof MaterialIcons.glyphMap,
-          string,
-        ][])
-      : []),
-  ];
+  const { data: taskComments } = useTaskComments(
+    commentsEnabled && task ? task.taskId : null,
+  );
 
   useEffect(() => {
     if (visible && task) {
@@ -195,6 +319,8 @@ export function TaskDetailModal({
       setEditing(false);
     }
     setShowDuePicker(false);
+    setDescExpanded(false);
+    setRailPicker(null);
     // `forceEdit`/`onSaveCustom` are intentionally excluded: they are stable in
     // behaviour per modal instance but `onSaveCustom` is often an inline
     // function (new identity each render). Including it would re-run startEdit()
@@ -256,6 +382,39 @@ export function TaskDetailModal({
     if (!task || !allNotes) return [];
     return allNotes.filter((n) => n.linkedTaskIds?.includes(task.taskId));
   }, [task, allNotes]);
+
+  // Tab counters carry the weight of the folded-away content, so the rail can
+  // stay dense: Steps shows done/total, Links the number of attached items.
+  const stepsDone = task?.steps.filter((s) => s.completed).length ?? 0;
+  const linksCount = relatedEvents.length + linkedNotes.length;
+  const detailTabs: [
+    TaskDetailTab,
+    keyof typeof MaterialIcons.glyphMap,
+    string,
+    string | null,
+  ][] = [
+    ["details", "info-outline", t("taskModal.tabDetails"), null],
+    [
+      "steps",
+      "checklist",
+      t("taskModal.tabSteps"),
+      task?.steps.length ? `${stepsDone}/${task.steps.length}` : null,
+    ],
+    [
+      "links",
+      "link",
+      t("taskModal.tabLinks"),
+      linksCount > 0 ? String(linksCount) : null,
+    ],
+    ...(historyEnabled
+      ? ([["history", "history", t("taskModal.tabHistory"), null]] as [
+          TaskDetailTab,
+          keyof typeof MaterialIcons.glyphMap,
+          string,
+          string | null,
+        ][])
+      : []),
+  ];
 
   const noteLinkSections = useMemo(
     () => [
@@ -393,6 +552,45 @@ export function TaskDetailModal({
     deleteTask.mutate(id);
   }
 
+  /**
+   * Edit a single field from the property rail. `PUT task` replaces the whole
+   * record, so every unchanged field has to be sent back untouched.
+   */
+  function applyTaskPatch(
+    patch: Partial<TaskSaveData>,
+    onSuccess?: () => void,
+  ) {
+    if (!task) return;
+    editTask.mutate(
+      {
+        taskId: task.taskId,
+        data: {
+          title: task.title,
+          description: task.description,
+          priority: task.priority,
+          statusId: task.statusId,
+          categoryId: task.categoryId ?? undefined,
+          estimatedDuration: task.estimatedDuration,
+          dueDateTime: resolveTaskDueDateTimeForSave(task, relatedEvents),
+          ...patch,
+        },
+      },
+      onSuccess ? { onSuccess } : undefined,
+    );
+  }
+
+  // `PUT assignees` replaces the list wholesale — always send the full set.
+  function toggleTaskAssignee(userId: string) {
+    if (!task) return;
+    const current = task.assignedUserIds ?? [];
+    setAssignees.mutate({
+      taskId: task.taskId,
+      userIds: current.includes(userId)
+        ? current.filter((id) => id !== userId)
+        : [...current, userId],
+    });
+  }
+
   function handleMarkComplete() {
     if (!task) return;
     const doneStatus = statuses.find(
@@ -403,24 +601,368 @@ export function TaskDetailModal({
         s.name.toLowerCase() === "ukończone",
     );
     if (!doneStatus) return;
-    editTask.mutate(
-      {
-        taskId: task.taskId,
-        data: {
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
-          statusId: doneStatus.statusId,
-          categoryId: task.categoryId ?? undefined,
-          estimatedDuration: task.estimatedDuration,
-          dueDateTime: resolveTaskDueDateTimeForSave(task, relatedEvents),
-        },
-      },
-      { onSuccess: onClose },
-    );
+    applyTaskPatch({ statusId: doneStatus.statusId }, onClose);
   }
 
   if (!task) return null;
+
+  // Terminem rządzi powiązane wydarzenie, jeśli istnieje (pułapka 10).
+  const effectiveDue = getEffectiveTaskDueDateTime(task, relatedEvents);
+  const assignedIds = task.assignedUserIds ?? [];
+  const descriptionIsLong =
+    task.description.length > DESCRIPTION_CLAMP_CHARS ||
+    task.description.split("\n").length > 3;
+
+  /** Dense metadata column — every row is `label ······ value`. */
+  const propertyRail = (
+    <View>
+      <RailRow
+        label={t("taskModal.status")}
+        onPress={() => setRailPicker((p) => (p === "status" ? null : "status"))}
+      >
+        {status ? (
+          <>
+            <View
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ backgroundColor: status.color }}
+            />
+            <Text
+              className="text-on-surface font-body text-[12.5px] flex-shrink"
+              numberOfLines={1}
+            >
+              {status.name}
+            </Text>
+          </>
+        ) : (
+          <Text className="text-on-surface-variant font-body text-[12.5px]">
+            —
+          </Text>
+        )}
+        <MaterialIcons
+          name={railPicker === "status" ? "expand-less" : "expand-more"}
+          size={15}
+          color={ui.textMuted}
+        />
+      </RailRow>
+      {railPicker === "status" && (
+        <RailPicker>
+          {statuses.map((s) => (
+            <RailOption
+              key={s.statusId}
+              active={s.statusId === task.statusId}
+              onPress={() => {
+                setRailPicker(null);
+                if (s.statusId !== task.statusId)
+                  applyTaskPatch({ statusId: s.statusId });
+              }}
+            >
+              <View
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: s.color }}
+              />
+              <Text
+                className="text-on-surface font-body text-xs flex-1"
+                numberOfLines={1}
+              >
+                {s.name}
+              </Text>
+              {s.statusId === task.statusId && (
+                <MaterialIcons
+                  name="check"
+                  size={14}
+                  color={ui.textSecondary}
+                />
+              )}
+            </RailOption>
+          ))}
+        </RailPicker>
+      )}
+
+      <RailRow
+        label={t("taskModal.priority")}
+        onPress={() =>
+          setRailPicker((p) => (p === "priority" ? null : "priority"))
+        }
+      >
+        <MaterialIcons
+          name={PRIORITY_ICON[task.priority]}
+          size={15}
+          color={pColors[task.priority]}
+        />
+        <Text className="text-on-surface font-body text-[12.5px]">
+          {t(PRIORITY_LABEL_KEY[task.priority])}
+        </Text>
+        <MaterialIcons
+          name={railPicker === "priority" ? "expand-less" : "expand-more"}
+          size={15}
+          color={ui.textMuted}
+        />
+      </RailRow>
+      {railPicker === "priority" && (
+        <RailPicker>
+          {Object.values(TaskPriority).map((p) => (
+            <RailOption
+              key={p}
+              active={p === task.priority}
+              onPress={() => {
+                setRailPicker(null);
+                if (p !== task.priority) applyTaskPatch({ priority: p });
+              }}
+            >
+              <MaterialIcons
+                name={PRIORITY_ICON[p]}
+                size={15}
+                color={pColors[p]}
+              />
+              <Text className="text-on-surface font-body text-xs flex-1">
+                {t(PRIORITY_LABEL_KEY[p])}
+              </Text>
+              {p === task.priority && (
+                <MaterialIcons
+                  name="check"
+                  size={14}
+                  color={ui.textSecondary}
+                />
+              )}
+            </RailOption>
+          ))}
+        </RailPicker>
+      )}
+
+      <RailRow label={t("taskModal.category")}>
+        {cat ? (
+          <>
+            <View
+              className="w-[7px] h-[7px] rounded-full"
+              style={{
+                backgroundColor: getCategoryDisplayColor(cat.color, isDark),
+              }}
+            />
+            <Text
+              className="text-on-surface font-body text-[12.5px] flex-shrink"
+              numberOfLines={1}
+            >
+              {cat.name}
+            </Text>
+          </>
+        ) : (
+          <Text className="text-on-surface-variant font-body text-[12.5px]">
+            {t("taskModal.none")}
+          </Text>
+        )}
+      </RailRow>
+
+      <RailDivider />
+
+      <RailRow label={t("taskModal.dueDate")}>
+        <Text
+          className={`font-body text-[12.5px] ${
+            effectiveDue && isOverdue(effectiveDue)
+              ? "text-error"
+              : "text-on-surface"
+          }`}
+        >
+          {effectiveDue ? formatDateTime(effectiveDue) : "—"}
+        </Text>
+      </RailRow>
+      <RailRow label={t("taskModal.duration")}>
+        <Text className="text-on-surface font-body text-[12.5px]">
+          {task.estimatedDuration > 0
+            ? formatDuration(task.estimatedDuration)
+            : "—"}
+        </Text>
+      </RailRow>
+      <RailRow label={t("taskModal.createdAt")}>
+        <Text className="text-on-surface-variant font-body text-[12.5px]">
+          {formatDateTime(task.createdAt)}
+        </Text>
+      </RailRow>
+
+      <RailDivider />
+
+      <RailRow label={t("taskModal.assignees")}>
+        {assignedMembers.length === 0 && workspaceMembers.length === 0 ? (
+          <Text className="text-on-surface-variant font-body text-[12.5px]">
+            {t("taskModal.nobodyAssigned")}
+          </Text>
+        ) : (
+          <View className="flex-row items-center">
+            {assignedMembers.map((m, i) => (
+              <RailAvatar
+                key={m.userId}
+                name={m.fullName ?? m.email ?? "?"}
+                overlap={i > 0}
+                isDark={isDark}
+              />
+            ))}
+            {workspaceMembers.length > 0 && (
+              <TouchableOpacity
+                accessibilityLabel={t("taskModal.assignees")}
+                onPress={() =>
+                  setRailPicker((p) => (p === "assignees" ? null : "assignees"))
+                }
+                className="items-center justify-center rounded-full"
+                style={{
+                  width: 24,
+                  height: 24,
+                  marginLeft: assignedMembers.length > 0 ? 4 : 0,
+                  borderWidth: 1,
+                  borderStyle: "dashed",
+                  borderColor: ui.borderHover,
+                }}
+              >
+                <MaterialIcons
+                  name={railPicker === "assignees" ? "close" : "add"}
+                  size={14}
+                  color={ui.textMuted}
+                />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+      </RailRow>
+      {railPicker === "assignees" && (
+        <RailPicker>
+          {workspaceMembers.map((m) => {
+            const selected = assignedIds.includes(m.userId);
+            return (
+              <RailOption
+                key={m.userId}
+                active={selected}
+                onPress={() => toggleTaskAssignee(m.userId)}
+              >
+                <RailAvatar
+                  name={m.fullName ?? m.email ?? "?"}
+                  overlap={false}
+                  isDark={isDark}
+                />
+                <Text
+                  className="text-on-surface font-body text-xs flex-1"
+                  numberOfLines={1}
+                >
+                  {m.fullName ?? m.email ?? t("common.user")}
+                </Text>
+                {selected && (
+                  <MaterialIcons
+                    name="check"
+                    size={14}
+                    color={ui.textSecondary}
+                  />
+                )}
+              </RailOption>
+            );
+          })}
+        </RailPicker>
+      )}
+    </View>
+  );
+
+  /**
+   * Read view of the Details tab: content owns the width, metadata is squeezed
+   * into the rail, and the composer stays pinned while the thread scrolls.
+   */
+  const detailsPane = (
+    <View className={`flex-1 ${isWide ? "flex-row" : ""}`}>
+      <View className="flex-1" style={{ minWidth: 0 }}>
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingHorizontal: 24,
+            paddingTop: 20,
+            paddingBottom: 20,
+            gap: 22,
+          }}
+        >
+          <View className="gap-2">
+            <SectionLabel>{t("taskModal.description")}</SectionLabel>
+            {task.description ? (
+              <>
+                <Text
+                  className="text-on-surface font-body text-sm leading-6"
+                  numberOfLines={
+                    descriptionIsLong && !descExpanded ? 3 : undefined
+                  }
+                >
+                  {task.description}
+                </Text>
+                {descriptionIsLong && (
+                  <TouchableOpacity
+                    onPress={() => setDescExpanded((v) => !v)}
+                    className="flex-row items-center gap-1 self-start"
+                  >
+                    <MaterialIcons
+                      name={descExpanded ? "expand-less" : "expand-more"}
+                      size={16}
+                      color={accent}
+                    />
+                    <Text
+                      className="font-label text-xs"
+                      style={{ color: accent }}
+                    >
+                      {descExpanded
+                        ? t("taskModal.showLess")
+                        : t("taskModal.showFullDescription")}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <Text className="text-on-surface-variant font-body text-sm">
+                {t("taskModal.noDescription")}
+              </Text>
+            )}
+          </View>
+
+          {/* Narrow screens have no rail — the properties fold in as a card. */}
+          {!isWide && (
+            <View className="rounded-xl border border-outline-variant px-4 py-2">
+              {propertyRail}
+            </View>
+          )}
+
+          {commentsEnabled && (
+            <View className="gap-3">
+              <View className="flex-row items-center gap-2">
+                <SectionLabel>{t("comments.title")}</SectionLabel>
+                {!!taskComments?.length && (
+                  <Text className="text-text-tertiary font-body text-[11px]">
+                    {taskComments.length}
+                  </Text>
+                )}
+                <View className="flex-1 h-px bg-border-subtle" />
+              </View>
+              <TaskCommentsThread taskId={task.taskId} isDark={isDark} />
+            </View>
+          )}
+        </ScrollView>
+
+        {commentsEnabled && (
+          <View className="px-6 pt-2 pb-4 border-t border-outline-variant">
+            <TaskCommentComposer
+              taskId={task.taskId}
+              assignedUserIds={assignedIds}
+              isDark={isDark}
+            />
+          </View>
+        )}
+      </View>
+
+      {isWide && (
+        <View
+          className="border-l border-outline-variant"
+          style={{ width: RAIL_WIDTH }}
+        >
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingVertical: 18 }}
+          >
+            {propertyRail}
+          </ScrollView>
+        </View>
+      )}
+    </View>
+  );
 
   return (
     <>
@@ -436,27 +978,75 @@ export function TaskDetailModal({
         >
           <Pressable
             onPress={(e) => e.stopPropagation()}
-            className="bg-surface rounded-xl w-full max-w-4xl overflow-hidden border border-outline-variant"
-            style={{ height: isNarrow ? "94%" : "86%", maxHeight: 780 }}
+            className="bg-surface rounded-xl w-full max-w-5xl overflow-hidden border border-outline-variant"
+            style={{ height: isNarrow ? "95%" : "90%", maxHeight: 860 }}
           >
-              {/* Header: badges + close */}
-              <View className="px-6 pt-6 pb-2">
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-row flex-wrap gap-2 flex-1">
-                    <PriorityBadge
-                      priority={editing ? priority : task.priority}
-                      variant="soft"
-                    />
-                    {task.source === TaskSource.AI_PARSED && (
-                      <View className="flex-row items-center gap-1 px-2 py-0.5 rounded-sm">
-                        <MaterialIcons
-                          name="auto-awesome"
-                          size={12}
-                          color="#5B4EE0"
-                        />
-                        <Text className="text-[#5B4EE0] text-[11px] font-label">
-                          AI
+              {/* Header: breadcrumb, title, live status pill */}
+              <View className="px-6 pt-5 pb-1">
+                <View className="flex-row items-start justify-between gap-4">
+                  <View className="flex-1" style={{ minWidth: 0 }}>
+                    <View className="flex-row items-center gap-1 mb-2">
+                      <Text className="text-text-tertiary font-label text-[11px] uppercase tracking-[0.06em]">
+                        {t("nav.tasks")}
+                      </Text>
+                      {cat && (
+                        <>
+                          <MaterialIcons
+                            name="chevron-right"
+                            size={14}
+                            color={ui.textMuted}
+                          />
+                          <Text
+                            className="text-text-tertiary font-label text-[11px] uppercase tracking-[0.06em] flex-shrink"
+                            numberOfLines={1}
+                          >
+                            {cat.name}
+                          </Text>
+                        </>
+                      )}
+                    </View>
+                    {editing ? (
+                      <Input value={title} onChangeText={setTitle} />
+                    ) : (
+                      <View className="flex-row items-center flex-wrap gap-x-3 gap-y-2">
+                        <Text className="font-display text-on-surface text-2xl leading-8">
+                          {task.title}
                         </Text>
+                        {status && (
+                          <View
+                            className="flex-row items-center gap-1.5 px-2.5 py-[3px] rounded-full border"
+                            style={{
+                              backgroundColor: `${status.color}1A`,
+                              borderColor: `${status.color}66`,
+                            }}
+                          >
+                            <View
+                              className="w-1.5 h-1.5 rounded-full"
+                              style={{ backgroundColor: status.color }}
+                            />
+                            <Text
+                              className="font-label text-[11px]"
+                              style={{ color: status.color }}
+                            >
+                              {status.name}
+                            </Text>
+                          </View>
+                        )}
+                        {task.source === TaskSource.AI_PARSED && (
+                          <View className="flex-row items-center gap-1">
+                            <MaterialIcons
+                              name="auto-awesome"
+                              size={13}
+                              color={accent}
+                            />
+                            <Text
+                              className="text-[11px] font-label"
+                              style={{ color: accent }}
+                            >
+                              AI
+                            </Text>
+                          </View>
+                        )}
                       </View>
                     )}
                   </View>
@@ -465,96 +1055,25 @@ export function TaskDetailModal({
                       setEditing(false);
                       onClose();
                     }}
-                    className="p-1"
+                    className="p-1 rounded-md"
                   >
-                    <MaterialIcons name="close" size={24} color="#6b6965" />
+                    <MaterialIcons
+                      name="close"
+                      size={22}
+                      color={ui.textSecondary}
+                    />
                   </TouchableOpacity>
                 </View>
               </View>
 
-              {/* Title */}
-              <View className="px-6 pb-3">
-                {editing ? (
-                  <Input value={title} onChangeText={setTitle} />
-                ) : (
-                  <Text className="font-display text-on-surface text-2xl leading-8">
-                    {task.title}
-                  </Text>
-                )}
-              </View>
-
-              {!editing && (
-                <View className="px-6 pb-4 flex-row flex-wrap gap-2">
-                  {cat && (
-                    <View className="flex-row items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
-                      <View
-                        className="w-2 h-2 rounded-full"
-                        style={{
-                          backgroundColor: getCategoryDisplayColor(
-                            cat.color,
-                            isDark,
-                          ),
-                        }}
-                      />
-                      <Text className="text-on-surface-variant font-label text-xs">
-                        {cat.name}
-                      </Text>
-                    </View>
-                  )}
-                  {status && (
-                    <View
-                      className="px-2.5 py-1 rounded-lg border border-outline-variant"
-                      style={{ backgroundColor: `${status.color}18` }}
-                    >
-                      <Text
-                        className="font-label text-xs"
-                        style={{ color: status.color }}
-                      >
-                        {status.name}
-                      </Text>
-                    </View>
-                  )}
-                  {task.estimatedDuration > 0 && (
-                    <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
-                      <MaterialIcons
-                        name="schedule"
-                        size={12}
-                        color="#9b9791"
-                      />
-                      <Text className="text-on-surface-variant font-label text-xs">
-                        {formatDuration(task.estimatedDuration)}
-                      </Text>
-                    </View>
-                  )}
-                  {task.dueDateTime && (
-                    <View className="flex-row items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low border border-outline-variant">
-                      <MaterialIcons
-                        name="calendar-today"
-                        size={12}
-                        color="#9b9791"
-                      />
-                      <Text
-                        className={`font-label text-xs ${
-                          isOverdue(task.dueDateTime)
-                            ? "text-error"
-                            : "text-on-surface-variant"
-                        }`}
-                      >
-                        {formatDateTime(task.dueDateTime)}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              )}
-
-              <View className="px-6 border-b border-outline-variant flex-row gap-1">
-                {detailTabs.map(([tabId, icon, label]) => {
+              <View className="px-6 pt-3 border-b border-outline-variant flex-row gap-0.5">
+                {detailTabs.map(([tabId, icon, label, count]) => {
                   const selected = activeTab === tabId;
                   return (
                     <TouchableOpacity
                       key={tabId}
                       accessibilityState={{ selected }}
-                      className={`min-h-11 flex-row items-center justify-center gap-1.5 px-3 border-b-2 ${
+                      className={`min-h-10 flex-row items-center justify-center gap-1.5 px-2.5 border-b-2 ${
                         selected ? "border-primary" : "border-transparent"
                       }`}
                       onPress={() => setActiveTab(tabId)}
@@ -562,7 +1081,7 @@ export function TaskDetailModal({
                       <MaterialIcons
                         name={icon}
                         size={15}
-                        color={selected ? "#5b4ee0" : "#8a8680"}
+                        color={selected ? accent : ui.textSecondary}
                       />
                       <Text
                         className={`font-label text-xs ${
@@ -571,11 +1090,19 @@ export function TaskDetailModal({
                       >
                         {label}
                       </Text>
+                      {count && (
+                        <Text className="text-text-tertiary font-body text-[11px]">
+                          {count}
+                        </Text>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
+            {activeTab === "details" && !editing ? (
+              detailsPane
+            ) : (
             <ScrollView
               className="flex-1"
               showsVerticalScrollIndicator={false}
@@ -598,282 +1125,167 @@ export function TaskDetailModal({
                 </View>
               ) : null}
 
-              {/* Two-column layout */}
+              {/* Details in edit mode — the read view is the property-rail pane */}
               {activeTab === "details" ? <View
                 className={`px-6 pb-4 ${isWide ? "flex-row gap-6" : "gap-4"}`}
               >
                 {/* Left column: description + category */}
                 <View className={`${isWide ? "flex-1" : ""} gap-4`}>
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                      {t("taskModal.description")}
-                    </Text>
-                    {editing ? (
-                      <TextInput
-                        className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-sm border border-outline-variant"
-                        style={[{ minHeight: 120 }, NO_OUTLINE]}
-                        multiline
-                        textAlignVertical="top"
-                        value={description}
-                        onChangeText={setDescription}
-                        placeholderTextColor="#6b6965"
-                        placeholder={t("taskModal.descPlaceholder")}
-                      />
-                    ) : (
-                      <Text className="text-on-surface font-body text-sm leading-5">
-                        {task.description || t("taskModal.noDescription")}
-                      </Text>
-                    )}
+                  <View className="gap-2">
+                    <SectionLabel>{t("taskModal.description")}</SectionLabel>
+                    <TextInput
+                      className="bg-surface-container-lowest rounded-xl p-4 text-on-surface font-body text-sm border border-outline-variant"
+                      style={[{ minHeight: 120 }, NO_OUTLINE]}
+                      multiline
+                      textAlignVertical="top"
+                      value={description}
+                      onChangeText={setDescription}
+                      placeholderTextColor="#6b6965"
+                      placeholder={t("taskModal.descPlaceholder")}
+                    />
                   </View>
 
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                      {t("taskModal.category")}
-                    </Text>
-                    {editing ? (
-                      <View className="flex-row gap-2 flex-wrap">
+                  <View className="gap-2">
+                    <SectionLabel>{t("taskModal.category")}</SectionLabel>
+                    <View className="flex-row gap-2 flex-wrap">
+                      <TouchableOpacity
+                        onPress={() => setCategoryId(null)}
+                        className={`px-3 py-1.5 rounded-full border ${
+                          !categoryId
+                            ? "border-transparent bg-outline-variant"
+                            : "border-outline-variant"
+                        }`}
+                      >
+                        <Text className="text-xs font-label text-on-surface-variant">
+                          {t("taskModal.none")}
+                        </Text>
+                      </TouchableOpacity>
+                      {categories.map((c) => (
                         <TouchableOpacity
-                          onPress={() => setCategoryId(null)}
-                          className={`px-3 py-1.5 rounded-full border ${
-                            !categoryId
-                              ? "border-transparent bg-outline-variant"
+                          key={c.categoryId}
+                          onPress={() => setCategoryId(c.categoryId)}
+                          className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+                            categoryId === c.categoryId
+                              ? "border-transparent"
                               : "border-outline-variant"
                           }`}
+                          style={
+                            categoryId === c.categoryId
+                              ? { backgroundColor: `${c.color}20` }
+                              : undefined
+                          }
                         >
-                          <Text className="text-xs font-label text-on-surface-variant">
-                            {t("taskModal.none")}
-                          </Text>
-                        </TouchableOpacity>
-                        {categories.map((c) => (
-                          <TouchableOpacity
-                            key={c.categoryId}
-                            onPress={() => setCategoryId(c.categoryId)}
-                            className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+                          <View
+                            className="w-2.5 h-2.5 rounded-full"
+                            style={{ backgroundColor: c.color }}
+                          />
+                          <Text
+                            className={`text-xs font-label ${
                               categoryId === c.categoryId
-                                ? "border-transparent"
-                                : "border-outline-variant"
+                                ? ""
+                                : "text-on-surface-variant"
                             }`}
                             style={
                               categoryId === c.categoryId
-                                ? { backgroundColor: `${c.color}20` }
+                                ? { color: c.color }
                                 : undefined
                             }
                           >
-                            <View
-                              className="w-2.5 h-2.5 rounded-full"
-                              style={{ backgroundColor: c.color }}
-                            />
-                            <Text
-                              className={`text-xs font-label ${
-                                categoryId === c.categoryId
-                                  ? ""
-                                  : "text-on-surface-variant"
-                              }`}
-                              style={
-                                categoryId === c.categoryId
-                                  ? { color: c.color }
-                                  : undefined
-                              }
-                            >
-                              {c.name}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : cat ? (
-                      <View className="flex-row items-center gap-2">
-                        <View
-                          className="w-3 h-3 rounded-full"
-                          style={{
-                            backgroundColor: getCategoryDisplayColor(
-                              cat.color,
-                              isDark,
-                            ),
-                          }}
-                        />
-                        <Text className="text-on-surface font-body text-sm">
-                          {cat.name}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Text className="text-on-surface-variant font-body text-sm">
-                        {t("taskModal.none")}
-                      </Text>
-                    )}
+                            {c.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
                 </View>
 
                 {/* Right column: status, priority, times */}
                 <View className={`${isWide ? "w-56" : ""} gap-4`}>
                   {/* Status */}
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                      {t("taskModal.status")}
-                    </Text>
-                    {editing ? (
-                      <View className="flex-row gap-2 flex-wrap">
-                        {statuses.map((s) => (
-                          <TouchableOpacity
-                            key={s.statusId}
-                            onPress={() => setStatusId(s.statusId)}
-                            className={`px-3 py-1.5 rounded-full border ${
+                  <View className="gap-2">
+                    <SectionLabel>{t("taskModal.status")}</SectionLabel>
+                    <View className="flex-row gap-2 flex-wrap">
+                      {statuses.map((s) => (
+                        <TouchableOpacity
+                          key={s.statusId}
+                          onPress={() => setStatusId(s.statusId)}
+                          className={`px-3 py-1.5 rounded-full border ${
+                            statusId === s.statusId
+                              ? "border-transparent"
+                              : "border-outline-variant"
+                          }`}
+                          style={
+                            statusId === s.statusId
+                              ? { backgroundColor: s.color }
+                              : undefined
+                          }
+                        >
+                          <Text
+                            className={`text-xs font-label ${
                               statusId === s.statusId
-                                ? "border-transparent"
-                                : "border-outline-variant"
+                                ? "text-white"
+                                : "text-on-surface-variant"
                             }`}
-                            style={
-                              statusId === s.statusId
-                                ? { backgroundColor: s.color }
-                                : undefined
-                            }
                           >
-                            <Text
-                              className={`text-xs font-label ${
-                                statusId === s.statusId
-                                  ? "text-white"
-                                  : "text-on-surface-variant"
-                              }`}
-                            >
-                              {s.name}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : status ? (
-                      <View className="flex-row gap-2 flex-wrap">
-                        {statuses.map((s) => (
-                          <TouchableOpacity
-                            key={s.statusId}
-                            disabled={editTask.isPending}
-                            onPress={() => {
-                              if (s.statusId === task.statusId) return;
-                              editTask.mutate({
-                                taskId: task.taskId,
-                                data: {
-                                  title: task.title,
-                                  description: task.description,
-                                  priority: task.priority,
-                                  statusId: s.statusId,
-                                  categoryId: task.categoryId ?? undefined,
-                                  estimatedDuration: task.estimatedDuration,
-                                  dueDateTime: resolveTaskDueDateTimeForSave(
-                                    task,
-                                    relatedEvents,
-                                  ),
-                                },
-                              });
-                            }}
-                            className={`px-3 py-1.5 rounded-full border ${
-                              task.statusId === s.statusId
-                                ? "border-transparent"
-                                : "border-outline-variant"
-                            }`}
-                            style={
-                              task.statusId === s.statusId
-                                ? { backgroundColor: s.color }
-                                : undefined
-                            }
-                          >
-                            <Text
-                              className={`text-xs font-label ${
-                                task.statusId === s.statusId
-                                  ? "text-white"
-                                  : "text-on-surface-variant"
-                              }`}
-                            >
-                              {s.name}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : null}
+                            {s.name}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   {/* Priority */}
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                      {t("taskModal.priority")}
-                    </Text>
-                    {editing ? (
-                      <View className="flex-row gap-2 flex-wrap">
-                        {Object.values(TaskPriority).map((p) => (
-                          <TouchableOpacity
-                            key={p}
-                            onPress={() => setPriority(p)}
-                            className={`px-3 py-1.5 rounded-full border ${
-                              priority === p
-                                ? "border-transparent"
-                                : "border-outline-variant"
-                            }`}
-                            style={
-                              priority === p
-                                ? { backgroundColor: pColors[p] }
-                                : undefined
-                            }
-                          >
-                            <Text
-                              className={`text-xs font-label ${
-                                priority === p
-                                  ? "text-white"
-                                  : "text-on-surface-variant"
-                              }`}
-                            >
-                              {p}
-                            </Text>
-                          </TouchableOpacity>
-                        ))}
-                      </View>
-                    ) : (
-                      <View
-                        className="px-3 py-1.5 rounded-lg self-start"
-                        style={{
-                          backgroundColor: `${pColors[task.priority]}25`,
-                        }}
-                      >
-                        <Text
-                          className="text-sm font-headline"
-                          style={{ color: pColors[task.priority] }}
+                  <View className="gap-2">
+                    <SectionLabel>{t("taskModal.priority")}</SectionLabel>
+                    <View className="flex-row gap-2 flex-wrap">
+                      {Object.values(TaskPriority).map((p) => (
+                        <TouchableOpacity
+                          key={p}
+                          onPress={() => setPriority(p)}
+                          className={`flex-row items-center gap-1.5 px-3 py-1.5 rounded-full border ${
+                            priority === p
+                              ? "border-transparent"
+                              : "border-outline-variant"
+                          }`}
+                          style={
+                            priority === p
+                              ? { backgroundColor: pColors[p] }
+                              : undefined
+                          }
                         >
-                          {task.priority}
-                        </Text>
-                      </View>
-                    )}
+                          <MaterialIcons
+                            name={PRIORITY_ICON[p]}
+                            size={14}
+                            color={priority === p ? "#ffffff" : pColors[p]}
+                          />
+                          <Text
+                            className={`text-xs font-label ${
+                              priority === p
+                                ? "text-white"
+                                : "text-on-surface-variant"
+                            }`}
+                          >
+                            {t(PRIORITY_LABEL_KEY[p])}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
                   </View>
 
                   {/* Duration */}
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                      {t("taskModal.duration")}
-                    </Text>
-                    {editing ? (
-                      <Input
-                        value={estimatedDuration}
-                        onChangeText={setEstimatedDuration}
-                        placeholder={t("taskModal.minPlaceholder")}
-                        keyboardType="numeric"
-                      />
-                    ) : (
-                      <View className="flex-row items-center gap-1.5">
-                        <MaterialIcons
-                          name="schedule"
-                          size={16}
-                          color="#6b6965"
-                        />
-                        <Text className="text-on-surface font-body text-sm">
-                          {task.estimatedDuration > 0
-                            ? formatDuration(task.estimatedDuration)
-                            : "—"}
-                        </Text>
-                      </View>
-                    )}
+                  <View className="gap-1">
+                    <SectionLabel>{t("taskModal.duration")}</SectionLabel>
+                    <Input
+                      value={estimatedDuration}
+                      onChangeText={setEstimatedDuration}
+                      placeholder={t("taskModal.minPlaceholder")}
+                      keyboardType="numeric"
+                    />
                   </View>
 
                   {/* Due date */}
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                      {t("taskModal.dueDate")}
-                    </Text>
-                    {editing ? (
+                  <View className="gap-1">
+                    <SectionLabel>{t("taskModal.dueDate")}</SectionLabel>
                       <View>
                         <TouchableOpacity
                           onPress={() => setShowDuePicker(!showDuePicker)}
@@ -954,112 +1366,48 @@ export function TaskDetailModal({
                           </View>
                         )}
                       </View>
-                    ) : (
-                      <View className="flex-row items-center gap-1.5">
-                        <MaterialIcons
-                          name="calendar-today"
-                          size={16}
-                          color="#6b6965"
-                        />
-                        <Text
-                          className={`font-body text-sm ${
-                            task.dueDateTime && isOverdue(task.dueDateTime)
-                              ? "text-error"
-                              : "text-on-surface"
-                          }`}
-                        >
-                          {task.dueDateTime
-                            ? formatDateTime(task.dueDateTime)
-                            : "—"}
-                        </Text>
-                      </View>
-                    )}
                   </View>
 
                   {/* Assignees */}
-                  <View>
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-2">
-                      {t("taskModal.assignees")}
-                    </Text>
-                    {editing ? (
-                      workspaceMembers.length === 0 ? (
-                        <Text className="text-on-surface-variant font-body text-sm">
-                          {t("taskModal.noMembers")}
-                        </Text>
-                      ) : (
-                        <View className="flex-row gap-2 flex-wrap">
-                          {workspaceMembers.map((m) => {
-                            const selected = assigneeIds.includes(m.userId);
-                            return (
-                              <TouchableOpacity
-                                key={m.userId}
-                                onPress={() => toggleAssignee(m.userId)}
-                                className={`flex-row items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border ${
-                                  selected
-                                    ? "border-transparent bg-accent/15"
-                                    : "border-outline-variant"
-                                }`}
-                              >
-                                <Avatar
-                                  fullName={m.fullName ?? m.email ?? "?"}
-                                  size="sm"
-                                />
-                                <Text
-                                  className={`text-xs font-label ${
-                                    selected
-                                      ? "text-accent"
-                                      : "text-on-surface-variant"
-                                  }`}
-                                >
-                                  {m.fullName ?? m.email ?? t("common.user")}
-                                </Text>
-                              </TouchableOpacity>
-                            );
-                          })}
-                        </View>
-                      )
-                    ) : assignedMembers.length === 0 ? (
+                  <View className="gap-2">
+                    <SectionLabel>{t("taskModal.assignees")}</SectionLabel>
+                    {workspaceMembers.length === 0 ? (
                       <Text className="text-on-surface-variant font-body text-sm">
-                        {t("taskModal.nobodyAssigned")}
+                        {t("taskModal.noMembers")}
                       </Text>
                     ) : (
-                      <View className="flex-row flex-wrap gap-2">
-                        {assignedMembers.map((m) => (
-                          <View
-                            key={m.userId}
-                            className="flex-row items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full bg-surface-container-low border border-outline-variant"
-                          >
-                            <Avatar
-                              fullName={m.fullName ?? m.email ?? "?"}
-                              size="sm"
-                            />
-                            <Text className="text-on-surface font-body text-xs">
-                              {m.fullName ?? m.email ?? t("common.user")}
-                            </Text>
-                          </View>
-                        ))}
+                      <View className="flex-row gap-2 flex-wrap">
+                        {workspaceMembers.map((m) => {
+                          const selected = assigneeIds.includes(m.userId);
+                          return (
+                            <TouchableOpacity
+                              key={m.userId}
+                              onPress={() => toggleAssignee(m.userId)}
+                              className={`flex-row items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border ${
+                                selected
+                                  ? "border-transparent bg-accent/15"
+                                  : "border-outline-variant"
+                              }`}
+                            >
+                              <Avatar
+                                fullName={m.fullName ?? m.email ?? "?"}
+                                size="sm"
+                              />
+                              <Text
+                                className={`text-xs font-label ${
+                                  selected
+                                    ? "text-accent"
+                                    : "text-on-surface-variant"
+                                }`}
+                              >
+                                {m.fullName ?? m.email ?? t("common.user")}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
                       </View>
                     )}
                   </View>
-
-                  {/* Created at */}
-                  {!editing && (
-                    <View>
-                      <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-1">
-                        {t("taskModal.createdAt")}
-                      </Text>
-                      <View className="flex-row items-center gap-1.5">
-                        <MaterialIcons
-                          name="access-time"
-                          size={16}
-                          color="#6b6965"
-                        />
-                        <Text className="text-on-surface font-body text-sm">
-                          {formatDateTime(task.createdAt)}
-                        </Text>
-                      </View>
-                    </View>
-                  )}
                 </View>
               </View> : null}
 
@@ -1163,18 +1511,8 @@ export function TaskDetailModal({
                 </View>
               )}
 
-              {activeTab === "details" && commentsEnabled && (
-                <View className="px-6 pt-2 pb-4">
-                  <View className="border-t border-outline-variant pt-5">
-                    <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
-                      {t("comments.title")}
-                    </Text>
-                    <TaskCommentsSection taskId={task.taskId} isDark={isDark} />
-                  </View>
-                </View>
-              )}
-
             </ScrollView>
+            )}
 
               {/* Action buttons */}
               <View
@@ -1275,21 +1613,22 @@ export function TaskDetailModal({
                 ) : (
                   <>
                     <Button
-                      label={t("taskModal.edit")}
-                      fullWidth={isNarrow}
-                      onPress={startEdit}
-                    />
-                    <Button
-                      variant="outline"
                       label={t("taskModal.markComplete")}
+                      icon="check"
                       fullWidth={isNarrow}
                       loading={editTask.isPending}
                       onPress={handleMarkComplete}
                     />
+                    <Button
+                      variant="outline"
+                      label={t("taskModal.edit")}
+                      fullWidth={isNarrow}
+                      onPress={startEdit}
+                    />
                     <TouchableOpacity
                       onPress={handleDelete}
                       className={`flex-row items-center gap-1.5 ${
-                        isNarrow ? "justify-center py-2" : "mr-auto"
+                        isNarrow ? "justify-center py-2" : "ml-auto"
                       }`}
                     >
                       <MaterialIcons
@@ -1684,7 +2023,110 @@ export function CreateTaskModal({
   );
 }
 
-function TaskCommentsSection({
+/**
+ * Comment composer. Split from the thread so the Details pane can pin it below
+ * a scrolling list instead of letting it scroll away.
+ */
+function TaskCommentComposer({
+  taskId,
+  assignedUserIds,
+  isDark,
+}: {
+  taskId: string;
+  assignedUserIds: string[];
+  isDark: boolean;
+}) {
+  const t = useT();
+  const currentUser = useAuthStore((s) => s.user);
+  const { data: mentionTargets } = useWorkspaceUsers();
+  const setAssignees = useSetTaskAssignees();
+  const addComment = useAddComment();
+  const [draft, setDraft] = useState("");
+
+  const accent = isDark ? "#9b8cff" : "#5b4ee0";
+
+  const pendingAssignees = useMemo(() => {
+    const assigned = new Set(assignedUserIds);
+    return extractMentionedMembers(draft, mentionTargets).filter(
+      (member) => !assigned.has(member.userId),
+    );
+  }, [draft, mentionTargets, assignedUserIds]);
+
+  async function submit() {
+    const content = draft.trim();
+    if (!content || addComment.isPending || setAssignees.isPending) return;
+
+    if (pendingAssignees.length) {
+      try {
+        await setAssignees.mutateAsync({
+          taskId,
+          userIds: [
+            ...assignedUserIds,
+            ...pendingAssignees.map((member) => member.userId),
+          ],
+        });
+      } catch {}
+    }
+
+    addComment.mutate({ taskId, content }, { onSuccess: () => setDraft("") });
+  }
+
+  return (
+    <View className="flex-row items-start gap-3">
+      <Avatar fullName={currentUser?.fullName ?? "?"} size="sm" />
+      <View className="flex-1">
+        <MentionInput
+          value={draft}
+          onChangeText={setDraft}
+          members={mentionTargets}
+          isDark={isDark}
+          placeholder={t("comments.placeholder")}
+        />
+        <View className="flex-row items-center justify-end gap-2 mt-2">
+          {pendingAssignees.length > 0 ? (
+            <View className="flex-row items-center gap-1.5 mr-auto flex-1">
+              <MaterialIcons name="person-add" size={13} color={accent} />
+              <Text
+                className="text-on-surface-variant font-body text-xs flex-1"
+                numberOfLines={2}
+              >
+                {t("comments.mentionWillAssign", {
+                  names: pendingAssignees
+                    .map((member) => member.fullName)
+                    .join(", "),
+                })}
+              </Text>
+            </View>
+          ) : (
+            mentionTargets.length > 0 &&
+            !draft.trim() && (
+              <Text className="text-on-surface-variant font-body text-xs mr-auto">
+                {t("comments.mentionTip")}
+              </Text>
+            )
+          )}
+          <TouchableOpacity
+            onPress={submit}
+            disabled={!draft.trim() || addComment.isPending}
+            className="flex-row items-center gap-1.5 px-4 py-2 rounded-full"
+            style={{
+              backgroundColor: draft.trim() ? accent : "#3a3a42",
+              opacity: draft.trim() ? 1 : 0.5,
+            }}
+          >
+            <MaterialIcons name="send" size={15} color="#ffffff" />
+            <Text className="text-white font-label text-xs">
+              {t("comments.send")}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/** Comment thread, newest first. Rendered above the pinned composer. */
+function TaskCommentsThread({
   taskId,
   isDark,
 }: {
@@ -1694,14 +2136,27 @@ function TaskCommentsSection({
   const t = useT();
   const currentUser = useAuthStore((s) => s.user);
   const { data: comments, isLoading } = useTaskComments(taskId);
-  const addComment = useAddComment();
+  const { data: mentionTargets } = useWorkspaceUsers();
+  const activeWorkspace = useWorkspaceStore((s) => s.getActiveWorkspace());
   const editComment = useEditComment();
   const deleteComment = useDeleteComment();
-  const [draft, setDraft] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
 
   const accent = isDark ? "#9b8cff" : "#5b4ee0";
+
+  const highlightMembers = useMemo<WorkspaceMember[]>(
+    () =>
+      (activeWorkspace?.assignedUsers ?? [])
+        .filter((u) => !!u.fullName)
+        .map((u) => ({
+          userId: u.userId,
+          fullName: u.fullName as string,
+          email: u.email ?? "",
+        })),
+    [activeWorkspace],
+  );
+
   const list = useMemo(
     () =>
       [...(comments ?? [])].sort(
@@ -1710,15 +2165,6 @@ function TaskCommentsSection({
       ),
     [comments],
   );
-
-  function submit() {
-    const content = draft.trim();
-    if (!content || addComment.isPending) return;
-    addComment.mutate(
-      { taskId, content },
-      { onSuccess: () => setDraft("") },
-    );
-  }
 
   function saveEdit(commentId: string) {
     const content = editDraft.trim();
@@ -1743,40 +2189,7 @@ function TaskCommentsSection({
   }
 
   return (
-    <View className="gap-4">
-      {/* Composer */}
-      <View className="flex-row items-start gap-3">
-        <Avatar fullName={currentUser?.fullName ?? "?"} size="sm" />
-        <View className="flex-1">
-          <TextInput
-            className="bg-surface-container-lowest rounded-xl px-4 py-3 text-on-surface font-body text-sm border border-outline-variant"
-            style={[{ minHeight: 44 }, NO_OUTLINE]}
-            multiline
-            value={draft}
-            onChangeText={setDraft}
-            placeholder={t("comments.placeholder")}
-            placeholderTextColor="#6b6965"
-          />
-          <View className="flex-row justify-end mt-2">
-            <TouchableOpacity
-              onPress={submit}
-              disabled={!draft.trim() || addComment.isPending}
-              className="flex-row items-center gap-1.5 px-4 py-2 rounded-full"
-              style={{
-                backgroundColor: draft.trim() ? accent : "#3a3a42",
-                opacity: draft.trim() ? 1 : 0.5,
-              }}
-            >
-              <MaterialIcons name="send" size={15} color="#ffffff" />
-              <Text className="text-white font-label text-xs">
-                {t("comments.send")}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-
-      {/* Thread */}
+    <View>
       {isLoading ? (
         <Text className="text-on-surface-variant font-body text-sm">…</Text>
       ) : list.length === 0 ? (
@@ -1845,14 +2258,13 @@ function TaskCommentsSection({
                   </View>
                   {isEditing ? (
                     <View className="gap-2">
-                      <TextInput
-                        className="bg-surface-container-lowest rounded-lg px-3 py-2 text-on-surface font-body text-sm border border-outline-variant"
-                        style={[{ minHeight: 40 }, NO_OUTLINE]}
-                        multiline
+                      <MentionInput
                         value={editDraft}
                         onChangeText={setEditDraft}
+                        members={mentionTargets}
+                        isDark={isDark}
                         autoFocus
-                        placeholderTextColor="#6b6965"
+                        minHeight={40}
                       />
                       <View className="flex-row justify-end gap-2">
                         <TouchableOpacity
@@ -1876,9 +2288,13 @@ function TaskCommentsSection({
                       </View>
                     </View>
                   ) : (
-                    <Text className="text-on-surface font-body text-sm leading-5">
-                      {c.content}
-                    </Text>
+                    <MentionText
+                      content={c.content}
+                      members={highlightMembers}
+                      currentUserId={currentUser?.userId}
+                      isDark={isDark}
+                      className="text-on-surface font-body text-sm leading-5"
+                    />
                   )}
                 </View>
               </View>

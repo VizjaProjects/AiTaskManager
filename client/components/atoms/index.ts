@@ -9,6 +9,7 @@ export {
 } from "./Badge";
 export { Card } from "./Card";
 export { Avatar } from "./Avatar";
+export { MentionText } from "./MentionText";
 export { EmptyState } from "./EmptyState";
 export {
   Skeleton,
