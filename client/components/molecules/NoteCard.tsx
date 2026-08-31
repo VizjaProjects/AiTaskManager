@@ -70,7 +70,10 @@ export function NoteCard({ note, active, onPress }: NoteCardProps) {
           className="font-body text-sm italic"
           style={{ color: noteTheme.mutedText }}
         >
-          {t("notes.emptyNote")}
+          {/* A handwritten note has no preview text, which is not the same as being empty. */}
+          {note.content.format === "ink"
+            ? t("notes.inkNoteLabel")
+            : t("notes.emptyNote")}
         </Text>
       )}
       <Text

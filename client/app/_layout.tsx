@@ -226,6 +226,37 @@ export default function RootLayout() {
     }
   }, []);
 
+  // `expo export` generates its own HTML shell and ignores app/+html.tsx, so
+  // these have to be injected at runtime. iOS reads them when the user taps
+  // "Add to Home Screen", which is well after this has run — and standalone
+  // mode is what makes the handwriting canvas usable on a tablet, because it
+  // drops the browser chrome and Safari's page-level pinch zoom.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof document === "undefined") return;
+
+    function setMeta(name: string, content: string) {
+      let tag = document.querySelector(`meta[name="${name}"]`);
+      if (!tag) {
+        tag = document.createElement("meta");
+        tag.setAttribute("name", name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute("content", content);
+    }
+
+    document.documentElement.lang = "pl";
+    setMeta("apple-mobile-web-app-capable", "yes");
+    setMeta("mobile-web-app-capable", "yes");
+    setMeta("apple-mobile-web-app-status-bar-style", "black-translucent");
+    setMeta("apple-mobile-web-app-title", "Ordovita");
+    // viewport-fit=cover stops the notch from letterboxing the canvas.
+    setMeta(
+      "viewport",
+      "width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover",
+    );
+    setMeta("theme-color", mode === "dark" ? "#1a1d2e" : "#f5f3ef");
+  }, [mode]);
+
   if (!fontsLoaded) return null;
 
   return (

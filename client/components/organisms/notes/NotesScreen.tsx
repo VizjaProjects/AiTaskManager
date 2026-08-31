@@ -11,6 +11,7 @@ import {
   Alert,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -19,8 +20,12 @@ import { LinkCheckboxModal } from "@/components/molecules";
 import { RichTextEditor } from "./RichTextEditor";
 import type { RichTextEditorHandle } from "./RichTextEditor.types";
 import { NoteEditorToolbar, type EditorCommand } from "./NoteEditorToolbar";
+import { InkEditor } from "./InkEditor";
+import type { InkEditorHandle } from "./InkEditor.types";
+import { InkEditorToolbar } from "./InkEditorToolbar";
 import {
   useNotes,
+  useNote,
   useNoteFolders,
   useCreateNote,
   useCreateNoteFolder,
@@ -35,9 +40,26 @@ import {
 } from "@/lib/hooks";
 import { useAiPlanningRequestStore, useThemeStore } from "@/lib/stores";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
-import type { Note, NoteFolder } from "@/lib/types";
+import {
+  isInkShapeTool,
+  type InkDocument,
+  type InkPageTemplate,
+  type InkTool,
+  type Note,
+  type NoteFolder,
+  type NoteMode,
+} from "@/lib/types";
 import { getNoteThemeColors, NOTE_COLORS } from "@/lib/noteTheme";
 import { formatDateTime } from "@/lib/utils";
+import {
+  buildInkNoteContentJson,
+  buildNoteContentJson,
+} from "@/lib/api/adapters";
+import { createEmptyInkDocument } from "@/lib/notes/inkDocument";
+import {
+  defaultInkColorForTool,
+  defaultInkWidthForTool,
+} from "@/lib/utils/inkColors";
 import { useT } from "@/lib/i18n";
 
 const NO_OUTLINE =
@@ -51,6 +73,30 @@ const EMPTY_STATE = {
   insertUnorderedList: false,
   insertOrderedList: false,
 };
+
+const EMPTY_INK_STATE = {
+  canUndo: false,
+  canRedo: false,
+  strokes: 0,
+  template: "lines" as InkPageTemplate,
+  zoom: 1,
+  rotation: 0,
+};
+
+/**
+ * Colour and nib are remembered per tool, but all four shape tools share one
+ * entry: switching from a rectangle to an arrow is a change of shape, not a
+ * change of pen.
+ */
+type InkSettingGroup = "pen" | "highlighter" | "eraser" | "shape";
+
+function inkSettingGroup(tool: InkTool): InkSettingGroup {
+  return isInkShapeTool(tool) ? "shape" : tool;
+}
+
+const HTML_SAVE_DEBOUNCE_MS = 800;
+/** Ink documents are orders of magnitude larger than HTML, so saves are spaced out. */
+const INK_SAVE_DEBOUNCE_MS = 2500;
 
 const NOTE_DRAG_TYPE = "application/note-id";
 const CONTEXT_MENU_WIDTH = 220;
@@ -147,6 +193,36 @@ export function NotesScreen() {
   const [folderId, setFolderId] = useState<string | null>(null);
   const [toolbarState, setToolbarState] = useState(EMPTY_STATE);
   const editorRef = useRef<RichTextEditorHandle>(null);
+
+  // handwritten notes
+  const inkEditorRef = useRef<InkEditorHandle>(null);
+  const inkDocRef = useRef<InkDocument | null>(null);
+  const [inkTool, setInkTool] = useState<InkTool>("pen");
+  const [inkState, setInkState] = useState(EMPTY_INK_STATE);
+  // Colour and nib are remembered per tool, so reaching for the highlighter and
+  // back does not reset the pen the user set up.
+  const [inkSettings, setInkSettings] = useState<
+    Record<InkSettingGroup, { color: string; width: number }>
+  >(() => ({
+    pen: {
+      color: defaultInkColorForTool("pen"),
+      width: defaultInkWidthForTool("pen"),
+    },
+    highlighter: {
+      color: defaultInkColorForTool("highlighter"),
+      width: defaultInkWidthForTool("highlighter"),
+    },
+    eraser: {
+      color: defaultInkColorForTool("eraser"),
+      width: defaultInkWidthForTool("eraser"),
+    },
+    shape: {
+      color: defaultInkColorForTool("line"),
+      width: defaultInkWidthForTool("line"),
+    },
+  }));
+  const activeInkSetting = inkSettings[inkSettingGroup(inkTool)];
+
   const titleInputRef = useRef<TextInput>(null);
   const focusTitleRef = useRef(false);
   const finderDragSurfaceRef = useRef<View>(null);
@@ -165,6 +241,52 @@ export function NotesScreen() {
     () => notes.find((n) => n.id === selectedNoteId) ?? null,
     [notes, selectedNoteId],
   );
+  const selectedIsInk = selectedNote?.content.format === "ink";
+
+  // The workspace list strips strokes out of handwritten notes, so opening one
+  // means fetching its content separately.
+  const { data: fullNote } = useNote(selectedIsInk ? selectedNoteId : null);
+
+  /**
+   * Strokes of the handwritten note being edited, latched once they arrive.
+   *
+   * Deliberately not derived from the queries. Every save invalidates the notes
+   * list, the list always answers "strokes stripped", so a derived value would
+   * drop back to "still loading" a couple of seconds after every stroke — which
+   * unmounted the canvas mid-session and took the undo history with it.
+   */
+  const [openInk, setOpenInk] = useState<{
+    noteId: string;
+    doc: InkDocument;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!selectedNoteId) {
+      if (openInk) setOpenInk(null);
+      return;
+    }
+    // The notes query can briefly miss the selected row (optimistic create id
+    // swap, refetch). Clearing the latch then remounts the canvas on an empty
+    // document and the stroke the user just drew is gone.
+    if (!selectedNote) return;
+    if (selectedNote.content.format !== "ink") {
+      if (openInk) setOpenInk(null);
+      return;
+    }
+    if (openInk?.noteId === selectedNote.id) return;
+
+    if (selectedNote.content.truncated !== true) {
+      setOpenInk({ noteId: selectedNote.id, doc: selectedNote.content.doc });
+      return;
+    }
+    const fetched = fullNote?.id === selectedNote.id ? fullNote.content : null;
+    if (fetched && fetched.format === "ink" && fetched.truncated !== true) {
+      setOpenInk({ noteId: selectedNote.id, doc: fetched.doc });
+    }
+  }, [selectedNoteId, selectedNote, fullNote, openInk]);
+
+  /** True while an opened handwritten note is still missing its strokes. */
+  const inkContentPending = selectedIsInk && openInk?.noteId !== selectedNoteId;
 
   const currentFolder = useMemo(
     () => folders.find((f) => f.id === currentFolderId) ?? null,
@@ -224,16 +346,32 @@ export function NotesScreen() {
     ];
   }, [linkNote, tasks, events, linkTaskIds, linkEventIds, t]);
 
+  const selectedNoteMode: NoteMode = selectedNote?.content.format ?? "html";
+
   // load selected note into buffers
   useEffect(() => {
     if (selectedNote) {
       setTitle(selectedNote.title);
       setColor(selectedNote.noteColor || NOTE_COLORS[0]);
       setFolderId(selectedNote.noteFolderId);
-      htmlRef.current = selectedNote.content.html;
+      if (selectedNote.content.format === "ink") {
+        htmlRef.current = "";
+        // Strokes are still in flight; this reruns when they land.
+        const doc = openInk?.noteId === selectedNote.id ? openInk.doc : null;
+        if (!doc) return;
+        inkDocRef.current = doc;
+        setInkState({
+          ...EMPTY_INK_STATE,
+          strokes: doc.pages[0]?.strokes.length ?? 0,
+          template: doc.pages[0]?.template ?? "lines",
+        });
+      } else {
+        htmlRef.current = selectedNote.content.html;
+        inkDocRef.current = null;
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNoteId]);
+  }, [selectedNoteId, openInk?.noteId]);
 
   // Autofocus the title field when a brand-new note is opened.
   useEffect(() => {
@@ -278,6 +416,32 @@ export function NotesScreen() {
       if (metaTimer.current) clearTimeout(metaTimer.current);
     };
   }, []);
+
+  // Backgrounding a tablet browser can suspend timers indefinitely, which with
+  // a 2.5s debounce is long enough to lose a page of handwriting.
+  useEffect(() => {
+    if (Platform.OS !== "web" || !editorOpen) return;
+    const flush = () => {
+      if (document.visibilityState === "hidden") {
+        void flushPendingEditorSaves().catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", flush);
+    return () => document.removeEventListener("visibilitychange", flush);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editorOpen, selectedNoteId, selectedNoteMode]);
+
+  // Pushed imperatively rather than as a prop: the canvas owns its own state
+  // and must not remount when the nib changes mid-note.
+  useEffect(() => {
+    if (selectedNoteMode !== "ink") return;
+    const setting = inkSettings[inkSettingGroup(inkTool)];
+    inkEditorRef.current?.setTool({
+      tool: inkTool,
+      color: setting.color,
+      width: setting.width,
+    });
+  }, [inkTool, inkSettings, selectedNoteMode, selectedNoteId]);
 
   useEffect(() => {
     setLinkNote(null);
@@ -340,8 +504,38 @@ export function NotesScreen() {
     const id = selectedNoteId;
     contentTimer.current = setTimeout(() => {
       contentTimer.current = null;
-      updateContent.mutate({ noteId: id, html });
-    }, 800);
+      updateContent.mutate({
+        noteId: id,
+        contentJson: buildNoteContentJson(html),
+      });
+    }, HTML_SAVE_DEBOUNCE_MS);
+  }
+
+  function scheduleInkSave(doc: InkDocument) {
+    inkDocRef.current = doc;
+    if (!selectedNoteId) return;
+    if (contentTimer.current) clearTimeout(contentTimer.current);
+    const id = selectedNoteId;
+    contentTimer.current = setTimeout(() => {
+      contentTimer.current = null;
+      updateContent.mutate({
+        noteId: id,
+        contentJson: buildInkNoteContentJson(doc),
+      });
+    }, INK_SAVE_DEBOUNCE_MS);
+  }
+
+  /**
+   * Envelope for whichever editor is currently open, or null when there is
+   * nothing safe to write. Never falls back to an HTML envelope for an ink
+   * note: that would replace a page of handwriting with empty text.
+   */
+  function currentContentJson(): string | null {
+    if (selectedNoteMode === "ink") {
+      const doc = inkDocRef.current;
+      return doc ? buildInkNoteContentJson(doc) : null;
+    }
+    return buildNoteContentJson(htmlRef.current);
   }
 
   function scheduleMetaSave(next: {
@@ -373,12 +567,15 @@ export function NotesScreen() {
     if (contentTimer.current && selectedNoteId) {
       clearTimeout(contentTimer.current);
       contentTimer.current = null;
-      saves.push(
-        updateContent.mutateAsync({
-          noteId: selectedNoteId,
-          html: htmlRef.current,
-        }),
-      );
+      const contentJson = currentContentJson();
+      if (contentJson) {
+        saves.push(
+          updateContent.mutateAsync({
+            noteId: selectedNoteId,
+            contentJson,
+          }),
+        );
+      }
     }
 
     if (metaTimer.current && pendingMetaRef.current) {
@@ -392,16 +589,20 @@ export function NotesScreen() {
     await Promise.all(saves);
   }
 
-  async function handleCreateNote() {
+  async function handleCreateNote(mode: NoteMode = "html") {
     const res = await createNote.mutateAsync({
-      title: t("notes.newNoteTitle"),
+      title: t(mode === "ink" ? "notes.newInkNoteTitle" : "notes.newNoteTitle"),
       noteColor: color || NOTE_COLORS[0],
       noteFolderId: currentFolderId,
-      html: "",
+      contentJson:
+        mode === "ink"
+          ? buildInkNoteContentJson(createEmptyInkDocument())
+          : buildNoteContentJson(""),
     });
     const newId = (res.data as { id: string }).id;
-    // New note → land with the cursor in the title field, text pre-selected.
-    focusTitleRef.current = true;
+    // New text note → land with the cursor in the title field, text pre-selected.
+    // An ink note should open straight onto the canvas instead.
+    focusTitleRef.current = mode === "html";
     openNote(newId);
   }
 
@@ -420,6 +621,11 @@ export function NotesScreen() {
 
   function closeEditor() {
     setEditorOpen(false);
+    // Ink saves are debounced by 2.5s; without flushing here the last strokes
+    // before closing would never reach the backend.
+    void flushPendingEditorSaves().catch(() => {
+      showMessage(t("notes.saveFailedTitle"), t("notes.saveFailedDesc"));
+    });
   }
 
   function handleDelete() {
@@ -582,6 +788,14 @@ export function NotesScreen() {
     editorRef.current?.sendCommand(cmd);
   }
 
+  function updateInkSetting(patch: { color?: string; width?: number }) {
+    const group = inkSettingGroup(inkTool);
+    setInkSettings((prev) => ({
+      ...prev,
+      [group]: { ...prev[group], ...patch },
+    }));
+  }
+
   /* ---------- editor modal ---------- */
 
   const editorBody = selectedNote ? (
@@ -643,21 +857,53 @@ export function NotesScreen() {
       </View>
 
       {/* editor surface */}
-      <RichTextEditor
-        key={selectedNote.id}
-        ref={editorRef}
-        initialHtml={selectedNote.content.html}
-        isDark={isDark}
-        backgroundColor={editorTheme.background}
-        placeholder={t("notes.editorPlaceholder")}
-        fontSize={editorFontSize}
-        onChange={scheduleContentSave}
-        onScheduleSelection={handleScheduleSelection}
-        onStateChange={setToolbarState}
-      />
+      {selectedNote.content.format === "ink" ? (
+        // Mounting before the strokes arrive would hand the canvas an empty
+        // document, and `key` would not change to correct it afterwards.
+        !openInk || inkContentPending ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator color={editorTheme.mutedText} />
+          </View>
+        ) : (
+        <InkEditor
+          key={openInk.noteId}
+          ref={inkEditorRef}
+          initialDoc={openInk.doc}
+          isDark={isDark}
+          backgroundColor={editorTheme.background}
+          initialTool={{
+            tool: inkTool,
+            color: activeInkSetting.color,
+            width: activeInkSetting.width,
+          }}
+          onChange={scheduleInkSave}
+          onStateChange={(state) =>
+            setInkState({ ...EMPTY_INK_STATE, ...state })
+          }
+        />
+        )
+      ) : (
+        <RichTextEditor
+          key={selectedNote.id}
+          ref={editorRef}
+          initialHtml={selectedNote.content.html}
+          isDark={isDark}
+          backgroundColor={editorTheme.background}
+          placeholder={t("notes.editorPlaceholder")}
+          fontSize={editorFontSize}
+          onChange={scheduleContentSave}
+          onScheduleSelection={handleScheduleSelection}
+          onStateChange={setToolbarState}
+        />
+      )}
 
-      {/* colour picker — bottom right */}
-      <View className="flex-row justify-end items-center gap-2 px-4 py-2">
+      {/* Paper tint. Hidden for handwritten notes: the ink toolbar already has
+          a colour row, two of them side by side read as one control, and the
+          canvas needs the height more. */}
+      <View
+        className="flex-row justify-end items-center gap-2 px-4 py-2"
+        style={selectedNoteMode === "ink" ? { display: "none" } : undefined}
+      >
         {NOTE_COLORS.map((c) => {
           const swatchTheme = getNoteThemeColors(c, isDark);
           return (
@@ -682,11 +928,34 @@ export function NotesScreen() {
       </View>
 
       {/* bottom macOS toolbar */}
-      <NoteEditorToolbar
-        state={toolbarState}
-        isDark={isDark}
-        onCommand={command}
-      />
+      {selectedNoteMode === "ink" ? (
+        <InkEditorToolbar
+          tool={inkTool}
+          color={activeInkSetting.color}
+          width={activeInkSetting.width}
+          template={inkState.template}
+          canUndo={inkState.canUndo}
+          canRedo={inkState.canRedo}
+          zoom={inkState.zoom}
+          rotation={inkState.rotation}
+          isDark={isDark}
+          onToolChange={setInkTool}
+          onColorChange={(next) => updateInkSetting({ color: next })}
+          onWidthChange={(next) => updateInkSetting({ width: next })}
+          onTemplateChange={(next) =>
+            inkEditorRef.current?.setTemplate(next)
+          }
+          onUndo={() => inkEditorRef.current?.undo()}
+          onRedo={() => inkEditorRef.current?.redo()}
+          onResetView={() => inkEditorRef.current?.resetView()}
+        />
+      ) : (
+        <NoteEditorToolbar
+          state={toolbarState}
+          isDark={isDark}
+          onCommand={command}
+        />
+      )}
     </View>
   ) : null;
 
@@ -698,14 +967,19 @@ export function NotesScreen() {
       onRequestClose={closeEditor}
     >
       <View className="flex-1 bg-black/50 items-center justify-center">
-        <Pressable
-          style={{ position: "absolute", inset: 0 } as never}
-          onPress={closeEditor}
-        />
+        {/* Handwritten notes fill the screen and cannot be dismissed by
+            tapping outside: the palm of the writing hand lands there, and a
+            stray touch used to throw away the page being written on. */}
+        {selectedNoteMode === "ink" ? null : (
+          <Pressable
+            style={{ position: "absolute", inset: 0 } as never}
+            onPress={closeEditor}
+          />
+        )}
         <View
           className="bg-surface-container-lowest overflow-hidden shadow-lg"
           style={
-            isDesktop
+            isDesktop && selectedNoteMode !== "ink"
               ? {
                   width: Math.min(1320, width - 48),
                   height: "96%",
@@ -1003,7 +1277,16 @@ export function NotesScreen() {
         <View className="flex-row items-center gap-2">
           {!currentFolderId && newFolderControl}
           <TouchableOpacity
-            onPress={handleCreateNote}
+            onPress={() => void handleCreateNote("ink")}
+            className="flex-row items-center gap-1.5 rounded-xl px-3 py-2 border border-outline-variant"
+          >
+            <MaterialIcons name="draw" size={16} color="#6b6965" />
+            <Text className="text-on-surface font-headline text-xs">
+              {t("notes.newInkNote")}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => void handleCreateNote("html")}
             className="flex-row items-center gap-1.5 bg-primary rounded-xl px-3 py-2"
           >
             <MaterialIcons
@@ -1382,6 +1665,7 @@ function NoteFileTile({
 }) {
   const t = useT();
   const noteTheme = getNoteThemeColors(note.noteColor, isDark);
+  const isInk = note.content.format === "ink";
   const preview = note.content.text;
 
   const tile = (
@@ -1406,7 +1690,13 @@ function NoteFileTile({
         >
           {note.title || t("taskModal.noteFallback")}
         </Text>
-        {preview ? (
+        {isInk ? (
+          // Handwritten notes carry no preview text; the glyph is what tells
+          // them apart in the finder until page thumbnails exist.
+          <View className="flex-1 items-center justify-center">
+            <MaterialIcons name="draw" size={26} color={noteTheme.mutedText} />
+          </View>
+        ) : preview ? (
           <Text
             className="font-body mt-1"
             style={{

@@ -5,6 +5,7 @@ using Ordovita.Application.Note.CreateNote;
 using Ordovita.Application.Note.CreateNoteFolder;
 using Ordovita.Application.Note.DeleteNote;
 using Ordovita.Application.Note.DeleteNoteFolder;
+using Ordovita.Application.Note.GetNote;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
 using Ordovita.Application.Note.SetNoteLinks;
@@ -54,6 +55,12 @@ public static class NoteEndpoint
             .WithName("GetWorkspaceNotes")
             .Produces<IReadOnlyList<NoteDto>>(200)
             .Produces(401);
+
+        g.MapGet("/{noteId:guid}", GetNote)
+            .WithName("GetNote")
+            .Produces<NoteDto>(200)
+            .Produces(401)
+            .Produces(404);
 
         g.MapPut("/{noteId:guid}/content", UpdateNoteContent)
             .WithName("UpdateNoteContent")
@@ -130,6 +137,12 @@ public static class NoteEndpoint
     private static async Task<IResult> GetWorkspaceNotes(Guid workspaceId, ISender sender, CancellationToken ct)
     {
         var result = await sender.Send(new GetWorkspaceNotesQuery(workspaceId), ct);
+        return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
+    }
+
+    private static async Task<IResult> GetNote(Guid workspaceId, Guid noteId, ISender sender, CancellationToken ct)
+    {
+        var result = await sender.Send(new GetNoteQuery(workspaceId, noteId), ct);
         return result.IsSuccess ? Results.Ok(result.Value) : result.Error.ToProblem();
     }
 

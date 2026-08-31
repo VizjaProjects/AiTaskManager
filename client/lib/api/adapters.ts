@@ -3,9 +3,13 @@ import {
   TaskPriority,
   type CalendarEvent,
   type Category,
+  type InkDocument,
+  type InkEncoding,
   type Note,
   type NoteContentEnvelope,
   type NoteFolder,
+  type NoteHtmlEnvelope,
+  type NoteInkEnvelope,
   type Question,
   type Survey,
   type Task,
@@ -17,6 +21,11 @@ import {
 } from "../types";
 import { parseApiDateTime, toLocalDateTimeString } from "../utils";
 import { DEFAULT_EVENT_COLOR } from "../utils/eventColors";
+import {
+  createEmptyInkDocument,
+  decodeInkDocument,
+  encodeInkDocument,
+} from "../notes/inkDocument";
 
 const PRIORITY_BY_NUMBER: Record<number, TaskPriority> = {
   0: TaskPriority.LOW,
@@ -242,7 +251,7 @@ export { mapPriorityToApi };
 
 const EMPTY_NOTE_HTML = "<p><br/></p>";
 
-export function emptyNoteContent(): NoteContentEnvelope {
+export function emptyNoteContent(): NoteHtmlEnvelope {
   return { version: 1, format: "html", html: EMPTY_NOTE_HTML, text: "" };
 }
 
@@ -266,11 +275,44 @@ export function htmlToPreviewText(html: string): string {
 /** Build the JSON envelope string stored in Note.contentJson from raw HTML. */
 export function buildNoteContentJson(html: string): string {
   const safeHtml = html && html.trim().length > 0 ? html : EMPTY_NOTE_HTML;
-  const envelope: NoteContentEnvelope = {
+  const envelope: NoteHtmlEnvelope = {
     version: 1,
     format: "html",
     html: safeHtml,
     text: htmlToPreviewText(safeHtml),
+  };
+  return JSON.stringify(envelope);
+}
+
+/**
+ * Encoding used when writing ink notes. Kept readable while the editor is being
+ * built — a densely written page is only ~124 KB either way, and "b64v" buys
+ * about 25% of that. Both encodings are read back transparently, so flipping
+ * this is safe at any time.
+ */
+export const INK_WIRE_ENCODING: InkEncoding = "none";
+
+export function emptyInkNoteContent(): NoteInkEnvelope {
+  return {
+    version: 1,
+    format: "ink",
+    enc: "none",
+    doc: createEmptyInkDocument(),
+    text: "",
+  };
+}
+
+/** Build the JSON envelope string stored in Note.contentJson from an ink document. */
+export function buildInkNoteContentJson(
+  doc: InkDocument,
+  previewText = "",
+): string {
+  const envelope = {
+    version: 1,
+    format: "ink" as const,
+    enc: INK_WIRE_ENCODING,
+    doc: encodeInkDocument(doc, INK_WIRE_ENCODING),
+    text: previewText,
   };
   return JSON.stringify(envelope);
 }
@@ -283,10 +325,25 @@ export function parseNoteContent(raw: unknown): NoteContentEnvelope {
   const trimmed = raw.trim();
   if (trimmed.startsWith("{")) {
     try {
-      const parsed = JSON.parse(trimmed) as Partial<NoteContentEnvelope>;
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>;
+      const version = typeof parsed.version === "number" ? parsed.version : 1;
+
+      if (parsed.format === "ink") {
+        // `enc` describes the stored form; the returned document is always plain.
+        const enc: InkEncoding = parsed.enc === "b64v" ? "b64v" : "none";
+        return {
+          version,
+          format: "ink",
+          enc: "none",
+          doc: decodeInkDocument(parsed.doc, enc),
+          text: typeof parsed.text === "string" ? parsed.text : "",
+          truncated: parsed.truncated === true,
+        };
+      }
+
       if (typeof parsed.html === "string") {
         return {
-          version: typeof parsed.version === "number" ? parsed.version : 1,
+          version,
           format: "html",
           html: parsed.html,
           text:
@@ -294,6 +351,12 @@ export function parseNoteContent(raw: unknown): NoteContentEnvelope {
               ? parsed.text
               : htmlToPreviewText(parsed.html),
         };
+      }
+
+      // A format written by a newer client. Rendering its payload as HTML would
+      // show the user raw JSON, so open the note empty instead of corrupting it.
+      if (typeof parsed.format === "string") {
+        return emptyNoteContent();
       }
     } catch {
       // fall through — treat as raw HTML

@@ -39,9 +39,20 @@ export const noteApi = {
       `${noteBase(workspaceId)}/folder/${encodeURIComponent(folderId)}`,
     ),
 
+  /**
+   * Workspace list. Handwritten notes come back with their strokes stripped and
+   * `content.truncated === true` — use `get` before opening one in the editor.
+   */
   getAll: async (workspaceId: string) => {
     const { data } = await api.get(noteBase(workspaceId) + "/all");
     return { notes: normalizeArray(data, mapNoteDto) };
+  },
+
+  get: async (workspaceId: string, noteId: string) => {
+    const { data } = await api.get(
+      `${noteBase(workspaceId)}/${encodeURIComponent(noteId)}`,
+    );
+    return mapNoteDto(data as Record<string, unknown>);
   },
 
   create: (workspaceId: string, data: CreateNoteRequest) =>

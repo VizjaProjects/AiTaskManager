@@ -11,6 +11,13 @@ public static class NoteMapper
             note.CreatedBy.Value, note.CreatedAt, note.UpdatedAt);
     }
 
+
+    public static NoteDto ToListDto(Domain.Note.Note note)
+    {
+        var dto = ToDto(note);
+        return dto with { ContentJson = NoteContentSummary.Summarize(dto.ContentJson) };
+    }
+
     public static NoteFolderDto ToDto(Domain.Note.NoteFolder folder)
     {
         return new NoteFolderDto(folder.Id.Value, folder.WorkspaceId.Value, folder.NoteTitle, folder.Description,

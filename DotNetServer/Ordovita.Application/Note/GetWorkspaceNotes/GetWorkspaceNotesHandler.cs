@@ -18,6 +18,6 @@ public class GetWorkspaceNotesHandler(WorkspaceAccessGuard accessGuard, INoteRep
             return Result.Failure<IReadOnlyList<NoteDto>>(access.Error);
 
         var notes = await noteRepository.GetByWorkspaceIdAsync(WorkspaceId.From(query.WorkspaceId), ct);
-        return Result.Success<IReadOnlyList<NoteDto>>(notes.Select(NoteMapper.ToDto).ToList());
+        return Result.Success<IReadOnlyList<NoteDto>>(notes.Select(NoteMapper.ToListDto).ToList());
     }
 }

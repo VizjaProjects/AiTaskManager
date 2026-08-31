@@ -24,6 +24,7 @@ using Ordovita.Application.Note.CreateNote;
 using Ordovita.Application.Note.CreateNoteFolder;
 using Ordovita.Application.Note.DeleteNote;
 using Ordovita.Application.Note.DeleteNoteFolder;
+using Ordovita.Application.Note.GetNote;
 using Ordovita.Application.Note.GetWorkspaceNoteFolders;
 using Ordovita.Application.Note.GetWorkspaceNotes;
 using Ordovita.Application.Note.SetNoteLinks;
@@ -240,6 +241,7 @@ public static class DependencyInjection
         services.AddScoped<ICommandHandler<SetNoteLinksCommand, Unit>, SetNoteLinksHandler>();
         services.AddScoped<ICommandHandler<DeleteNoteCommand, Unit>, DeleteNoteHandler>();
         services.AddScoped<IQueryHandler<GetWorkspaceNotesQuery, IReadOnlyList<NoteDto>>, GetWorkspaceNotesHandler>();
+        services.AddScoped<IQueryHandler<GetNoteQuery, NoteDto>, GetNoteHandler>();
 
         services.AddScoped<ICommandHandler<CreatePlanCommand, PlanDto>, CreatePlanHandler>();
         services.AddScoped<IQueryHandler<GetAllPlansQuery, IReadOnlyList<PlanDto>>, GetAllPlansHandler>();

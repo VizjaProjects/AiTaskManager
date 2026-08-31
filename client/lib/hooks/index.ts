@@ -1405,6 +1405,23 @@ export function useNotes() {
   });
 }
 
+/**
+ * Full content of a single note. The workspace list strips strokes out of
+ * handwritten notes, so the editor has to ask for them separately.
+ */
+export function useNote(noteId: string | null) {
+  const workspaceId = useWorkspaceId();
+  return useQuery({
+    queryKey: ["note", workspaceId, noteId],
+    queryFn: async () => {
+      const id = requireWorkspaceId(workspaceId);
+      if (!noteId) throw new Error("noteId is required");
+      return noteApi.get(id, noteId);
+    },
+    enabled: !!workspaceId && !!noteId,
+  });
+}
+
 export function useCreateNote() {
   const workspaceId = useWorkspaceId();
   const qc = useQueryClient();
@@ -1414,20 +1431,21 @@ export function useCreateNote() {
       noteColor: string;
       noteFolderId?: string | null;
       noteDescription?: string;
-      html?: string;
+      /** Full envelope — build it with buildNoteContentJson / buildInkNoteContentJson. */
+      contentJson?: string;
     }) =>
       noteApi.create(requireWorkspaceId(workspaceId), {
         title: input.title,
         noteColor: input.noteColor,
         noteFolderId: input.noteFolderId ?? null,
         noteDescription: input.noteDescription ?? "",
-        contentJson: buildNoteContentJson(input.html ?? ""),
+        contentJson: input.contentJson ?? buildNoteContentJson(""),
       }),
     onMutate: async (input) => {
       await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
       const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
       const now = new Date().toISOString();
-      const contentJson = buildNoteContentJson(input.html ?? "");
+      const contentJson = input.contentJson ?? buildNoteContentJson("");
       const tempNote = {
         id: `temp-${now}-${Math.random().toString(36).slice(2)}`,
         workspaceId: workspaceId ?? "",
@@ -1459,14 +1477,20 @@ export function useUpdateNoteContent() {
   const workspaceId = useWorkspaceId();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ noteId, html }: { noteId: string; html: string }) =>
+    mutationFn: ({
+      noteId,
+      contentJson,
+    }: {
+      noteId: string;
+      /** Full envelope — build it with buildNoteContentJson / buildInkNoteContentJson. */
+      contentJson: string;
+    }) =>
       noteApi.updateContent(requireWorkspaceId(workspaceId), noteId, {
-        contentJson: buildNoteContentJson(html),
+        contentJson,
       }),
-    onMutate: async ({ noteId, html }) => {
+    onMutate: async ({ noteId, contentJson }) => {
       await qc.cancelQueries({ queryKey: ["notes", workspaceId] });
       const previous = qc.getQueryData<Note[]>(["notes", workspaceId]);
-      const contentJson = buildNoteContentJson(html);
       const content = parseNoteContent(contentJson);
       const now = new Date().toISOString();
       qc.setQueryData<Note[]>(["notes", workspaceId], (old) =>
@@ -1474,12 +1498,37 @@ export function useUpdateNoteContent() {
           n.id === noteId ? { ...n, contentJson, content, updatedAt: now } : n,
         ),
       );
-      return { previous };
+      // Patch the detail cache rather than invalidating it: what we just sent is
+      // authoritative, and refetching would pull a whole ink document back down
+      // after every autosave.
+      const previousDetail = qc.getQueryData<Note>(["note", workspaceId, noteId]);
+      if (previousDetail) {
+        qc.setQueryData<Note>(["note", workspaceId, noteId], {
+          ...previousDetail,
+          contentJson,
+          content,
+          updatedAt: now,
+        });
+      }
+      return { previous, previousDetail };
     },
-    onError: (_err, _vars, ctx) => {
+    onError: (_err, vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
+      if (ctx?.previousDetail) {
+        qc.setQueryData(
+          ["note", workspaceId, vars.noteId],
+          ctx.previousDetail,
+        );
+      }
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onSettled: (_data, _err, vars) => {
+      const parsed = parseNoteContent(vars.contentJson);
+      // GET /note/all strips ink strokes. Refetching the list after every
+      // handwritten save would replace the open note with a truncated envelope
+      // and has remounted the canvas mid-stroke before.
+      if (parsed.format === "ink") return;
+      qc.invalidateQueries({ queryKey: ["notes", workspaceId] });
+    },
   });
 }
 
@@ -1553,7 +1602,12 @@ export function useDeleteNote() {
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) qc.setQueryData(["notes", workspaceId], ctx.previous);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["notes", workspaceId] }),
+    onSettled: (_data, _err, noteId) => {
+      // Drop the cached content too, or reopening a recreated note could show
+      // the deleted one's strokes.
+      qc.removeQueries({ queryKey: ["note", workspaceId, noteId] });
+      return qc.invalidateQueries({ queryKey: ["notes", workspaceId] });
+    },
   });
 }
 

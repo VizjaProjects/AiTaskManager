@@ -436,13 +436,103 @@ export interface NoteFolder {
   updatedAt: string;
 }
 
-/** Parsed shape of the JSON envelope stored in Note.contentJson */
-export interface NoteContentEnvelope {
+/* ───────── Ink (handwritten) note documents ───────── */
+
+/**
+ * Shape tools draw the same `InkStroke` a pen does — the outline is generated
+ * from the drag instead of sampled from the stylus — so erasing, undo and
+ * serialization need no special cases for them.
+ */
+export type InkShapeTool = "line" | "rect" | "ellipse" | "arrow";
+export type InkTool = "pen" | "highlighter" | "eraser" | InkShapeTool;
+export type InkPageTemplate = "blank" | "lines" | "grid" | "dots";
+
+export const INK_SHAPE_TOOLS: readonly InkShapeTool[] = [
+  "line",
+  "rect",
+  "ellipse",
+  "arrow",
+];
+
+export function isInkShapeTool(tool: InkTool): tool is InkShapeTool {
+  return (INK_SHAPE_TOOLS as readonly string[]).includes(tool);
+}
+
+/**
+ * One handwritten stroke.
+ *
+ * `d` is a flat, quantized, delta-encoded point list — triplets of
+ * [dx, dy, pressure]. Always a plain number array at runtime; the wire form may
+ * be compacted (see InkEncoding) and is decoded by lib/notes/inkDocument.ts.
+ */
+export interface InkStroke {
+  /**
+   * "p" = pen, "h" = highlighter, "s" = geometric shape.
+   *
+   * Shapes are stored as an ordinary point list but painted as a stroked
+   * polyline of constant width rather than a pressure-varying filled outline,
+   * which is what keeps a rectangle's corners square.
+   */
+  t: "p" | "h" | "s";
+  /** ink color, hex */
+  c: string;
+  /** base width in logical page units */
+  w: number;
+  /**
+   * Coordinate scale for `d`. Missing means 4 (legacy 1/4 page px).
+   * New strokes use 32 so writing at high zoom does not collapse to a dot.
+   */
+  cs?: number;
+  d: number[];
+}
+
+export interface InkPage {
+  id: string;
+  template: InkPageTemplate;
+  strokes: InkStroke[];
+}
+
+export interface InkDocument {
+  /** logical page size in CSS px; A4 @96dpi = 794 x 1123 */
+  pageSize: { w: number; h: number };
+  pages: InkPage[];
+}
+
+/** Wire encoding of stroke point data. Always decoded to plain arrays after parsing. */
+export type InkEncoding = "none" | "b64v";
+
+/* ───────── Note content envelope ───────── */
+
+/**
+ * Parsed shape of the JSON envelope stored in Note.contentJson.
+ *
+ * Discriminated on `format`: a note is either rich text or handwritten, never
+ * both. `text` exists on every variant so previews and search work uniformly.
+ */
+export type NoteContentEnvelope = NoteHtmlEnvelope | NoteInkEnvelope;
+
+export interface NoteHtmlEnvelope {
   version: number;
   format: "html";
   html: string;
   text: string;
 }
+
+export interface NoteInkEnvelope {
+  version: number;
+  format: "ink";
+  enc: InkEncoding;
+  doc: InkDocument;
+  text: string;
+  /**
+   * True when this came from the workspace list, which strips strokes to keep
+   * the response small. `doc` is empty in that case — fetch the note by id
+   * before opening it in the editor.
+   */
+  truncated?: boolean;
+}
+
+export type NoteMode = NoteContentEnvelope["format"];
 
 export interface Note {
   id: UUID;

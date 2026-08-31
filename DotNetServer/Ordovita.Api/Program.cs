@@ -64,6 +64,18 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 
 builder.Services.AddOpenApi(options => { options.AddDocumentTransformer<BearerSecuritySchemeTransformer>(); });
 
+const string devCorsPolicy = "DevelopmentLan";
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy(devCorsPolicy, policy => policy
+            .AllowAnyOrigin()
+            .AllowAnyHeader()
+            .AllowAnyMethod());
+    });
+}
+
 
 var app = builder.Build();
 
@@ -99,6 +111,10 @@ if (app.Environment.IsDevelopment())
 app.UseExceptionHandler();
 app.UseForwardedHeaders();
 app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseCors(devCorsPolicy);
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHangfireDashboard("/hangfire", new DashboardOptions
