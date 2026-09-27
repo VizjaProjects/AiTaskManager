@@ -103,9 +103,9 @@ export function getUiTokens(isDark: boolean): UiTokens {
 export const UI = LIGHT;
 
 /**
- * Brand palette used by the landing page and login. Mirrors the
- * `--color-brand-*` variables in global.css, for props that can't take a class
- * (icon colors, placeholder text, shadows).
+ * Landing page and login tokens. Since 2026-09-27 they are the Arena palette
+ * (`--color-brand-*` in global.css alias the app tokens), kept as a separate
+ * set for props that can't take a class (icon colors, placeholder text, shadows).
  */
 export interface BrandTokens {
   paper: string;
@@ -116,6 +116,7 @@ export interface BrandTokens {
   accent: string;
   onAccent: string;
   accentText: string;
+  success: string;
   error: string;
   proposal: string;
   proposalEdge: string;
@@ -123,32 +124,34 @@ export interface BrandTokens {
 }
 
 const BRAND_LIGHT: BrandTokens = {
-  paper: "#f3f5f2",
+  paper: "#f5f3ef",
   surface: "#ffffff",
-  ink: "#1c2321",
-  muted: "#56605c",
-  field: "#7f8a85",
-  accent: "#006b58",
+  ink: "#1a1a18",
+  muted: "#6b6965",
+  field: "#8a8680",
+  accent: "#1a1a18",
   onAccent: "#ffffff",
-  accentText: "#006b58",
+  accentText: "#1a1a18",
+  success: "#2e7d52",
   error: "#b3261e",
-  proposal: "#fbf1df",
-  proposalEdge: "#b7770d",
-  shadow: "0 40px 80px -48px rgba(28,35,33,0.35)",
+  proposal: "#ffffff",
+  proposalEdge: "#c8c4be",
+  shadow: "0 40px 80px -48px rgba(26,26,24,0.32)",
 };
 
 const BRAND_DARK: BrandTokens = {
-  paper: "#101513",
-  surface: "#18201d",
-  ink: "#e7ece9",
-  muted: "#a3aeaa",
-  field: "#6f7c77",
-  accent: "#4cb99a",
-  onAccent: "#0b1210",
-  accentText: "#5cc4a6",
+  paper: "#111111",
+  surface: "#1c1c1c",
+  ink: "rgba(255,255,255,0.88)",
+  muted: "rgba(255,255,255,0.5)",
+  field: "#75726e",
+  accent: "rgba(255,255,255,0.92)",
+  onAccent: "#111111",
+  accentText: "rgba(255,255,255,0.88)",
+  success: "#6cc095",
   error: "#f2867a",
-  proposal: "#2a2216",
-  proposalEdge: "#c98a22",
+  proposal: "#1c1c1c",
+  proposalEdge: "rgba(255,255,255,0.2)",
   shadow: "0 40px 80px -48px rgba(0,0,0,0.8)",
 };
 

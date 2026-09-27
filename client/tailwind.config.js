@@ -103,6 +103,7 @@ module.exports = {
           "proposal-edge": token("--color-brand-proposal-edge"),
           "proposal-text": token("--color-brand-proposal-text"),
           now: token("--color-brand-now"),
+          success: token("--color-brand-success"),
           error: token("--color-brand-error"),
           "error-soft": token("--color-brand-error-soft"),
         },

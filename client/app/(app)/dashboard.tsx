@@ -200,7 +200,7 @@ export default function DashboardScreen() {
       >
         <View className="flex-row items-start justify-between">
           <View className="flex-1">
-            <Text className="text-on-surface font-headline text-headline-md">
+            <Text className="text-on-surface font-display text-headline-md">
               {t(greetingKey(), { name: firstName })}
             </Text>
             <Text className="text-on-surface-variant font-body text-body-md mt-1">

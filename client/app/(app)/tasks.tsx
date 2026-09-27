@@ -886,7 +886,7 @@ export default function TasksScreen() {
     <PageLayout searchPlaceholder={t("tasks.searchPlaceholder")}>
       <View className="gap-4 flex-1">
         <View className="flex-row items-center gap-2">
-          <Text className="text-on-surface font-headline text-headline-md">
+          <Text className="text-on-surface font-display text-headline-md">
             {t("tasks.allTasks")}
           </Text>
           <View className="bg-surface-container px-2.5 py-0.5 rounded-full">

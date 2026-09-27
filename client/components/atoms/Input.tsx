@@ -52,7 +52,7 @@ export function Input({
     : "text-on-surface-variant font-label text-body-md mb-2";
   const fieldClass = isBrand
     ? `flex-row items-center rounded-input min-h-12 pl-3.5 border bg-brand-surface ${
-        error ? "border-brand-error" : success ? "border-brand-accent" : "border-brand-field"
+        error ? "border-brand-error" : success ? "border-brand-success" : "border-brand-field"
       }`
     : `flex-row items-center rounded-md min-h-12 px-3.5 py-3 border border-outline-variant bg-surface ${
         error ? "border-[rgba(192,57,43,0.4)]" : ""
@@ -108,9 +108,9 @@ export function Input({
               <MaterialIcons
                 name={error ? "error-outline" : "check-circle"}
                 size={16}
-                color={error ? brand.error : brand.accentText}
+                color={error ? brand.error : brand.success}
               />
-              <Text className={`flex-1 font-body text-sm ${error ? "text-brand-error" : "text-brand-accent-text"}`}>
+              <Text className={`flex-1 font-body text-sm ${error ? "text-brand-error" : "text-brand-success"}`}>
                 {error ?? success}
               </Text>
             </View>

@@ -5,7 +5,7 @@ import Svg, { Ellipse, Path, Rect } from "react-native-svg";
 import { useLocale, useT } from "@/lib/i18n";
 import { useThemeStore } from "@/lib/stores";
 import { EVENT_COLOR_OPTIONS } from "@/lib/utils/eventColors";
-import { getBrandTokens } from "@/lib/utils/uiTokens";
+import { getBrandTokens, getUiTokens } from "@/lib/utils/uiTokens";
 
 /*
  * Landing-page fragments of the real UI. Each one only shows what the app actually does;
@@ -13,7 +13,6 @@ import { getBrandTokens } from "@/lib/utils/uiTokens";
  */
 
 const BLUE = EVENT_COLOR_OPTIONS[1];
-const TEAL = EVENT_COLOR_OPTIONS[6];
 const VIOLET = EVENT_COLOR_OPTIONS[0];
 const GREEN = EVENT_COLOR_OPTIONS[2];
 
@@ -45,6 +44,7 @@ export function TaskSpecimen() {
   const t = useT();
   const locale = useLocale();
   const brand = useBrand();
+  const aiAccent = getUiTokens(useThemeStore((s) => s.mode) === "dark").accent;
   const due = thisWeekDay(4, 16);
   const dueLabel = `${due.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" })}, ${due.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" })}`;
 
@@ -60,7 +60,7 @@ export function TaskSpecimen() {
             <Text className="text-brand-ink font-headline text-xs">{t("landing.specCategory")}</Text>
           </View>
           <View className="ml-auto flex-row items-center gap-1">
-            <MaterialIcons name="auto-awesome" size={13} color={brand.accentText} />
+            <MaterialIcons name="auto-awesome" size={13} color={aiAccent} />
             <Text className="text-brand-muted font-body text-[11px]">AI</Text>
           </View>
         </View>
@@ -94,8 +94,8 @@ export function TaskSpecimen() {
 
 // Event dots per day of month; fixed so the month looks lived-in the same way every visit.
 const MONTH_DOTS: Record<number, string[]> = {
-  3: [TEAL], 8: [BLUE], 11: [TEAL, BLUE], 15: [VIOLET], 17: [TEAL], 21: [TEAL],
-  22: [BLUE], 24: [TEAL], 25: [TEAL, BLUE], 29: [BLUE], 30: [GREEN],
+  3: [GREEN], 8: [BLUE], 11: [GREEN, BLUE], 15: [VIOLET], 17: [GREEN], 21: [GREEN],
+  22: [BLUE], 24: [GREEN], 25: [GREEN, BLUE], 29: [BLUE], 30: [GREEN],
 };
 
 export function MonthSpecimen() {

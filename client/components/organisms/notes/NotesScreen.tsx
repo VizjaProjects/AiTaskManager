@@ -1558,7 +1558,7 @@ function RootCrumb({
         className={`rounded-lg px-1 ${over ? "bg-primary-fixed" : ""}`}
       >
         <Text
-          className={`font-headline text-headline-md ${active ? "text-on-surface" : "text-on-surface-variant"}`}
+          className={`font-display text-headline-md ${active ? "text-on-surface" : "text-on-surface-variant"}`}
         >
           {t("notes.title")}
         </Text>

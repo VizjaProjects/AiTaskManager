@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Animated, Platform, Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 import { BrandButton } from "@/components/atoms";
 import { MORPH_EASING } from "@/components/molecules/Fold";
 import { LandPulse } from "@/components/molecules/LandPulse";
 import { useLocale, useT } from "@/lib/i18n";
 import { useThemeStore } from "@/lib/stores";
-import { EVENT_COLOR_OPTIONS, eventPillStyle } from "@/lib/utils/eventColors";
-import { getBrandTokens } from "@/lib/utils/uiTokens";
+import { DEFAULT_EVENT_COLOR, EVENT_COLOR_OPTIONS, eventColorWithAlpha } from "@/lib/utils/eventColors";
+import { getBrandTokens, getUiTokens } from "@/lib/utils/uiTokens";
 import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 type Key = "task" | "call";
@@ -19,11 +20,17 @@ export type SlotState = "hidden" | "flying" | "shown" | "landed" | "appeared";
 type Rect = { x: number; y: number; w: number; h: number };
 
 const FIRST_HOUR = 9;
-const TEAL = EVENT_COLOR_OPTIONS[6];
+const GREEN = EVENT_COLOR_OPTIONS[2];
 const BLUE = EVENT_COLOR_OPTIONS[1];
-const COLOR: Record<Key, string> = { call: TEAL, task: BLUE };
+// Accepted AI items get the default event colour in the real calendar too.
+const COLOR: Record<Key, string> = { call: DEFAULT_EVENT_COLOR, task: DEFAULT_EVENT_COLOR };
 const FLIGHT_MS = 640;
 const APPEAR_MS = 320;
+
+/** Same look as a timed event in the app calendar: tint + 3 px bar on the left. */
+function eventBlock(color: string) {
+  return { backgroundColor: eventColorWithAlpha(color, 0.18), borderLeftColor: color };
+}
 
 function StepBadge({ n }: { n: number }) {
   return (
@@ -33,11 +40,13 @@ function StepBadge({ n }: { n: number }) {
   );
 }
 
-function StepLabel({ n, label }: { n: number; label: string }) {
+function StepLabel({ n, label, ai }: { n: number; label: string; ai?: boolean }) {
+  const accent = getUiTokens(useThemeStore((s) => s.mode) === "dark").accent;
   return (
     <View className="flex-row items-center gap-2.5">
       <StepBadge n={n} />
       <Text className="text-brand-ink font-headline text-sm">{label}</Text>
+      {ai && <MaterialIcons name="auto-awesome" size={14} color={accent} />}
     </View>
   );
 }
@@ -183,7 +192,7 @@ export function WeekPreview({
 }) {
   const t = useT();
   const locale = useLocale();
-  const isDark = useThemeStore((s) => s.mode) === "dark";
+  const brand = getBrandTokens(useThemeStore((s) => s.mode) === "dark");
 
   const now = new Date();
   const monday = startOfWeek(now);
@@ -218,13 +227,13 @@ export function WeekPreview({
   );
 
   const blocks: WeekBlock[] = [
-    { day: 0, start: 0, duration: 0.75, label: t("landing.demoStandup"), kind: "event", color: TEAL },
+    { day: 0, start: 0, duration: 0.75, label: t("landing.demoStandup"), kind: "event", color: GREEN },
     { day: 1, start: 2, duration: 2, label: t("landing.demoWorkshop"), kind: "event", color: BLUE },
     { day: 2, start: 1, duration: 1.4, label: t("landing.demoBudget"), kind: "neutral" },
-    { day: 4, start: 1, duration: 1, label: t("landing.demoWeekly"), kind: "event", color: TEAL },
+    { day: 4, start: 1, duration: 1, label: t("landing.demoWeekly"), kind: "event", color: GREEN },
     // A task with a due date creates a regular calendar event.
-    { day: 3, start: 5, duration: 0.5, label: t("landing.demoEventTitle"), kind: "event", color: TEAL, slot: call, slotRef: callRef },
-    { day: 4, start: 7, duration: 0.8, label: t("landing.demoTaskTitle"), kind: "event", color: BLUE, slot: report, slotRef: reportRef },
+    { day: 3, start: 5, duration: 0.5, label: t("landing.demoEventTitle"), kind: "event", color: COLOR.call, slot: call, slotRef: callRef },
+    { day: 4, start: 7, duration: 0.8, label: t("landing.demoTaskTitle"), kind: "event", color: COLOR.task, slot: report, slotRef: reportRef },
   ];
   const skipHours = firstHour - FIRST_HOUR;
   const visible = blocks.filter(
@@ -309,7 +318,7 @@ export function WeekPreview({
                 {visible
                   .filter((b) => b.day === i)
                   .map((b) => {
-                    const pill = b.kind === "event" && b.color ? eventPillStyle(b.color, isDark) : null;
+                    const tint = b.kind === "event" && b.color ? eventBlock(b.color) : { borderLeftColor: brand.field };
                     const base = {
                       position: "absolute" as const,
                       top: (b.start - skipHours) * rowHeight + (dense ? 3 : 4),
@@ -318,11 +327,13 @@ export function WeekPreview({
                       height: b.duration * rowHeight - (dense ? 4 : 6),
                       paddingHorizontal: dense ? 5 : 7,
                       paddingVertical: b.duration <= 0.5 ? 1 : b.duration < 1 ? 3 : 6,
-                      borderRadius: 6,
+                      borderRadius: 4,
                       borderWidth: 1,
+                      borderColor: "transparent",
+                      borderLeftWidth: 3,
                       opacity: b.slot === "flying" ? 0 : 1,
                     };
-                    const kindClass = b.kind === "neutral" ? "bg-brand-surface border-brand-field" : "";
+                    const kindClass = b.kind === "neutral" ? "bg-surface-container" : "";
                     const label = (
                       <Text
                         className={`font-headline text-brand-ink ${dense ? "text-[11px] leading-[14px]" : "text-xs"}`}
@@ -337,9 +348,9 @@ export function WeekPreview({
                           key={b.label}
                           innerRef={b.slotRef}
                           duration={APPEAR_MS}
-                          style={[base, pill ? { backgroundColor: pill.bg, borderColor: pill.border } : null]}
+                          style={[base, tint]}
                         >
-                          {b.color && <LandPulse color={b.color} radius={6} still delay={APPEAR_MS} />}
+                          {b.color && <LandPulse color={b.color} radius={4} still delay={APPEAR_MS} />}
                           {label}
                         </FadeIn>
                       );
@@ -349,9 +360,9 @@ export function WeekPreview({
                         key={b.label}
                         ref={b.slotRef}
                         className={kindClass}
-                        style={[base, pill ? { backgroundColor: pill.bg, borderColor: pill.border } : null]}
+                        style={[base, tint]}
                       >
-                        {b.slot === "landed" && b.color && <LandPulse color={b.color} radius={6} />}
+                        {b.slot === "landed" && b.color && <LandPulse color={b.color} radius={4} />}
                         {label}
                       </View>
                     );
@@ -375,7 +386,7 @@ type Flight = { id: number; key: Key; label: string; from: Rect; dense: boolean 
 
 /**
  * The accepted proposal card itself becomes the calendar event: it shrinks into its
- * slot and turns from proposal amber into the event colour. The slot is measured every
+ * slot and turns from the proposal card into the event colour. The slot is measured every
  * frame, because on the phone the grid sits below the cards and moves up as they collapse.
  */
 function ProposalFlight({
@@ -389,7 +400,8 @@ function ProposalFlight({
 }) {
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const brand = getBrandTokens(isDark);
-  const pill = eventPillStyle(COLOR[flight.key], isDark);
+  const color = COLOR[flight.key];
+  const end = eventBlock(color);
   const { from } = flight;
   const pos = useRef(new Animated.ValueXY({ x: from.x, y: from.y })).current;
   const size = useRef(new Animated.ValueXY({ x: from.w, y: from.h })).current;
@@ -440,9 +452,11 @@ function ProposalFlight({
         paddingVertical: flight.key === "call" ? 1 : 3,
         borderWidth: 1,
         borderStyle: solid ? "solid" : "dashed",
-        borderRadius: progress.interpolate({ inputRange: [0, 1], outputRange: [10, 6] }),
-        backgroundColor: progress.interpolate({ inputRange: [0, 1], outputRange: [brand.proposal, pill.bg] }),
-        borderColor: progress.interpolate({ inputRange: [0, 1], outputRange: [brand.proposalEdge, pill.border] }),
+        borderRadius: progress.interpolate({ inputRange: [0, 1], outputRange: [10, 4] }),
+        borderLeftWidth: progress.interpolate({ inputRange: [0, 1], outputRange: [1, 3] }),
+        backgroundColor: progress.interpolate({ inputRange: [0, 1], outputRange: [brand.proposal, end.backgroundColor] }),
+        borderColor: progress.interpolate({ inputRange: [0, 1], outputRange: [brand.proposalEdge, eventColorWithAlpha(color, 0)] }),
+        borderLeftColor: progress.interpolate({ inputRange: [0, 1], outputRange: [brand.proposalEdge, color] }),
         transform: pos.getTranslateTransform(),
       }}
     >
@@ -529,7 +543,7 @@ export function PlanDemo({ compact = false }: { compact?: boolean }) {
 
   const proposals = (
     <View className="gap-3">
-      <StepLabel n={2} label={t("landing.demoProposals")} />
+      <StepLabel n={2} label={t("landing.demoProposals")} ai />
       <ProposalCard
         title={t("landing.demoTaskTitle")}
         meta={compact ? t("landing.demoTaskMetaShort") : t("landing.demoTaskMeta")}
