@@ -22,6 +22,8 @@ import {
 } from "@/lib/hooks";
 import type { UserResponseResultItem } from "@/lib/api/surveys";
 import { useT } from "@/lib/i18n";
+import { useThemeStore } from "@/lib/stores";
+import { getUiTokens } from "@/lib/utils/uiTokens";
 
 /* ─── Completed survey card — expandable answers with inline edit ─── */
 function CompletedSurveyCard({
@@ -38,6 +40,7 @@ function CompletedSurveyCard({
   total: number;
 }) {
   const t = useT();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const [expanded, setExpanded] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -72,8 +75,8 @@ function CompletedSurveyCard({
         {/* Header */}
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-row items-center gap-2.5 flex-1 mr-3">
-            <View className="w-10 h-10 rounded-xl items-center justify-center bg-green-500/15">
-              <MaterialIcons name="check-circle" size={22} color="#16a34a" />
+            <View className="w-10 h-10 rounded-xl items-center justify-center bg-success/15">
+              <MaterialIcons name="check-circle" size={22} color={ui.success} />
             </View>
             <View className="flex-1">
               <Text className="text-on-surface font-headline text-base">
@@ -91,15 +94,15 @@ function CompletedSurveyCard({
           </View>
 
           <View className="flex-row items-center gap-2">
-            <View className="bg-green-500/15 px-2.5 py-1 rounded-full">
-              <Text className="text-green-600 font-label text-[10px] font-bold">
+            <View className="bg-success/15 px-2.5 py-1 rounded-full">
+              <Text className="text-success font-label text-[10px] font-bold">
                 {t("surveys.completed")}
               </Text>
             </View>
             <MaterialIcons
               name={expanded ? "expand-less" : "expand-more"}
               size={20}
-              color="#6b6965"
+              color={ui.textSecondary}
             />
           </View>
         </View>
@@ -107,7 +110,7 @@ function CompletedSurveyCard({
         {/* Progress bar — full green */}
         <View>
           <View className="h-1.5 bg-surface-container-low rounded-full overflow-hidden">
-            <View className="h-full bg-green-500 rounded-full w-full" />
+            <View className="h-full bg-success rounded-full w-full" />
           </View>
           <Text className="text-on-surface-variant font-label text-[10px] mt-1.5">
             {t("surveys.progress", { answered: total, total, pct: 100 })}
@@ -119,7 +122,7 @@ function CompletedSurveyCard({
       {expanded && responses.length > 0 && (
         <View className="mt-4 pt-4 border-t border-outline-variant/15">
           <View className="flex-row items-center gap-2 mb-3">
-            <MaterialIcons name="quiz" size={16} color="#5b4ee0" />
+            <MaterialIcons name="quiz" size={16} color={ui.accent} />
             <Text className="text-on-surface-variant font-label text-[10px] uppercase tracking-widest font-bold">
               {t("surveys.yourAnswers")}
             </Text>
@@ -131,11 +134,11 @@ function CompletedSurveyCard({
               return (
                 <View
                   key={item.userResponseId}
-                  className="border-l-[3px] border-green-500/30 pl-4 py-2"
+                  className="border-l-[3px] border-success/30 pl-4 py-2"
                 >
                   <View className="flex-row items-center gap-2 mb-1.5">
-                    <View className="w-5 h-5 rounded-full bg-green-500/10 items-center justify-center">
-                      <Text className="text-green-600 font-label text-[9px] font-bold">
+                    <View className="w-5 h-5 rounded-full bg-success/10 items-center justify-center">
+                      <Text className="text-success font-label text-[9px] font-bold">
                         {idx + 1}
                       </Text>
                     </View>
@@ -148,7 +151,7 @@ function CompletedSurveyCard({
                         className="p-1"
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       >
-                        <MaterialIcons name="edit" size={15} color="#6b6965" />
+                        <MaterialIcons name="edit" size={15} color={ui.textSecondary} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -171,7 +174,7 @@ function CompletedSurveyCard({
                           <MaterialIcons
                             name="check"
                             size={14}
-                            color="#5b4ee0"
+                            color={ui.accent}
                           />
                           <Text className="text-primary font-label text-[10px] font-bold uppercase">
                             {t("common.save")}
@@ -184,7 +187,7 @@ function CompletedSurveyCard({
                           <MaterialIcons
                             name="close"
                             size={14}
-                            color="#6b6965"
+                            color={ui.textSecondary}
                           />
                           <Text className="text-on-surface-variant font-label text-[10px] uppercase">
                             {t("common.cancel")}
@@ -222,6 +225,7 @@ function InProgressSurveyCard({
   total: number;
 }) {
   const t = useT();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const router = useRouter();
   const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
@@ -239,7 +243,7 @@ function InProgressSurveyCard({
         <View className="flex-row items-start justify-between mb-3">
           <View className="flex-row items-center gap-2.5 flex-1 mr-3">
             <View className="w-10 h-10 rounded-xl items-center justify-center bg-primary/10">
-              <MaterialIcons name="assignment" size={22} color="#5b4ee0" />
+              <MaterialIcons name="assignment" size={22} color={ui.accent} />
             </View>
             <View className="flex-1">
               <Text className="text-on-surface font-headline text-base">
@@ -289,7 +293,7 @@ function InProgressSurveyCard({
 
         {/* CTA */}
         <View className="flex-row items-center gap-1.5 mt-3">
-          <MaterialIcons name="arrow-forward" size={14} color="#5b4ee0" />
+          <MaterialIcons name="arrow-forward" size={14} color={ui.accent} />
           <Text className="text-primary font-label text-xs">
             {t(answered > 0 ? "surveys.continue" : "surveys.start")}
           </Text>
@@ -355,6 +359,7 @@ function SurveyCardWrapper({
 /* ─── Main screen ─── */
 export default function SurveysScreen() {
   const t = useT();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const {
     data: surveys,
     isLoading,
@@ -386,7 +391,7 @@ export default function SurveysScreen() {
     return (
       <PageLayout>
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#5b4ee0" />
+          <ActivityIndicator size="large" color={ui.accent} />
         </View>
       </PageLayout>
     );
@@ -421,7 +426,7 @@ export default function SurveysScreen() {
               label={t("surveys.statAvailable")}
               value={surveys.length}
               icon="assignment"
-              iconColor="#5b4ee0"
+              iconColor={ui.accent}
             />
           </View>
           <View className="flex-1">
@@ -429,7 +434,7 @@ export default function SurveysScreen() {
               label={t("surveys.statCompleted")}
               value={completedCount}
               icon="check-circle"
-              iconColor="#16a34a"
+              iconColor={ui.success}
             />
           </View>
           <View className="flex-1">
@@ -437,7 +442,7 @@ export default function SurveysScreen() {
               label={t("surveys.statResponses")}
               value={allResponses.length}
               icon="question-answer"
-              iconColor="#B7770D"
+              iconColor={ui.warning}
             />
           </View>
         </View>

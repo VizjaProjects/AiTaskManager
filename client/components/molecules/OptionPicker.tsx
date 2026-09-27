@@ -74,7 +74,7 @@ export function OptionPicker({
         <Text className="text-error font-body text-xs mt-1">{error}</Text>
       ) : null}
 
-      <AppModal visible={open} dim={0.5}>
+      <AppModal visible={open} onRequestClose={() => setOpen(false)} dim={0.5}>
         <View className="flex-1 items-center justify-center p-4">
           <View className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[80%] overflow-hidden border border-outline-variant">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-outline-variant">

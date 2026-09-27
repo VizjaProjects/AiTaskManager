@@ -269,7 +269,7 @@ function CreateEventModal({
   }
 
   return (
-    <AppModal visible={visible} dim={0.5}>
+    <AppModal visible={visible} onRequestClose={onClose} dim={0.5}>
       <View className="flex-1 items-center justify-center p-6">
         <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
           <View className="flex-row items-center justify-between">
@@ -524,7 +524,7 @@ function EditCalendarEventModal({
 
   return (
     <>
-      <AppModal visible={visible} dim={0.5}>
+      <AppModal visible={visible} onRequestClose={onClose} dim={0.5}>
         <View className="flex-1 items-center justify-center p-6">
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
             <View className="flex-row items-center justify-between">
@@ -2475,7 +2475,7 @@ export default function CalendarScreen() {
         />
       )}
 
-      <AppModal visible={printOpen} dim={0.5}>
+      <AppModal visible={printOpen} onRequestClose={() => setPrintOpen(false)} dim={0.5}>
         <View className="flex-1 items-center justify-center p-6">
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
             <View className="flex-row items-center justify-between">

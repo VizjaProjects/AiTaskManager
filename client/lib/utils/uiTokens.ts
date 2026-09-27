@@ -35,6 +35,8 @@ export interface UiTokens {
   onAction: string;
   critical: string;
   warning: string;
+  /** Same in both themes, matches the `success` class. */
+  success: string;
   shadow: ShadowToken;
 }
 
@@ -55,6 +57,7 @@ const LIGHT: UiTokens = {
   onAction: "#ffffff", // on-action
   critical: "#c0392b",
   warning: "#b7770d",
+  success: "#2e7d52",
   shadow: {
     shadowColor: "#101828",
     shadowOffset: { width: 0, height: 4 },
@@ -81,6 +84,7 @@ const DARK: UiTokens = {
   onAction: "#111111", // on-action (dark)
   critical: "#e07a6f",
   warning: "#d6a23e",
+  success: "#2e7d52",
   shadow: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },

@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
 import type {
   CreateTaskStepInput,
@@ -428,10 +428,18 @@ export function DraftTaskStepsEditor({ steps, onChange }: DraftTaskStepsEditorPr
   const members = activeWorkspace?.assignedUsers ?? [];
   const [newTitle, setNewTitle] = useState("");
   const [assignIndex, setAssignIndex] = useState<number | null>(null);
+  const reduced = useReducedMotion();
+  // Drafts have no ids; these keep each row (and its input) attached to the same step when it moves.
+  const idSeq = useRef(0);
+  const ids = useRef<string[]>([]);
+  if (ids.current.length !== steps.length) {
+    ids.current = steps.map(() => `draft-${idSeq.current++}`);
+  }
 
   function addDraft() {
     const title = newTitle.trim();
     if (!title || steps.length >= 20) return;
+    ids.current = [...ids.current, `draft-${idSeq.current++}`];
     onChange([...steps, { title }]);
     setNewTitle("");
   }
@@ -441,6 +449,9 @@ export function DraftTaskStepsEditor({ steps, onChange }: DraftTaskStepsEditorPr
     if (next < 0 || next >= steps.length) return;
     const reordered = [...steps];
     [reordered[index], reordered[next]] = [reordered[next], reordered[index]];
+    const nextIds = [...ids.current];
+    [nextIds[index], nextIds[next]] = [nextIds[next], nextIds[index]];
+    ids.current = nextIds;
     onChange(reordered);
   }
 
@@ -452,11 +463,14 @@ export function DraftTaskStepsEditor({ steps, onChange }: DraftTaskStepsEditorPr
         </Text>
         <Text className="text-text-tertiary font-label text-[11px]">{steps.length}/20</Text>
       </View>
+      <BoardFlip flipKey={ids.current.join(",")} reduced={reduced} clipped={false}>
+      <View className="gap-2">
       {steps.map((step, index) => {
         const member = members.find((candidate) => candidate.userId === step.assignedUserId);
         return (
           <View
-            key={`draft-step-${index}`}
+            key={ids.current[index]}
+            {...({ dataSet: { flipId: ids.current[index] } } as object)}
             className="flex-row items-center gap-2 px-2 py-1.5 rounded-lg bg-surface-container-low"
           >
             <MaterialIcons name="drag-indicator" size={16} color="#9b9791" />
@@ -502,13 +516,18 @@ export function DraftTaskStepsEditor({ steps, onChange }: DraftTaskStepsEditorPr
             <TouchableOpacity
               accessibilityLabel={t("common.delete")}
               className="w-8 h-8 items-center justify-center"
-              onPress={() => onChange(steps.filter((_, candidateIndex) => candidateIndex !== index))}
+              onPress={() => {
+                ids.current = ids.current.filter((_, candidateIndex) => candidateIndex !== index);
+                onChange(steps.filter((_, candidateIndex) => candidateIndex !== index));
+              }}
             >
               <MaterialIcons name="close" size={17} color="#C0392B" />
             </TouchableOpacity>
           </View>
         );
       })}
+      </View>
+      </BoardFlip>
       {steps.length < 20 ? (
         <View className="flex-row gap-2">
           <TextInput

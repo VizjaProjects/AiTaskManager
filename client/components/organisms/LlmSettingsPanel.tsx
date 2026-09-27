@@ -246,7 +246,7 @@ function ConfigFormModal({
   }
 
   return (
-    <AppModal visible={visible} dim={0.25}>
+    <AppModal visible={visible} onRequestClose={onClose} dim={0.25}>
       <View className="flex-1 items-center justify-center p-4">
         <View
           className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[88%] overflow-hidden"
