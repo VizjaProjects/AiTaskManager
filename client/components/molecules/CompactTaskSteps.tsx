@@ -11,6 +11,10 @@ import type { Task, WorkspaceUser } from "@/lib/types";
 import { useSetTaskStepCompleted } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 import { useT } from "@/lib/i18n";
+import { ProgressBar } from "@/components/atoms/ProgressBar";
+import { StepCheckbox, StrikeText } from "@/components/atoms/StepCheckbox";
+import { Fold } from "./Fold";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 interface CompactTaskStepsProps {
   task: Task;
@@ -47,6 +51,7 @@ export function CompactTaskSteps({
 }: CompactTaskStepsProps) {
   const t = useT();
   const [expanded, setExpanded] = useState(false);
+  const reduced = useReducedMotion();
   const completeStep = useSetTaskStepCompleted();
   const activeWorkspace = useWorkspaceStore((state) => state.getActiveWorkspace());
   const members = activeWorkspace?.assignedUsers ?? [];
@@ -79,12 +84,10 @@ export function CompactTaskSteps({
         <Text className="text-on-surface-variant font-label text-[11px]">
           {completed}/{steps.length}
         </Text>
-        <View className="h-1 flex-1 rounded-full bg-surface-container overflow-hidden">
-          <View
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${progress}%` }}
-          />
-        </View>
+        <ProgressBar
+          value={progress}
+          className="h-1 flex-1 rounded-full bg-surface-container"
+        />
         <MaterialIcons
           name={expanded ? "keyboard-arrow-up" : "keyboard-arrow-down"}
           size={18}
@@ -92,7 +95,7 @@ export function CompactTaskSteps({
         />
       </TouchableOpacity>
 
-      {expanded ? (
+      <Fold open={expanded} reduceMotion={reduced}>
         <ScrollView
           nestedScrollEnabled
           showsVerticalScrollIndicator={steps.length > 6}
@@ -109,18 +112,16 @@ export function CompactTaskSteps({
                 key={step.stepId}
                 className="min-h-9 flex-row items-center gap-2 px-1.5 py-1 rounded-md"
               >
-                <TouchableOpacity
+                <StepCheckbox
+                  checked={step.completed}
+                  size={20}
+                  radius={4}
                   accessibilityLabel={
                     step.completed
                       ? t("taskSteps.markOpen")
                       : t("taskSteps.markDone")
                   }
                   disabled={completeStep.isPending || !task.accepted}
-                  className={`w-5 h-5 rounded border items-center justify-center ${
-                    step.completed
-                      ? "bg-primary border-primary"
-                      : "border-outline bg-surface"
-                  }`}
                   onPress={(event) => {
                     stopCardPress(event);
                     completeStep.mutate({
@@ -129,28 +130,22 @@ export function CompactTaskSteps({
                       completed: !step.completed,
                     });
                   }}
-                >
-                  {step.completed ? (
-                    <MaterialIcons name="check" size={13} color="#ffffff" />
-                  ) : null}
-                </TouchableOpacity>
-                <Text
-                  className="flex-1 text-on-surface font-body text-xs leading-4"
+                />
+                <StrikeText
+                  done={step.completed}
+                  className="text-on-surface font-body text-xs leading-4"
+                  lineHeight={16}
                   numberOfLines={2}
-                  style={
-                    step.completed
-                      ? { textDecorationLine: "line-through", opacity: 0.55 }
-                      : undefined
-                  }
+                  doneOpacity={0.55}
                 >
                   {step.title}
-                </Text>
+                </StrikeText>
                 <StepAvatar member={member} />
               </View>
             );
           })}
         </ScrollView>
-      ) : null}
+      </Fold>
     </View>
   );
 }

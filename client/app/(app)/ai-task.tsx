@@ -6,7 +6,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
-  Modal,
   Animated,
   useWindowDimensions,
 } from "react-native";
@@ -40,11 +39,33 @@ import {
   extractApiErrorMessage,
   isOrdovitaAiSelection,
 } from "@/lib/utils/llmSettings";
-import type { Task, CalendarEvent } from "@/lib/types";
+import type {
+  Task,
+  CalendarEvent,
+  AcceptAiTaskRequest,
+  AcceptAiEventRequest,
+} from "@/lib/types";
 import { EventStatus } from "@/lib/types";
-import { formatDuration, normalizeDueDateTime } from "@/lib/utils";
+import { formatDuration, normalizeDueDateTime, parseApiDateTime } from "@/lib/utils";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 import { UI } from "@/lib/utils/uiTokens";
 import { useT, useLocale, useLanguageStore, localeFor } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { Fold } from "@/components/molecules/Fold";
+import { Reveal } from "@/components/molecules/Reveal";
+import { useRouter } from "expo-router";
+
+type ProposalItem =
+  | { id: string; task: Task; event?: undefined }
+  | { id: string; event: CalendarEvent; task?: undefined };
+
+/** Where an accepted proposal landed; `date` is null for a task without a due date. */
+type Receipt = { date: Date | null; allDay: boolean };
+
+function dateKey(d: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
@@ -91,16 +112,9 @@ function AiLoadingAnimation() {
     <View className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-8 items-center gap-4">
       <View className="flex-row items-center gap-2">
         {[pulse1, pulse2, pulse3].map((p, i) => (
-          <Animated.View
-            key={i}
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: "#111111",
-              opacity: p,
-            }}
-          />
+          <Animated.View key={i} style={{ opacity: p }}>
+            <View className="w-2 h-2 rounded-full bg-on-surface" />
+          </Animated.View>
         ))}
       </View>
       <Text className="text-on-surface font-headline text-body-md">
@@ -161,8 +175,8 @@ function EditEventModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
+    <AppModal visible={visible} dim={0.5}>
+      <View className="flex-1 items-center justify-center p-6">
         <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-lg gap-4">
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
@@ -281,7 +295,7 @@ function EditEventModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -317,6 +331,135 @@ export default function AiTaskScreen() {
   const [previewTask, setPreviewTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const router = useRouter();
+  const reduced = useReducedMotion();
+
+  // Cards keep their place when the list refetches: accepted ones stay as a
+  // receipt, rejected ones until they have folded away.
+  const [shown, setShown] = useState<ProposalItem[]>([]);
+  const [busy, setBusy] = useState<Record<string, true>>({});
+  const [receipts, setReceipts] = useState<Record<string, Receipt>>({});
+  const [rejected, setRejected] = useState<Record<string, true>>({});
+  const keep = useRef(new Set<string>());
+  // Cards from a plan just generated come in one after another.
+  const [reveal, setReveal] = useState<Record<string, number>>({});
+  const armReveal = useRef(false);
+
+  useEffect(() => {
+    if (!proposals) return;
+    const fresh: ProposalItem[] = [
+      ...proposals.events
+        .filter((e) => !e.taskId)
+        .map((event) => ({ id: event.eventId, event })),
+      ...proposals.tasks.map((task) => ({ id: task.taskId, task })),
+    ];
+    setShown((prev) => {
+      const byId = new Map(fresh.map((i) => [i.id, i]));
+      const kept = prev
+        .filter((i) => byId.has(i.id) || keep.current.has(i.id))
+        .map((i) => byId.get(i.id) ?? i);
+      const ids = new Set(kept.map((i) => i.id));
+      const added = fresh.filter((i) => !ids.has(i.id));
+      if (armReveal.current && added.length) {
+        armReveal.current = false;
+        setReveal(Object.fromEntries(added.map((i, n) => [i.id, n])));
+      }
+      return [...kept, ...added];
+    });
+  }, [proposals]);
+
+  function without<T>(map: Record<string, T>, id: string) {
+    const next = { ...map };
+    delete next[id];
+    return next;
+  }
+
+  function settle(id: string, error?: unknown) {
+    setBusy((b) => without(b, id));
+    if (error) {
+      keep.current.delete(id);
+      setConfigError(extractApiErrorMessage(error));
+    }
+  }
+
+  function acceptTaskProposal(taskId: string, data: AcceptAiTaskRequest, onDone?: () => void) {
+    keep.current.add(taskId);
+    setBusy((b) => ({ ...b, [taskId]: true }));
+    acceptTask.mutate(
+      { taskId, data },
+      {
+        onSuccess: () => {
+          const due = data.dueDateTime ? parseApiDateTime(data.dueDateTime) : null;
+          setReceipts((r) => ({ ...r, [taskId]: { date: due, allDay: false } }));
+          settle(taskId);
+          onDone?.();
+        },
+        onError: (e) => settle(taskId, e),
+      },
+    );
+  }
+
+  function acceptEventProposal(eventId: string, data: AcceptAiEventRequest, onDone?: () => void) {
+    keep.current.add(eventId);
+    setBusy((b) => ({ ...b, [eventId]: true }));
+    acceptEvent.mutate(
+      { eventId, data },
+      {
+        onSuccess: () => {
+          setReceipts((r) => ({
+            ...r,
+            [eventId]: { date: parseApiDateTime(data.startDateTime), allDay: data.allDay },
+          }));
+          settle(eventId);
+          onDone?.();
+        },
+        onError: (e) => settle(eventId, e),
+      },
+    );
+  }
+
+  // Optimistic: the card folds away at once and comes back if the request fails.
+  function rejectProposal(item: ProposalItem) {
+    keep.current.add(item.id);
+    setRejected((r) => ({ ...r, [item.id]: true }));
+    const callbacks = {
+      onSuccess: () =>
+        setTimeout(() => {
+          keep.current.delete(item.id);
+          setShown((prev) => prev.filter((i) => i.id !== item.id));
+        }, 420),
+      onError: (e: unknown) => {
+        setRejected((r) => without(r, item.id));
+        settle(item.id, e);
+      },
+    };
+    if (item.task) rejectTask.mutate(item.id, callbacks);
+    else rejectEvent.mutate(item.id, callbacks);
+  }
+
+  function receiptFor(id: string) {
+    const r = receipts[id];
+    if (!r) return null;
+    if (!r.date) {
+      return {
+        label: t("aiTask.addedToTasks"),
+        actionLabel: t("aiTask.openTasks"),
+        onAction: () => router.push("/tasks"),
+      };
+    }
+    const date = r.date;
+    const day = date.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+    const when = r.allDay
+      ? day
+      : `${day}, ${date.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" })}`;
+    return {
+      label: t("aiTask.addedToCalendar", { when }),
+      actionLabel: t("aiTask.openCalendar"),
+      // `highlight` = event id or task id; the calendar pulses the matching event.
+      onAction: () =>
+        router.push({ pathname: "/calendar", params: { date: dateKey(date), highlight: id } }),
+    };
+  }
 
   useEffect(() => {
     if (!proposals) return;
@@ -347,6 +490,13 @@ export default function AiTaskScreen() {
     }
     if (isListening) toggleSpeech();
     setConfigError(null);
+    // Receipts belong to the previous plan.
+    setShown((prev) => prev.filter((i) => !keep.current.has(i.id)));
+    keep.current.clear();
+    setReceipts({});
+    setRejected({});
+    setReveal({});
+    armReveal.current = true;
     try {
       await generatePlan.mutateAsync({
         text: normalized,
@@ -356,6 +506,7 @@ export default function AiTaskScreen() {
       });
       setText("");
     } catch (e) {
+      armReveal.current = false;
       setConfigError(extractApiErrorMessage(e));
     }
   }
@@ -500,10 +651,7 @@ export default function AiTaskScreen() {
     startWithPermission();
   }
 
-  const taskCount = proposals?.tasks?.length ?? 0;
-  const manualEvents = (proposals?.events ?? []).filter((e) => !e.taskId);
-  const eventCount = manualEvents.length;
-  const totalCount = taskCount + eventCount;
+  const pendingCount = shown.filter((i) => !receipts[i.id] && !rejected[i.id]).length;
 
   const isGenerating = generatePlan.isPending;
   const { width } = useWindowDimensions();
@@ -627,7 +775,7 @@ export default function AiTaskScreen() {
 
           {isGenerating && <AiLoadingAnimation />}
 
-          {!isGenerating && totalCount > 0 && (
+          {!isGenerating && shown.length > 0 && (
             <View className="gap-5">
               <View className="flex-row items-start justify-between gap-4">
                 <View className="flex-1">
@@ -638,91 +786,86 @@ export default function AiTaskScreen() {
                     {t("aiTask.proposalsDesc")}
                   </Text>
                 </View>
-                <View className="px-2.5 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
-                  <Text className="text-on-surface-variant font-label text-xs">
-                    {t("aiTask.pendingCount", { count: totalCount })}
-                  </Text>
-                </View>
+                {pendingCount > 0 && (
+                  <View className="px-2.5 py-1 rounded-full border border-outline-variant bg-surface-container-lowest">
+                    <Text className="text-on-surface-variant font-label text-xs">
+                      {t("aiTask.pendingCount", { count: pendingCount })}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               <View className="flex-row flex-wrap gap-4">
-                {manualEvents.map((event) => {
-                  const start = new Date(event.startDateTime);
-                  const end = new Date(event.endDateTime);
-                  const hhmm = {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  } as const;
-                  const duration = `${start.toLocaleTimeString(locale, hhmm)} – ${end.toLocaleTimeString(locale, hhmm)}`;
-                  const dueDate = start.toLocaleDateString(locale, {
-                    day: "numeric",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-                  return (
-                    <View
-                      key={event.eventId}
-                      style={{ width: proposalCardWidth }}
-                    >
+                {shown.map((item) => {
+                  let card;
+                  if (item.event) {
+                    const event = item.event;
+                    const start = new Date(event.startDateTime);
+                    const end = new Date(event.endDateTime);
+                    const hhmm = {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    } as const;
+                    const duration = `${start.toLocaleTimeString(locale, hhmm)} – ${end.toLocaleTimeString(locale, hhmm)}`;
+                    const dueDate = start.toLocaleDateString(locale, {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+                    card = (
                       <AiProposedCard
                         type="event"
                         title={event.title}
                         duration={duration}
                         dueDate={dueDate}
-                        onDismiss={() => rejectEvent.mutate(event.eventId)}
+                        onDismiss={() => rejectProposal(item)}
                         onEdit={() => setEditingEvent(event)}
                         onAccept={() =>
-                          acceptEvent.mutate({
-                            eventId: event.eventId,
-                            data: {
-                              title: event.title,
-                              startDateTime: event.startDateTime,
-                              endDateTime: event.endDateTime,
-                              allDay: event.allDay,
-                              status: EventStatus.ACCEPTED,
-                            },
+                          acceptEventProposal(event.eventId, {
+                            title: event.title,
+                            startDateTime: event.startDateTime,
+                            endDateTime: event.endDateTime,
+                            allDay: event.allDay,
+                            status: EventStatus.ACCEPTED,
                           })
                         }
-                        loading={acceptEvent.isPending}
+                        loading={!!busy[item.id]}
+                        receipt={receiptFor(item.id)}
                       />
-                    </View>
-                  );
-                })}
-
-                {proposals!.tasks.map((task) => (
-                  <View key={task.taskId} style={{ width: proposalCardWidth }}>
-                    <AiProposedCard
-                      type="task"
-                      title={task.title}
-                      description={task.description ?? undefined}
-                      priority={task.priority}
-                      steps={task.steps}
-                      duration={
-                        task.estimatedDuration > 0
-                          ? formatDuration(task.estimatedDuration)
-                          : undefined
-                      }
-                      dueDate={
-                        task.dueDateTime
-                          ? new Date(task.dueDateTime).toLocaleDateString(
-                              locale,
-                              {
-                                day: "numeric",
-                                month: "short",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              },
-                            )
-                          : undefined
-                      }
-                      onDismiss={() => rejectTask.mutate(task.taskId)}
-                      onPreview={() => setPreviewTask(task)}
-                      onEdit={() => setEditingTask(task)}
-                      onAccept={() =>
-                        acceptTask.mutate({
-                          taskId: task.taskId,
-                          data: {
+                    );
+                  } else {
+                    const task = item.task;
+                    card = (
+                      <AiProposedCard
+                        type="task"
+                        title={task.title}
+                        description={task.description ?? undefined}
+                        priority={task.priority}
+                        steps={task.steps}
+                        duration={
+                          task.estimatedDuration > 0
+                            ? formatDuration(task.estimatedDuration)
+                            : undefined
+                        }
+                        dueDate={
+                          task.dueDateTime
+                            ? new Date(task.dueDateTime).toLocaleDateString(
+                                locale,
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                },
+                              )
+                            : undefined
+                        }
+                        onDismiss={() => rejectProposal(item)}
+                        onPreview={() => setPreviewTask(task)}
+                        onEdit={() => setEditingTask(task)}
+                        onAccept={() =>
+                          acceptTaskProposal(task.taskId, {
                             title: task.title,
                             description: task.description,
                             priority: task.priority,
@@ -730,18 +873,31 @@ export default function AiTaskScreen() {
                             categoryId: task.categoryId ?? undefined,
                             estimatedDuration: task.estimatedDuration,
                             dueDateTime: normalizeDueDateTime(task.dueDateTime),
-                          },
-                        })
-                      }
-                      loading={acceptTask.isPending}
-                    />
-                  </View>
-                ))}
+                          })
+                        }
+                        loading={!!busy[item.id]}
+                        receipt={receiptFor(item.id)}
+                      />
+                    );
+                  }
+                  return (
+                    <View key={item.id} style={{ width: proposalCardWidth }}>
+                      <Reveal
+                        animate={reveal[item.id] !== undefined}
+                        delay={Math.min(reveal[item.id] ?? 0, 8) * 70}
+                      >
+                        <Fold open={!rejected[item.id]} reduceMotion={reduced}>
+                          {card}
+                        </Fold>
+                      </Reveal>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           )}
 
-          {totalCount === 0 && !proposalsLoading && !isGenerating && (
+          {shown.length === 0 && !proposalsLoading && !isGenerating && (
             <View className="items-center py-8 gap-2">
               <MaterialIcons name="auto-awesome" size={32} color="#cccccc" />
               <Text className="text-on-surface-variant font-body text-body-md text-center">
@@ -763,30 +919,27 @@ export default function AiTaskScreen() {
           label: t("common.reject"),
           onPress: () => {
             if (!previewTask) return;
-            rejectTask.mutate(previewTask.taskId, {
-              onSuccess: () => setPreviewTask(null),
-            });
+            rejectProposal({ id: previewTask.taskId, task: previewTask });
+            setPreviewTask(null);
           },
         }}
         acceptAction={{
           label: t("common.accept"),
-          loading: acceptTask.isPending,
+          loading: !!previewTask && !!busy[previewTask.taskId],
           onPress: () => {
             if (!previewTask) return;
-            acceptTask.mutate(
+            acceptTaskProposal(
+              previewTask.taskId,
               {
-                taskId: previewTask.taskId,
-                data: {
-                  title: previewTask.title,
-                  description: previewTask.description,
-                  priority: previewTask.priority,
-                  statusId: previewTask.statusId,
-                  categoryId: previewTask.categoryId ?? undefined,
-                  estimatedDuration: previewTask.estimatedDuration,
-                  dueDateTime: normalizeDueDateTime(previewTask.dueDateTime),
-                },
+                title: previewTask.title,
+                description: previewTask.description,
+                priority: previewTask.priority,
+                statusId: previewTask.statusId,
+                categoryId: previewTask.categoryId ?? undefined,
+                estimatedDuration: previewTask.estimatedDuration,
+                dueDateTime: normalizeDueDateTime(previewTask.dueDateTime),
               },
-              { onSuccess: () => setPreviewTask(null) },
+              () => setPreviewTask(null),
             );
           },
         }}
@@ -801,13 +954,10 @@ export default function AiTaskScreen() {
         forceEdit
         showDelete={false}
         saveLabel={t("aiTask.saveAndAccept")}
-        saveLoading={acceptTask.isPending}
+        saveLoading={!!editingTask && !!busy[editingTask.taskId]}
         onSaveCustom={(data) => {
           if (!editingTask) return;
-          acceptTask.mutate(
-            { taskId: editingTask.taskId, data },
-            { onSuccess: () => setEditingTask(null) },
-          );
+          acceptTaskProposal(editingTask.taskId, data, () => setEditingTask(null));
         }}
       />
 
@@ -816,12 +966,9 @@ export default function AiTaskScreen() {
           event={editingEvent}
           visible={!!editingEvent}
           onClose={() => setEditingEvent(null)}
-          loading={acceptEvent.isPending}
+          loading={!!busy[editingEvent.eventId]}
           onSave={(data) => {
-            acceptEvent.mutate(
-              { eventId: editingEvent.eventId, data },
-              { onSuccess: () => setEditingEvent(null) },
-            );
+            acceptEventProposal(editingEvent.eventId, data, () => setEditingEvent(null));
           }}
         />
       )}

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import {
   Linking,
   Platform,
@@ -9,36 +10,34 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { MaterialIcons } from "@expo/vector-icons";
-import { Button, OrdovitaLogo } from "@/components/atoms";
+import { BrandButton, OrdovitaLogo } from "@/components/atoms";
+import { PlanDemo } from "@/components/organisms/landing/PlanDemo";
+import {
+  AiSettingsSpecimen,
+  CommentSpecimen,
+  MonthSpecimen,
+  NoteSpecimen,
+  TaskSpecimen,
+} from "@/components/organisms/landing/Specimens";
 import { useAuthStore } from "@/lib/stores";
 import { useT } from "@/lib/i18n";
 
 const WINDOWS_INSTALLER_URL = "/downloads/Ordovita-Setup.exe";
 const MACOS_INSTALLER_URL = "/downloads/Ordovita-macOS-arm64.dmg";
+const CONTACT_EMAIL = "kontakt@ordovita.pl";
 
-// Single accent — the Arena violet. One accent, used everywhere a highlight is needed.
-const ACCENT = "#5b4ee0";
-const INK = "#1a1a18";
-const DANGER = "#dc2c4f";
+// Mirror of DotNetServer PlanDefaults (Free). The AI limit is counted per day.
+const FREE_PLAN = { aiPerDay: 15, privateWorkspaces: 3, publicWorkspaces: 3 };
 
-// Real elevation for landing cards (the app surfaces stay flat by design; the
-// marketing page needs depth so white cards read against the cream paper bg).
-const cardShadow =
-  Platform.OS === "web"
-    ? {
-        boxShadow:
-          "0 1px 2px rgba(16,24,40,0.04), 0 6px 16px rgba(16,24,40,0.07)",
-      }
-    : {
-        shadowColor: "#101828",
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.08,
-        shadowRadius: 16,
-        elevation: 3,
-      };
+type SectionKey = "how" | "features" | "start";
 
-const accentTint = (alpha: number) => `rgba(91,78,224,${alpha})`;
+function openExternal(url: string) {
+  if (Platform.OS === "web" && typeof window !== "undefined") {
+    window.location.href = url;
+    return;
+  }
+  Linking.openURL(url.startsWith("/") ? `https://ordovita.pl${url}` : url);
+}
 
 export default function Index() {
   const t = useT();
@@ -47,334 +46,266 @@ export default function Index() {
   const isLoading = useAuthStore((s) => s.isLoading);
   const { width } = useWindowDimensions();
   const isWide = Platform.OS === "web" && width >= 1024;
+  const scrollRef = useRef<ScrollView>(null);
+  const sectionY = useRef<Record<SectionKey, number>>({ how: 0, features: 0, start: 0 });
 
   if (isLoading || isAuthenticated) return null;
 
-  function openDownload(url: string) {
-    if (Platform.OS === "web" && typeof window !== "undefined") {
-      window.location.href = url;
-      return;
-    }
-    Linking.openURL(`https://ordovita.pl${url}`);
+  const goRegister = () => router.push("/(auth)/register");
+  const goLogin = () => router.push("/(auth)/login");
+  const scrollTo = (key: SectionKey) =>
+    scrollRef.current?.scrollTo({ y: sectionY.current[key], animated: true });
+  const track = (key: SectionKey) => (e: { nativeEvent: { layout: { y: number } } }) => {
+    sectionY.current[key] = e.nativeEvent.layout.y;
+  };
+
+  const startBody = t(isWide ? "landing.startBody" : "landing.startBodyShort", {
+    ai: FREE_PLAN.aiPerDay,
+    private: FREE_PLAN.privateWorkspaces,
+    public: FREE_PLAN.publicWorkspaces,
+  });
+
+  // Each feature is shown as a fragment of the real UI next to its description.
+  const features = [
+    { title: t("landing.featTasks"), body: t("landing.featTasksDesc"), specimen: <TaskSpecimen /> },
+    {
+      title: t("landing.featCalendar"),
+      body: t(isWide ? "landing.featCalendarDesc" : "landing.featCalendarShort"),
+      specimen: <MonthSpecimen />,
+    },
+    { title: t("landing.featNotes"), body: t("landing.featNotesDesc"), specimen: <NoteSpecimen /> },
+    { title: t("landing.featTeam"), body: t("landing.featTeamDesc"), specimen: <CommentSpecimen /> },
+  ];
+  const aiBody = [t("landing.aiBody1"), t("landing.aiBody2", { limit: FREE_PLAN.aiPerDay })];
+
+  const footerLinks = [
+    { label: t("landing.terms"), onPress: () => router.push("/terms-of-service" as never) },
+    { label: t("landing.privacy"), onPress: () => router.push("/privacy-policy" as never) },
+    { label: CONTACT_EMAIL, onPress: () => openExternal(`mailto:${CONTACT_EMAIL}`) },
+  ];
+
+  if (!isWide) {
+    return (
+      <SafeAreaView nativeID="brand-root" className="flex-1 bg-brand-paper">
+        <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
+          <View className="w-full self-center" style={{ maxWidth: 600 }}>
+            <View className="h-[60px] pl-5 pr-2 flex-row items-center justify-between">
+              <OrdovitaLogo size="sm" />
+              <TouchableOpacity
+                accessibilityRole="link"
+                onPress={goLogin}
+                className="min-h-11 px-3 justify-center"
+              >
+                <Text className="text-brand-ink font-headline text-base">{t("auth.login")}</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View className="px-5 pt-7 pb-10 gap-5">
+              <Text
+                accessibilityRole="header"
+                className="text-brand-ink font-display"
+                style={{ fontSize: 40, lineHeight: 42 }}
+              >
+                {t("landing.heroTitle")}
+              </Text>
+              <Text className="text-brand-muted font-body text-[17px] leading-[26px]">
+                {t("landing.heroBodyMobile")}
+              </Text>
+              <View className="gap-1 mt-1">
+                <BrandButton label={t("landing.ctaPrimary")} size="lg" fullWidth onPress={goRegister} />
+                <BrandButton label={t("landing.haveAccount")} variant="ghost" size="lg" fullWidth onPress={goLogin} />
+              </View>
+            </View>
+
+            <View className="px-5 pb-12">
+              <PlanDemo compact />
+            </View>
+
+            <View className="px-5 py-10 gap-7 border-t border-brand-line">
+              <Text accessibilityRole="header" className="text-brand-ink font-display text-[32px] leading-[37px]">
+                {t("landing.featuresTitle")}
+              </Text>
+              {features.map((f) => (
+                <View key={f.title} className="pt-5 border-t border-brand-ink gap-2.5">
+                  <Text className="text-brand-ink font-headline text-xl">{f.title}</Text>
+                  <Text className="text-brand-muted font-body text-base leading-[26px]">{f.body}</Text>
+                  <View className="mt-3">{f.specimen}</View>
+                </View>
+              ))}
+            </View>
+
+            <View className="px-5 pt-10 pb-12 gap-6 border-t border-brand-line">
+              <View className="gap-4">
+                <Text accessibilityRole="header" className="text-brand-ink font-display text-[32px] leading-[35px]">
+                  {t("landing.aiTitle")}
+                </Text>
+                {aiBody.map((p) => (
+                  <Text key={p} className="text-brand-muted font-body text-base leading-[26px]">
+                    {p}
+                  </Text>
+                ))}
+              </View>
+              <AiSettingsSpecimen />
+            </View>
+
+            <View className="px-5 py-10 gap-5 bg-brand-accent-soft">
+              <Text accessibilityRole="header" className="text-brand-ink font-display text-[30px] leading-9">
+                {t("landing.startTitle")}
+              </Text>
+              <Text className="text-brand-ink font-body text-base leading-6">{startBody}</Text>
+              <BrandButton label={t("landing.ctaPrimary")} size="lg" fullWidth onPress={goRegister} />
+              <Text className="text-brand-ink font-body text-sm leading-5">{t("landing.desktopNote")}</Text>
+            </View>
+          </View>
+
+          <View className="flex-1" />
+          <View className="px-5 pt-5 pb-8 border-t border-brand-line gap-2 w-full self-center" style={{ maxWidth: 600 }}>
+            {footerLinks.map((l) => (
+              <TouchableOpacity key={l.label} accessibilityRole="link" onPress={l.onPress} className="min-h-11 justify-center">
+                <Text className="text-brand-muted font-body text-[15px]">{l.label}</Text>
+              </TouchableOpacity>
+            ))}
+            <Text className="text-brand-muted font-body text-sm">
+              {t("landing.copyright", { year: new Date().getFullYear() })}
+            </Text>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
   }
 
+  const heroSize = width >= 1280 ? 80 : 64;
+  const gutter = width >= 1280 ? 120 : 48;
+  const container = { width: "100%" as const, maxWidth: 1200 + gutter * 2, paddingHorizontal: gutter, alignSelf: "center" as const };
+
   return (
-    <SafeAreaView className="flex-1 bg-background">
-      <ScrollView className="flex-1">
-        {/* Header */}
-        <View className="px-6 md:px-12 py-5 flex-row items-center justify-between max-w-5xl w-full self-center">
-          <OrdovitaLogo size="md" showTagline={false} />
-          <View className="flex-row items-center gap-3">
-            <Button
-              label={t("auth.login")}
-              variant="outline"
-              onPress={() => router.push("/(auth)/login")}
-            />
-            <Button
-              label={t("auth.register")}
-              icon="arrow-forward"
-              onPress={() => router.push("/(auth)/register")}
-            />
+    <View nativeID="brand-root" className="flex-1 bg-brand-paper">
+      <ScrollView ref={scrollRef} className="flex-1" contentContainerStyle={{ flexGrow: 1 }}>
+        <View style={container} className="h-20 flex-row items-center justify-between">
+          <OrdovitaLogo size="md" />
+          <View className="flex-row items-center gap-9">
+            {([
+              ["how", t("landing.navHow")],
+              ["features", t("landing.navFeatures")],
+              ["start", t("landing.navDownload")],
+            ] as const).map(([key, label]) => (
+              <TouchableOpacity key={key} accessibilityRole="link" onPress={() => scrollTo(key)} className="min-h-11 justify-center">
+                <Text className="text-brand-ink font-body text-[15px]">{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View className="flex-row items-center gap-2">
+            <BrandButton label={t("auth.login")} variant="ghost" onPress={goLogin} />
+            <BrandButton label={t("landing.signUp")} onPress={goRegister} />
           </View>
         </View>
 
-        {/* Hero */}
-        <View className="max-w-5xl w-full self-center px-6 pt-12 pb-10 items-center gap-6">
-          <View
-            className="flex-row items-center gap-1.5 px-3.5 py-1.5 rounded-full"
-            style={{ backgroundColor: accentTint(0.08) }}
+        <View style={[container, { paddingTop: 72 }]} className="flex-row items-end gap-20">
+          <Text
+            accessibilityRole="header"
+            className="flex-1 text-brand-ink font-display"
+            style={{ fontSize: heroSize, lineHeight: heroSize * 1.04, maxWidth: 720 }}
           >
-            <MaterialIcons name="auto-awesome" size={13} color={ACCENT} />
-            <Text
-              className="font-label text-label-md"
-              style={{ color: ACCENT }}
-            >
-              {t("landing.versionBadge")}
-            </Text>
+            {t("landing.heroTitle")}
+          </Text>
+          <View className="gap-6 pb-2" style={{ width: 380 }}>
+            <Text className="text-brand-muted font-body text-lg leading-7">{t("landing.heroBody")}</Text>
+            <View className="flex-row gap-3">
+              <BrandButton label={t("landing.ctaPrimary")} size="lg" onPress={goRegister} />
+              <BrandButton label={t("auth.login")} variant="outline" size="lg" onPress={goLogin} />
+            </View>
           </View>
-
-          <Text className="text-on-surface font-display text-headline-lg-mobile md:text-display-lg text-center max-w-3xl">
-            {t("landing.heroPrefix")}{" "}
-            <Text className="font-display" style={{ color: ACCENT }}>
-              {t("landing.heroAccent")}
-            </Text>{" "}
-            {t("landing.heroSuffix")}
-          </Text>
-
-          <Text className="text-on-surface-variant font-body text-body-lg text-center max-w-2xl">
-            {t("landing.heroSubtitle")}
-          </Text>
-
-          <View
-            className={`gap-4 mt-4 ${isWide ? "flex-row" : "flex-col w-full max-w-md"}`}
-          >
-            <DownloadButton
-              icon="desktop-windows"
-              label={t("landing.downloadWindows")}
-              onPress={() => openDownload(WINDOWS_INSTALLER_URL)}
-            />
-            <DownloadButton
-              icon="laptop-mac"
-              label={t("landing.downloadMac")}
-              onPress={() => openDownload(MACOS_INSTALLER_URL)}
-            />
-          </View>
-          <Text className="text-text-tertiary font-body text-body-md">
-            Also available on web · Free 14-day trial
-          </Text>
         </View>
 
-        {/* App preview */}
-        <View className="max-w-5xl w-full self-center px-6 pb-16">
-          <LandingAppPreview />
+        <View style={[container, { paddingTop: 56, paddingBottom: 104 }]} onLayout={track("how")}>
+          <PlanDemo />
         </View>
 
-        {/* Features */}
-        <View className="max-w-5xl w-full self-center px-6 pb-16 items-center gap-4">
-          <Text className="text-on-surface font-display text-headline-md text-center">
+        <View style={[container, { paddingBottom: 88 }]} className="flex-row gap-20" onLayout={track("features")}>
+          <Text accessibilityRole="header" className="text-brand-ink font-display text-[44px] leading-[48px]" style={{ width: 340 }}>
             {t("landing.featuresTitle")}
           </Text>
-          <Text className="text-on-surface-variant font-body text-body-lg text-center max-w-xl">
-            {t("landing.featuresSubtitle")}
-          </Text>
-          <View
-            className={`gap-4 mt-6 w-full ${isWide ? "flex-row" : "flex-col"}`}
-          >
-            <FocusCard
-              icon="checklist"
-              title={t("landing.featTasks")}
-              desc={t("landing.featTasksDesc")}
-            />
-            <FocusCard
-              icon="calendar-today"
-              title={t("landing.featCalendar")}
-              desc={t("landing.featCalendarDesc")}
-            />
-            <FocusCard
-              icon="auto-awesome"
-              title={t("landing.featAi")}
-              desc={t("landing.featAiDesc")}
-            />
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View className="border-t border-outline-variant">
-          <View className="max-w-5xl w-full self-center px-6 py-8 gap-4 md:flex-row md:items-center md:justify-between">
-            <View className="flex-row items-center gap-2">
-              <OrdovitaLogo size="sm" showTagline={false} />
-            </View>
-            <View className="flex-row flex-wrap items-center gap-x-6 gap-y-2">
-              <FooterLink
-                label={t("auth.login")}
-                onPress={() => router.push("/(auth)/login")}
-              />
-              <FooterLink
-                label={t("auth.privacy")}
-                onPress={() => router.push("/privacy-policy" as never)}
-              />
-              <FooterLink
-                label={t("auth.terms")}
-                onPress={() => router.push("/terms-of-service" as never)}
-              />
-              <FooterLink
-                label="kontakt@ordovita.pl"
-                onPress={() =>
-                  Platform.OS === "web"
-                    ? (window.location.href = "mailto:kontakt@ordovita.pl")
-                    : Linking.openURL("mailto:kontakt@ordovita.pl")
-                }
-              />
-            </View>
-          </View>
-          <View className="max-w-5xl w-full self-center px-6 pb-8">
-            <Text className="text-text-tertiary font-body text-xs">
-              © 2026 Ordovita · ordovita.pl
-            </Text>
-          </View>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function FooterLink({
-  label,
-  onPress,
-}: {
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity onPress={onPress}>
-      <Text className="text-on-surface-variant font-body text-sm">{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function DownloadButton({
-  icon,
-  label,
-  onPress,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  label: string;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.9}
-      className="flex-1 flex-row items-center justify-center gap-3 bg-surface-container-lowest rounded-xl px-6 py-4 border border-outline-variant"
-      style={cardShadow}
-    >
-      <MaterialIcons name={icon} size={20} color={INK} />
-      <Text className="text-on-surface font-headline text-sm">{label}</Text>
-    </TouchableOpacity>
-  );
-}
-
-function LandingAppPreview() {
-  const t = useT();
-  return (
-    <View
-      className="bg-surface-container-lowest rounded-3xl border border-outline-variant p-6 md:p-8 overflow-hidden"
-      style={cardShadow}
-    >
-      <View className="flex-row gap-4">
-        <View className="hidden md:flex w-44 gap-2">
-          <OrdovitaLogo size="sm" showTagline />
-          <View className="h-px bg-outline-variant my-1" />
-          {[
-            t("landing.navDashboard"),
-            t("landing.navTasks"),
-            t("landing.navCalendar"),
-          ].map((item, i) => (
-            <View
-              key={item}
-              className="h-8 rounded-lg px-3 justify-center"
-              style={i === 0 ? { backgroundColor: accentTint(0.1) } : undefined}
-            >
-              <Text
-                className="text-xs font-label"
-                style={{ color: i === 0 ? ACCENT : "#6b6965" }}
-              >
-                {item}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-        <View className="flex-1 gap-4">
-          <View className="flex-row items-center justify-between">
-            <View>
-              <Text className="text-on-surface font-display text-title-lg">
-                {t("landing.previewGreeting")}
-              </Text>
-              <Text className="text-on-surface-variant font-body text-body-md mt-0.5">
-                {t("landing.previewSummary")}
-              </Text>
-            </View>
-            <Text className="text-text-tertiary font-body text-sm">
-              {t("landing.previewDate")}
-            </Text>
-          </View>
-
-          <View className="flex-row gap-3">
-            {[
-              { label: t("landing.previewTasksToday"), value: "5", color: INK },
-              { label: t("landing.previewEvents"), value: "2", color: DANGER },
-              { label: t("landing.previewPendingAi"), value: "1", color: ACCENT },
-            ].map((s) => (
-              <View
-                key={s.label}
-                className="flex-1 bg-surface-container-lowest rounded-xl p-3 border border-outline-variant"
-              >
-                <View
-                  className="w-7 h-7 rounded-lg items-center justify-center mb-2"
-                  style={{ backgroundColor: `${s.color}1a` }}
-                >
-                  <MaterialIcons name="circle" size={8} color={s.color} />
-                </View>
-                <Text className="text-on-surface font-headline text-xl">
-                  {s.value}
-                </Text>
-                <Text className="text-text-tertiary font-label text-[10px] uppercase mt-0.5">
-                  {s.label}
-                </Text>
+          <View className="flex-1 flex-row flex-wrap items-start" style={{ columnGap: 56, rowGap: 64 }}>
+            {features.map((f) => (
+              <View key={f.title} className="pt-5 border-t border-brand-ink gap-2.5" style={{ width: "46%", flexGrow: 1 }}>
+                <Text className="text-brand-ink font-headline text-xl">{f.title}</Text>
+                <Text className="text-brand-muted font-body text-base leading-[26px]">{f.body}</Text>
+                <View className="mt-3">{f.specimen}</View>
               </View>
             ))}
           </View>
+        </View>
 
-          <View className="gap-2">
-            <Text className="text-on-surface font-headline text-sm">
-              {t("landing.previewTodaysFocus")}
-            </Text>
-            <View className="bg-surface-container-lowest rounded-xl p-3 border border-outline-variant flex-row items-center gap-3">
-              <View className="w-4 h-4 rounded-full border-2 border-outline" />
-              <View className="flex-1">
-                <Text className="text-on-surface font-headline text-sm">
-                  {t("landing.previewTaskTitle")}
-                </Text>
-                <Text className="text-on-surface-variant font-body text-xs">
-                  {t("landing.previewTaskDue")}
-                </Text>
-              </View>
-            </View>
-            <View
-              className="rounded-xl p-3 flex-row items-center gap-2"
-              style={{
-                backgroundColor: accentTint(0.06),
-                borderWidth: 1,
-                borderColor: accentTint(0.25),
-              }}
-            >
-              <MaterialIcons name="auto-awesome" size={16} color={ACCENT} />
-              <Text className="text-on-surface font-headline text-sm flex-1">
-                {t("landing.previewAiSuggestion")}
+        <View style={[container, { paddingBottom: 112 }]}>
+          {/* 360 + 60 keeps the specimen on the same edge as the features above (340 + 80). */}
+          <View className="flex-row pt-12 border-t border-brand-line" style={{ gap: 60 }}>
+            <View className="gap-4" style={{ width: 360 }}>
+              <Text accessibilityRole="header" className="text-brand-ink font-display text-[44px] leading-[48px]">
+                {t("landing.aiTitle")}
               </Text>
-              <View
-                className="px-3 py-1 rounded-lg"
-                style={{ backgroundColor: ACCENT }}
-              >
-                <Text className="text-white font-label text-[10px]">
-                  {t("landing.previewAdd")}
+              {aiBody.map((p) => (
+                <Text key={p} className="text-brand-muted font-body text-base leading-[26px]">
+                  {p}
                 </Text>
-              </View>
+              ))}
+            </View>
+            <View className="flex-1" style={{ maxWidth: 560 }}>
+              <AiSettingsSpecimen />
             </View>
           </View>
         </View>
-      </View>
-    </View>
-  );
-}
 
-function FocusCard({
-  icon,
-  title,
-  desc,
-}: {
-  icon: keyof typeof MaterialIcons.glyphMap;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <View
-      className="flex-1 bg-surface-container-lowest rounded-2xl p-5 border border-outline-variant"
-      style={cardShadow}
-    >
-      <View
-        className="w-10 h-10 rounded-xl items-center justify-center"
-        style={{ backgroundColor: accentTint(0.1) }}
-      >
-        <MaterialIcons name={icon} size={22} color={ACCENT} />
-      </View>
-      <Text className="text-on-surface font-headline text-title-lg mt-3">
-        {title}
-      </Text>
-      <Text className="text-on-surface-variant font-body text-body-md mt-1">
-        {desc}
-      </Text>
+        <View style={container} onLayout={track("start")}>
+          <View className="bg-brand-accent-soft flex-row gap-20" style={{ borderRadius: 24, paddingVertical: 72, paddingHorizontal: 80 }}>
+            <View className="flex-1 gap-6">
+              <Text accessibilityRole="header" className="text-brand-ink font-display text-[56px] leading-[60px]">
+                {t("landing.startTitle")}
+              </Text>
+              <Text className="text-brand-ink font-body text-[17px] leading-7" style={{ maxWidth: 520 }}>
+                {startBody}
+              </Text>
+              <BrandButton label={t("landing.ctaPrimary")} size="lg" onPress={goRegister} style={{ alignSelf: "flex-start" }} />
+            </View>
+            <View style={{ width: 440 }}>
+              <Text className="text-brand-ink font-body text-base leading-[26px] mb-2">{t("landing.downloadIntro")}</Text>
+              {[
+                { name: t("landing.windows"), meta: t("landing.windowsMeta"), url: WINDOWS_INSTALLER_URL },
+                { name: t("landing.mac"), meta: t("landing.macMeta"), url: MACOS_INSTALLER_URL },
+              ].map((d) => (
+                <TouchableOpacity
+                  key={d.url}
+                  accessibilityRole="link"
+                  accessibilityLabel={`${t("landing.download")} ${d.name}`}
+                  onPress={() => openExternal(d.url)}
+                  className="min-h-16 flex-row items-center justify-between border-b border-brand-line"
+                >
+                  <View className="gap-0.5">
+                    <Text className="text-brand-ink font-headline text-[17px]">{d.name}</Text>
+                    <Text className="text-brand-muted font-body text-sm">{d.meta}</Text>
+                  </View>
+                  <Text className="text-brand-accent-text font-headline text-[15px]">{t("landing.download")}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        <View className="flex-1" style={{ minHeight: 96 }} />
+        <View className="border-t border-brand-line">
+          <View style={container} className="py-5 flex-row items-center justify-between">
+            <Text className="text-brand-muted font-body text-sm">
+              {t("landing.copyright", { year: new Date().getFullYear() })}
+            </Text>
+            <View className="flex-row gap-7">
+              {footerLinks.map((l) => (
+                <TouchableOpacity key={l.label} accessibilityRole="link" onPress={l.onPress} className="min-h-11 justify-center">
+                  <Text className="text-brand-muted font-body text-sm">{l.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </View>
+      </ScrollView>
     </View>
   );
 }

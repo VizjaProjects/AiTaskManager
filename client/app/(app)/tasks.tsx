@@ -4,7 +4,6 @@ import {
   ScrollView,
   RefreshControl,
   TouchableOpacity,
-  Modal,
   Pressable,
   Platform,
   Dimensions,
@@ -56,6 +55,14 @@ import { useThemeStore } from "@/lib/stores";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 import { getInitials } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { BoardFlip, markLanding } from "@/components/molecules/BoardFlip";
+import { Fold } from "@/components/molecules/Fold";
+import {
+  IndicatorShape,
+  useSlidingIndicator,
+} from "@/components/molecules/SlidingIndicator";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 type ViewMode = "kanban" | "list";
 type ListGrouping = "status" | "category-status";
@@ -84,6 +91,11 @@ function saveColumnOrder(order: string[]) {
   }
 }
 
+// The card being dragged: its size opens a matching gap in the target column,
+// and the grab offset lets the dropped card settle from where it was let go.
+let activeDrag: { taskId: string; dx: number; dy: number; height: number } | null =
+  null;
+
 function DraggableCard({
   taskId,
   children,
@@ -104,6 +116,13 @@ function DraggableCard({
       e.dataTransfer?.setData("application/task-id", taskId);
       e.dataTransfer?.setData("text/plain", taskId);
       if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+      const r = el.getBoundingClientRect();
+      activeDrag = {
+        taskId,
+        dx: e.clientX - r.left,
+        dy: e.clientY - r.top,
+        height: r.height,
+      };
       el.style.opacity = "0.5";
     };
     const onEnd = () => {
@@ -119,7 +138,12 @@ function DraggableCard({
     };
   }, [taskId]);
 
-  return <View ref={ref}>{children}</View>;
+  // Set in render, not the effect: BoardFlip looks for it when the card has just mounted.
+  return (
+    <View ref={ref} {...({ dataSet: { flipId: taskId } } as object)}>
+      {children}
+    </View>
+  );
 }
 
 function KanbanTaskCard({
@@ -307,14 +331,9 @@ function KanbanTaskCard({
         </View>
       </TouchableOpacity>
 
-      <Modal
-        visible={assignOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setAssignOpen(false)}
-      >
+      <AppModal visible={assignOpen} onRequestClose={() => setAssignOpen(false)}>
         <Pressable
-          className="flex-1 bg-black/40 items-center justify-center px-6"
+          className="flex-1 items-center justify-center px-6"
           onPress={() => setAssignOpen(false)}
         >
           <Pressable
@@ -372,7 +391,7 @@ function KanbanTaskCard({
             )}
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
     </DraggableCard>
   );
 }
@@ -386,7 +405,7 @@ function DropColumn({
   children,
 }: {
   statusId: string;
-  onDrop: (taskId: string, statusId: string) => void;
+  onDrop: (taskId: string, statusId: string, x: number, y: number) => void;
   isDragOver: boolean;
   setDragOverId: (id: string | null) => void;
   onCreateInColumn?: (statusId: string) => void;
@@ -420,7 +439,7 @@ function DropColumn({
       const taskId =
         e.dataTransfer?.getData("application/task-id") ||
         e.dataTransfer?.getData("text/plain");
-      if (taskId) onDrop(taskId, statusId);
+      if (taskId) onDrop(taskId, statusId, e.clientX, e.clientY);
     };
     el.addEventListener("dragover", handleOver);
     el.addEventListener("dragleave", handleLeave);
@@ -445,7 +464,7 @@ function DropColumn({
       className={`w-[300px] rounded-2xl p-2.5 border transition-colors duration-150 ${
         isDragOver
           ? "bg-accent/[0.06] border-accent"
-          : "bg-surface-container-low/40 border-outline-variant/70"
+          : "bg-surface-container-low/40 border-outline-variant"
       }`}
       style={{ alignSelf: "stretch" }}
     >
@@ -521,6 +540,29 @@ export default function TasksScreen() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [columnOrder, setColumnOrder] = useState<string[]>(loadColumnOrder);
   const [dragOverId, setDragOverId] = useState<string | null>(null);
+  const [pendingDrop, setPendingDrop] = useState<{
+    taskId: string;
+    statusId: string;
+    height: number;
+    token: number;
+  } | null>(null);
+  const reduced = useReducedMotion();
+  const viewPill = useSlidingIndicator(viewMode);
+  const groupPill = useSlidingIndicator(listGrouping);
+  // Filter/sort dropdowns (web portals) drop out of their button on mount.
+  const dropIn = useCallback(
+    (el: HTMLElement | null) => {
+      if (!el || typeof el.animate !== "function") return;
+      el.animate(
+        [
+          { opacity: 0, transform: reduced ? "none" : "translateY(-6px) scale(0.97)" },
+          { opacity: 1, transform: "none" },
+        ],
+        { duration: reduced ? 140 : 200, easing: "cubic-bezier(0.2, 0.7, 0.2, 1)" },
+      );
+    },
+    [reduced],
+  );
   const [showCompleted, setShowCompleted] = useState(false);
   const [columnSorts, setColumnSorts] = useState<Record<string, ColumnSort>>(
     {},
@@ -734,23 +776,103 @@ export default function TasksScreen() {
   }, [refetch]);
 
   const handleDropTask = useCallback(
-    (taskId: string, newStatusId: string) => {
+    (taskId: string, newStatusId: string, x: number, y: number) => {
       const task = tasks?.find((t) => t.taskId === taskId);
       if (!task || task.statusId === newStatusId) return;
-      editTask.mutate({
-        taskId,
-        data: {
-          title: task.title,
-          description: task.description,
-          priority: task.priority,
+      const drag = activeDrag?.taskId === taskId ? activeDrag : null;
+      if (drag) {
+        markLanding(taskId, x - drag.dx, y - drag.dy);
+        setPendingDrop({
+          taskId,
           statusId: newStatusId,
-          categoryId: resolveTaskCategoryId(task.categoryId, categories),
-          estimatedDuration: task.estimatedDuration,
-          dueDateTime: resolveTaskDueDateTimeForSave(task, events),
+          height: drag.height,
+          token: Date.now(),
+        });
+      }
+      editTask.mutate(
+        {
+          taskId,
+          data: {
+            title: task.title,
+            description: task.description,
+            priority: task.priority,
+            statusId: newStatusId,
+            categoryId: resolveTaskCategoryId(task.categoryId, categories),
+            estimatedDuration: task.estimatedDuration,
+            dueDateTime: resolveTaskDueDateTimeForSave(task, events),
+          },
         },
-      });
+        { onError: () => setPendingDrop(null) },
+      );
     },
     [tasks, events, editTask, categories],
+  );
+
+  const slotMemory = useRef<Record<string, { index: number; height: number }>>(
+    {},
+  );
+
+  useEffect(() => {
+    if (!pendingDrop) return;
+    const task = tasks?.find((t) => t.taskId === pendingDrop.taskId);
+    if (!task || task.statusId === pendingDrop.statusId) setPendingDrop(null);
+  }, [tasks, pendingDrop]);
+
+  // A cancelled drag (Esc, drop outside) doesn't always fire dragleave.
+  useEffect(() => {
+    if (Platform.OS !== "web" || typeof window === "undefined") return;
+    const onEnd = () => {
+      activeDrag = null;
+      setDragOverId(null);
+    };
+    window.addEventListener("dragend", onEnd);
+    return () => window.removeEventListener("dragend", onEnd);
+  }, []);
+
+  // Gap in the column where the dragged card will land, placed where the
+  // column's sort will put it. Kept open after the drop until the card arrives.
+  const dropSlot = useMemo(() => {
+    const d =
+      dragOverId && activeDrag
+        ? {
+            taskId: activeDrag.taskId,
+            statusId: dragOverId,
+            height: activeDrag.height,
+          }
+        : pendingDrop;
+    if (!d) return null;
+    const task = tasks?.find((t) => t.taskId === d.taskId);
+    if (!task || task.statusId === d.statusId) return null;
+    const moved = {
+      ...task,
+      statusId: d.statusId,
+      updatedAt: new Date().toISOString(),
+    };
+    const column = filteredTasks
+      .map((t) => (t.taskId === task.taskId ? moved : t))
+      .filter((t) => t.statusId === d.statusId);
+    if (!column.some((t) => t.taskId === task.taskId)) column.push(moved);
+    const sorted = sortColumnTasks(column, columnSorts[d.statusId] ?? "default");
+    return {
+      statusId: d.statusId,
+      height: d.height,
+      index: sorted.findIndex((t) => t.taskId === task.taskId),
+    };
+  }, [dragOverId, pendingDrop, tasks, filteredTasks, sortColumnTasks, columnSorts]);
+
+  const flipKey = useMemo(
+    () =>
+      orderedStatuses
+        .map((s) => {
+          if (!showCompleted && isDoneStatus(s.statusId)) return "";
+          const col = sortColumnTasks(
+            groupedByStatus.get(s.statusId) ?? [],
+            columnSorts[s.statusId] ?? "default",
+          );
+          return s.statusId + ":" + col.map((t) => t.taskId).join(",");
+        })
+        .join("|"),
+    [orderedStatuses, showCompleted, isDoneStatus, groupedByStatus, sortColumnTasks, columnSorts],
   );
 
   const priorities = Object.values(TaskPriority);
@@ -784,9 +906,13 @@ export default function TasksScreen() {
         <View className="flex-row items-center justify-between flex-wrap gap-2">
           <View className="flex-row items-center gap-3">
             <View className="flex-row bg-surface-container-low rounded-full p-1">
+              <IndicatorShape indicator={viewPill}>
+                <View className="flex-1 rounded-full bg-primary" />
+              </IndicatorShape>
               <TouchableOpacity
+                onLayout={viewPill.itemLayout("list")}
                 onPress={() => setViewMode("list")}
-                className={`px-4 py-2 rounded-full ${viewMode === "list" ? "bg-primary" : ""}`}
+                className="px-4 py-2 rounded-full"
               >
                 <Text
                   className={`text-xs font-label ${viewMode === "list" ? "text-on-primary" : "text-on-surface-variant"}`}
@@ -795,8 +921,9 @@ export default function TasksScreen() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
+                onLayout={viewPill.itemLayout("kanban")}
                 onPress={() => setViewMode("kanban")}
-                className={`px-4 py-2 rounded-full ${viewMode === "kanban" ? "bg-primary" : ""}`}
+                className="px-4 py-2 rounded-full"
               >
                 <Text
                   className={`text-xs font-label ${viewMode === "kanban" ? "text-on-primary" : "text-on-surface-variant"}`}
@@ -808,9 +935,13 @@ export default function TasksScreen() {
 
             {viewMode === "list" && (
               <View className="flex-row bg-surface-container-low rounded-full p-1">
+                <IndicatorShape indicator={groupPill}>
+                  <View className="flex-1 rounded-full bg-secondary" />
+                </IndicatorShape>
                 <TouchableOpacity
+                  onLayout={groupPill.itemLayout("status")}
                   onPress={() => setListGrouping("status")}
-                  className={`px-3 py-1.5 rounded-full ${listGrouping === "status" ? "bg-secondary" : ""}`}
+                  className="px-3 py-1.5 rounded-full"
                 >
                   <Text
                     className={`text-[10px] font-label ${listGrouping === "status" ? "text-white" : "text-on-surface-variant"}`}
@@ -819,8 +950,9 @@ export default function TasksScreen() {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
+                  onLayout={groupPill.itemLayout("category-status")}
                   onPress={() => setListGrouping("category-status")}
-                  className={`px-3 py-1.5 rounded-full ${listGrouping === "category-status" ? "bg-secondary" : ""}`}
+                  className="px-3 py-1.5 rounded-full"
                 >
                   <Text
                     className={`text-[10px] font-label ${listGrouping === "category-status" ? "text-white" : "text-on-surface-variant"}`}
@@ -880,6 +1012,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
+              ref={dropIn as any}
               className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
@@ -961,6 +1094,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
+              ref={dropIn as any}
               className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
@@ -1054,6 +1188,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
+              ref={dropIn as any}
               className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
@@ -1138,6 +1273,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
+              ref={dropIn as any}
               className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
@@ -1228,6 +1364,7 @@ export default function TasksScreen() {
           Platform.OS === "web" &&
           createPortal(
             <View
+              ref={dropIn as any}
               className="bg-surface-container-lowest rounded-xl border border-outline-variant shadow-kanban-hover py-1"
               style={{
                 position: "fixed" as any,
@@ -1501,6 +1638,7 @@ export default function TasksScreen() {
             }}
           />
         ) : viewMode === "kanban" ? (
+          <BoardFlip flipKey={flipKey} hold={!!selectedTask} reduced={reduced}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -1616,14 +1754,32 @@ export default function TasksScreen() {
                     contentContainerStyle={{ gap: 8 }}
                     style={{ flex: 1 }}
                   >
-                    {statusTasks.length === 0 ? (
-                      <View className="items-center justify-center py-10 px-3">
-                        <Text className="text-text-tertiary font-body text-[11px] text-center leading-4">
-                          {t("tasks.dropHere")}
-                        </Text>
-                      </View>
-                    ) : (
-                      statusTasks.map((task) => (
+                    {(() => {
+                      const slot =
+                        dropSlot?.statusId === status.statusId ? dropSlot : null;
+                      if (slot) {
+                        slotMemory.current[status.statusId] = {
+                          index: slot.index,
+                          height: slot.height,
+                        };
+                      }
+                      const mem = slotMemory.current[status.statusId];
+                      const mine = pendingDrop?.statusId === status.statusId;
+                      // A new key unmounts the gap at once when the card lands in it.
+                      const slotEl = (
+                        <View
+                          key={mine ? `${pendingDrop!.token}${slot ? "" : "-in"}` : "slot"}
+                          style={{ marginTop: -8 }}
+                        >
+                          <Fold open={!!slot} gap={8} reduceMotion={reduced}>
+                            <View
+                              className="rounded-xl border border-dashed border-accent bg-accent/[0.06]"
+                              style={{ height: mem?.height ?? 0 }}
+                            />
+                          </Fold>
+                        </View>
+                      );
+                      const cards = statusTasks.map((task) => (
                         <KanbanTaskCard
                           key={task.taskId}
                           task={task}
@@ -1635,8 +1791,25 @@ export default function TasksScreen() {
                           onPress={() => setSelectedTask(task)}
                           isCompleted={isDoneStatus(task.statusId)}
                         />
-                      ))
-                    )}
+                      ));
+                      cards.splice(
+                        Math.min(mem?.index ?? cards.length, cards.length),
+                        0,
+                        slotEl,
+                      );
+                      return (
+                        <>
+                          {cards}
+                          {statusTasks.length === 0 && !slot ? (
+                            <View className="items-center justify-center py-10 px-3">
+                              <Text className="text-text-tertiary font-body text-[11px] text-center leading-4">
+                                {t("tasks.dropHere")}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </ScrollView>
 
                   <TouchableOpacity
@@ -1655,7 +1828,9 @@ export default function TasksScreen() {
               );
             })}
           </ScrollView>
+          </BoardFlip>
         ) : listGrouping === "status" ? (
+          <BoardFlip flipKey={flipKey} hold={!!selectedTask} reduced={reduced}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -1698,7 +1873,9 @@ export default function TasksScreen() {
               );
             })}
           </ScrollView>
+          </BoardFlip>
         ) : (
+          <BoardFlip flipKey={flipKey} hold={!!selectedTask} reduced={reduced}>
           <ScrollView
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -1751,6 +1928,7 @@ export default function TasksScreen() {
               </View>
             ))}
           </ScrollView>
+          </BoardFlip>
         )}
       </View>
 

@@ -1,9 +1,8 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useRef, useState, type ReactNode } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   ScrollView,
   TextInput,
   Platform,
@@ -14,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "./AppModal";
 
 const NO_OUTLINE: TextStyle | undefined =
   Platform.OS === "web"
@@ -64,6 +64,18 @@ export function MinimalSelectDropdown({
   const ui = getUiTokens(isDark);
   const inkColor = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<View>(null);
+  const [origin, setOrigin] = useState<{ x: number; y: number } | null>(null);
+
+  function openPanel() {
+    // The dialog grows out of the field that opened it.
+    const el = triggerRef.current;
+    if (!el) return setOpen(true);
+    el.measureInWindow((x, y, w, h) => {
+      setOrigin({ x: x + w / 2, y: y + h / 2 });
+      setOpen(true);
+    });
+  }
   const [query, setQuery] = useState("");
 
   const selected = options.find((o) => o.value === value);
@@ -94,9 +106,10 @@ export function MinimalSelectDropdown({
         {label}
       </Text>
 
+      <View ref={triggerRef} collapsable={false}>
       <TouchableOpacity
         disabled={disabled || options.length === 0}
-        onPress={() => setOpen(true)}
+        onPress={openPanel}
         className="flex-row items-center gap-3 px-4 rounded-xl bg-surface-container-lowest border border-outline-variant"
         style={{
           minHeight: 44,
@@ -118,11 +131,19 @@ export function MinimalSelectDropdown({
         </Text>
         <MaterialIcons name="expand-more" size={18} color={ui.textMuted} />
       </TouchableOpacity>
+      </View>
 
-      <Modal visible={open} transparent animationType="fade">
+      <AppModal
+        visible={open}
+        dim={0.2}
+        origin={origin}
+        onRequestClose={() => {
+          setOpen(false);
+          setQuery("");
+        }}
+      >
         <Pressable
           className="flex-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.2)" }}
           onPress={() => {
             setOpen(false);
             setQuery("");
@@ -256,7 +277,7 @@ export function MinimalSelectDropdown({
             </Pressable>
           </View>
         </Pressable>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

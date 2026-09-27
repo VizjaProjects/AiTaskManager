@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -42,6 +40,25 @@
   --color-text-tertiary: #9b9791;
   --color-text-muted: #b8b4af;
   --color-border-subtle: #eceae6;
+  /* Brand (landing + login): sage paper, graphite ink, bottle-green accent.
+     AI proposals use amber, same as PROPOSED events in the calendar. */
+  --color-brand-paper: #f3f5f2;
+  --color-brand-surface: #ffffff;
+  --color-brand-ink: #1c2321;
+  --color-brand-muted: #56605c;
+  --color-brand-line: #dde2de;
+  --color-brand-line-soft: #e8ece9;
+  --color-brand-field: #7f8a85;
+  --color-brand-accent: #006b58;
+  --color-brand-on-accent: #ffffff;
+  --color-brand-accent-text: #006b58;
+  --color-brand-accent-soft: #e2ede8;
+  --color-brand-proposal: #fbf1df;
+  --color-brand-proposal-edge: #b7770d;
+  --color-brand-proposal-text: #8a5a09;
+  --color-brand-now: #c0392b;
+  --color-brand-error: #b3261e;
+  --color-brand-error-soft: #fbeae8;
 }
 
 .dark {
@@ -78,6 +95,23 @@
   --color-text-tertiary: rgba(255, 255, 255, 0.28);
   --color-text-muted: rgba(255, 255, 255, 0.22);
   --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-brand-paper: #101513;
+  --color-brand-surface: #18201d;
+  --color-brand-ink: #e7ece9;
+  --color-brand-muted: #a3aeaa;
+  --color-brand-line: #29322e;
+  --color-brand-line-soft: #212926;
+  --color-brand-field: #6f7c77;
+  --color-brand-accent: #4cb99a;
+  --color-brand-on-accent: #0b1210;
+  --color-brand-accent-text: #5cc4a6;
+  --color-brand-accent-soft: #15251f;
+  --color-brand-proposal: #2a2216;
+  --color-brand-proposal-edge: #c98a22;
+  --color-brand-proposal-text: #e8b35f;
+  --color-brand-now: #e0604f;
+  --color-brand-error: #f2867a;
+  --color-brand-error-soft: #3a1f1c;
 }
 
 /* Remove browser default focus rings on web */
@@ -98,6 +132,13 @@ select:focus-visible {
   outline: none !important;
   box-shadow: none !important;
   border-color: inherit !important;
+}
+
+/* Keyboard focus on the landing page and login (roots carry nativeID="brand-root") */
+#brand-root [tabindex]:focus-visible,
+#brand-root a:focus-visible {
+  outline: 2px solid var(--color-brand-accent-text);
+  outline-offset: 2px;
 }
 
 /* Arena base typography — UI font is system/Inter, no heavy weights */

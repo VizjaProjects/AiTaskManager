@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   Pressable,
   ScrollView,
   useWindowDimensions,
@@ -14,6 +13,7 @@ import { ProviderBrandIcon } from "../atoms/ProviderBrandIcon";
 import { useLlmSettings } from "@/lib/hooks";
 import { useLlmSettingsSelectionStore } from "@/lib/stores";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "./AppModal";
 import {
   formatPickerLabel,
   isOrdovitaAiSelection,
@@ -295,12 +295,20 @@ export function AiChatConfigButton({
         </TouchableOpacity>
       </View>
 
-      <Modal visible={open} transparent animationType="fade">
-        <Pressable
-          className="flex-1"
-          style={{ backgroundColor: "rgba(0,0,0,0.12)" }}
-          onPress={() => setOpen(false)}
-        >
+      <AppModal
+        visible={open}
+        onRequestClose={() => setOpen(false)}
+        dim={0.12}
+        origin={
+          anchor
+            ? {
+                x: anchor.x + anchor.width / 2,
+                y: openBelow ? anchor.y + anchor.height : anchor.y,
+              }
+            : null
+        }
+      >
+        <Pressable className="flex-1" onPress={() => setOpen(false)}>
           {anchor ? (
             <View
               style={{
@@ -316,7 +324,7 @@ export function AiChatConfigButton({
             </View>
           ) : null}
         </Pressable>
-      </Modal>
+      </AppModal>
     </>
   );
 }

@@ -4,12 +4,12 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Modal,
   Pressable,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { SearchBar } from "./SearchBar";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 export type LinkCheckboxItem = {
   id: string;
@@ -80,14 +80,9 @@ export function LinkCheckboxModal({
   );
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <AppModal visible={visible} onRequestClose={onClose}>
       <Pressable
-        className="flex-1 bg-black/40 items-center justify-center px-6"
+        className="flex-1 items-center justify-center px-6"
         onPress={onClose}
       >
         <Pressable
@@ -189,6 +184,6 @@ export function LinkCheckboxModal({
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }

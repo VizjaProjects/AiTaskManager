@@ -3,7 +3,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Modal,
   Pressable,
   useWindowDimensions,
 } from "react-native";
@@ -25,6 +24,7 @@ import { useThemeStore } from "@/lib/stores";
 import { useEffect, useMemo, useState } from "react";
 import { Input, Button } from "../atoms";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 type DefinitionKind = "category" | "status";
 
@@ -68,9 +68,9 @@ function DefinitionFormModal({
       : t(isEdit ? "defs.editStatus" : "defs.newStatus");
 
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+    <AppModal visible={true} onRequestClose={onClose} dim={0.5}>
       <Pressable
-        className="flex-1 bg-black/50 items-center justify-center p-6"
+        className="flex-1 items-center justify-center p-6"
         onPress={onClose}
       >
         <Pressable
@@ -138,7 +138,7 @@ function DefinitionFormModal({
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }
 

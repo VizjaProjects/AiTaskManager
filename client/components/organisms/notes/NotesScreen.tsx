@@ -9,7 +9,6 @@ import {
   Platform,
   useWindowDimensions,
   Alert,
-  Modal,
   Pressable,
   ActivityIndicator,
 } from "react-native";
@@ -61,6 +60,11 @@ import {
   defaultInkWidthForTool,
 } from "@/lib/utils/inkColors";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { BoardFlip } from "@/components/molecules/BoardFlip";
+import { Reveal } from "@/components/molecules/Reveal";
+import { usePresenceList } from "@/lib/utils/usePresenceList";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineStyle: "none" } as any) : undefined;
@@ -306,6 +310,18 @@ export function NotesScreen() {
         new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
     );
   }, [notes, currentFolderId]);
+
+  // Deleted tiles fade out, then the rest glide into the gap (BoardFlip).
+  const reducedMotion = useReducedMotion();
+  const foldersInView = useMemo(
+    () => (currentFolderId ? [] : folders),
+    [currentFolderId, folders],
+  );
+  const view = currentFolderId ?? "root";
+  const shownFolders = usePresenceList(foldersInView, (f) => f.id, 220, view);
+  const shownNotes = usePresenceList(notesInView, (n) => n.id, 220, view);
+  const tilesFlipKey =
+    view + ":" + [...shownFolders, ...shownNotes].map((s) => s.key).join(",");
 
   const linkSections = useMemo(() => {
     if (!linkNote) return [];
@@ -960,13 +976,8 @@ export function NotesScreen() {
   ) : null;
 
   const editorModal = (
-    <Modal
-      visible={editorOpen && !!selectedNote}
-      transparent
-      animationType="fade"
-      onRequestClose={closeEditor}
-    >
-      <View className="flex-1 bg-black/50 items-center justify-center">
+    <AppModal visible={editorOpen && !!selectedNote} onRequestClose={closeEditor} dim={0.5}>
+      <View className="flex-1 items-center justify-center">
         {/* Handwritten notes fill the screen and cannot be dismissed by
             tapping outside: the palm of the writing hand lands there, and a
             stray touch used to throw away the page being written on. */}
@@ -991,20 +1002,15 @@ export function NotesScreen() {
           {editorBody}
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 
   /* ---------- folder edit modal ---------- */
 
   const folderEditModal = (
-    <Modal
-      visible={!!menuFolder}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setMenuFolder(null)}
-    >
+    <AppModal visible={!!menuFolder} onRequestClose={() => setMenuFolder(null)}>
       <Pressable
-        className="flex-1 bg-black/40 items-center justify-center px-6"
+        className="flex-1 items-center justify-center px-6"
         onPress={() => setMenuFolder(null)}
       >
         <Pressable
@@ -1062,20 +1068,15 @@ export function NotesScreen() {
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 
   /* ---------- move-to-folder sheet (native fallback) ---------- */
 
   const moveSheet = (
-    <Modal
-      visible={!!moveNoteId}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setMoveNoteId(null)}
-    >
+    <AppModal visible={!!moveNoteId} onRequestClose={() => setMoveNoteId(null)}>
       <Pressable
-        className="flex-1 bg-black/40 justify-end"
+        className="flex-1 justify-end"
         onPress={() => setMoveNoteId(null)}
       >
         <Pressable
@@ -1114,7 +1115,7 @@ export function NotesScreen() {
           ))}
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 
   /* ---------- finder context menu (web / desktop) ---------- */
@@ -1141,10 +1142,10 @@ export function NotesScreen() {
     : 8;
 
   const finderContextMenu = (
-    <Modal
+    <AppModal
       visible={Platform.OS === "web" && !!contextMenu}
-      transparent
-      animationType="none"
+      dim={0}
+      origin={contextMenu ? { x: contextMenu.x, y: contextMenu.y } : null}
       onRequestClose={() => setContextMenu(null)}
     >
       <Pressable
@@ -1210,7 +1211,7 @@ export function NotesScreen() {
           />
         </View>
       ) : null}
-    </Modal>
+    </AppModal>
   );
 
   /* ---------- finder ---------- */
@@ -1316,12 +1317,13 @@ export function NotesScreen() {
             Ładowanie…
           </Text>
         ) : (
+          <BoardFlip flipKey={tilesFlipKey} reduced={reducedMotion} clipped={false}>
           <View className="flex-row flex-wrap gap-3 items-start">
             {/* folders (only in root) live beside the notes */}
-            {!currentFolderId &&
-              folders.map((f) => (
+            {shownFolders.map(({ key, item: f, exiting }) => (
+              <View key={key} {...({ dataSet: { flipId: key } } as object)}>
+              <Reveal animate={false} leaving={exiting} rise={0} scale={0.9}>
                 <FolderTile
-                  key={f.id}
                   folder={f}
                   count={notes.filter((n) => n.noteFolderId === f.id).length}
                   isDark={isDark}
@@ -1336,11 +1338,14 @@ export function NotesScreen() {
                   onRename={commitRename}
                   onCancelRename={() => setRenameTarget(null)}
                 />
+              </Reveal>
+              </View>
               ))}
 
-            {notesInView.map((n) => (
+            {shownNotes.map(({ key, item: n, exiting }) => (
+              <View key={key} {...({ dataSet: { flipId: key } } as object)}>
+              <Reveal animate={false} leaving={exiting} rise={0} scale={0.9}>
               <NoteFileTile
-                key={n.id}
                 note={n}
                 isDark={isDark}
                 onOpen={() => openNote(n.id)}
@@ -1352,6 +1357,8 @@ export function NotesScreen() {
                 onRename={commitRename}
                 onCancelRename={() => setRenameTarget(null)}
               />
+              </Reveal>
+              </View>
             ))}
 
             {notesInView.length === 0 && (
@@ -1369,20 +1376,16 @@ export function NotesScreen() {
                 </View>
               )}
           </View>
+          </BoardFlip>
         )}
       </ScrollView>
     </View>
   );
 
   const confirmModal = (
-    <Modal
-      visible={!!confirmState}
-      transparent
-      animationType="fade"
-      onRequestClose={() => setConfirmState(null)}
-    >
+    <AppModal visible={!!confirmState} onRequestClose={() => setConfirmState(null)}>
       <Pressable
-        className="flex-1 bg-black/40 items-center justify-center px-6"
+        className="flex-1 items-center justify-center px-6"
         onPress={() => setConfirmState(null)}
       >
         <Pressable
@@ -1431,7 +1434,7 @@ export function NotesScreen() {
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 
   const linkModal = (

@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  Modal,
   TouchableOpacity,
   ScrollView,
   Pressable,
@@ -21,6 +20,7 @@ import {
 import { useWorkspaceStore, useThemeStore } from "@/lib/stores";
 import type { Workspace, WorkspaceVisibility } from "@/lib/types";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 type CreateForm = { workspaceName: string };
 
@@ -208,14 +208,9 @@ export function WorkspaceModal({
   }
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
-    >
+    <AppModal visible={visible} onRequestClose={handleClose}>
       <Pressable
-        className="flex-1 bg-black/40 items-center justify-center p-6"
+        className="flex-1 items-center justify-center p-6"
         onPress={handleClose}
       >
         <Pressable
@@ -432,6 +427,6 @@ export function WorkspaceModal({
           )}
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }

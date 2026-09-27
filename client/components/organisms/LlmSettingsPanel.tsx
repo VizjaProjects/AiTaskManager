@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   ScrollView,
   Platform,
   Alert,
@@ -37,6 +36,7 @@ import {
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
 import { useT, tr } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -246,11 +246,8 @@ function ConfigFormModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View
-        className="flex-1 items-center justify-center p-4"
-        style={{ backgroundColor: "rgba(0,0,0,0.25)" }}
-      >
+    <AppModal visible={visible} dim={0.25}>
+      <View className="flex-1 items-center justify-center p-4">
         <View
           className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[88%] overflow-hidden"
           style={{ borderWidth: 1, borderColor: ui.border, ...ui.shadow }}
@@ -343,7 +340,7 @@ function ConfigFormModal({
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

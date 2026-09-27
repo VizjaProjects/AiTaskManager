@@ -4,13 +4,12 @@ import {
   TextInput,
   ScrollView,
   TouchableOpacity,
-  Modal,
   Pressable,
   Platform,
   Alert,
   useWindowDimensions,
 } from "react-native";
-import { useState, useMemo, useEffect, type ReactNode } from "react";
+import { useState, useMemo, useEffect, useRef, type ReactNode } from "react";
 import { useRouter } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Button, Input } from "../atoms";
@@ -72,6 +71,17 @@ import { useWorkspaceStore } from "@/lib/stores/workspace";
 
 import { useAuthStore } from "@/lib/stores/auth";
 import { useT, useLocale } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { PopCheck } from "@/components/atoms/PopCheck";
+import { Fold } from "@/components/molecules/Fold";
+import { ExpandingText } from "@/components/molecules/ExpandingText";
+import { Reveal } from "@/components/molecules/Reveal";
+import { usePresenceList } from "@/lib/utils/usePresenceList";
+import {
+  IndicatorShape,
+  useSlidingIndicator,
+} from "@/components/molecules/SlidingIndicator";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 type TaskSaveData = {
   title: string;
@@ -284,6 +294,14 @@ export function TaskDetailModal({
   const [railPicker, setRailPicker] = useState<
     "status" | "priority" | "assignees" | null
   >(null);
+  const [justCompleted, setJustCompleted] = useState(false);
+  const [completeWidth, setCompleteWidth] = useState<number>();
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reduced = useReducedMotion();
+  const tabIndicator = useSlidingIndicator(activeTab);
+  useEffect(() => () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  }, []);
   const syncEntityNoteLinks = useSyncEntityNoteLinks();
   const ui = getUiTokens(isDark);
   const accent = isDark ? "#9b8cff" : "#5b4ee0";
@@ -321,6 +339,7 @@ export function TaskDetailModal({
     setShowDuePicker(false);
     setDescExpanded(false);
     setRailPicker(null);
+    setJustCompleted(false);
     // `forceEdit`/`onSaveCustom` are intentionally excluded: they are stable in
     // behaviour per modal instance but `onSaveCustom` is often an inline
     // function (new identity each render). Including it would re-run startEdit()
@@ -377,6 +396,13 @@ export function TaskDetailModal({
     const ids = task?.assignedUserIds ?? [];
     return workspaceMembers.filter((m) => ids.includes(m.userId));
   }, [task?.assignedUserIds, workspaceMembers]);
+  // Someone assigned while the modal is open (rail picker, an @mention) pops in.
+  const railAvatars = usePresenceList(
+    assignedMembers,
+    (m) => m.userId,
+    260,
+    task?.taskId,
+  );
 
   const linkedNotes = useMemo(() => {
     if (!task || !allNotes) return [];
@@ -601,10 +627,21 @@ export function TaskDetailModal({
         s.name.toLowerCase() === "ukończone",
     );
     if (!doneStatus) return;
-    applyTaskPatch({ statusId: doneStatus.statusId }, onClose);
+    applyTaskPatch({ statusId: doneStatus.statusId }, () => {
+      // The check pops in first, so the modal leaves only once "done" has registered.
+      setJustCompleted(true);
+      closeTimer.current = setTimeout(onClose, reduced ? 450 : 700);
+    });
   }
 
-  if (!task) return null;
+  // Same tree shape as the open modal, so AppModal keeps its last content for the exit.
+  if (!task) {
+    return (
+      <>
+        <AppModal visible={false}>{null}</AppModal>
+      </>
+    );
+  }
 
   // Terminem rządzi powiązane wydarzenie, jeśli istnieje (pułapka 10).
   const effectiveDue = getEffectiveTaskDueDateTime(task, relatedEvents);
@@ -644,7 +681,7 @@ export function TaskDetailModal({
           color={ui.textMuted}
         />
       </RailRow>
-      {railPicker === "status" && (
+      <Fold open={railPicker === "status"} reduceMotion={reduced}>
         <RailPicker>
           {statuses.map((s) => (
             <RailOption
@@ -676,7 +713,7 @@ export function TaskDetailModal({
             </RailOption>
           ))}
         </RailPicker>
-      )}
+      </Fold>
 
       <RailRow
         label={t("taskModal.priority")}
@@ -698,7 +735,7 @@ export function TaskDetailModal({
           color={ui.textMuted}
         />
       </RailRow>
-      {railPicker === "priority" && (
+      <Fold open={railPicker === "priority"} reduceMotion={reduced}>
         <RailPicker>
           {Object.values(TaskPriority).map((p) => (
             <RailOption
@@ -727,7 +764,7 @@ export function TaskDetailModal({
             </RailOption>
           ))}
         </RailPicker>
-      )}
+      </Fold>
 
       <RailRow label={t("taskModal.category")}>
         {cat ? (
@@ -787,13 +824,20 @@ export function TaskDetailModal({
           </Text>
         ) : (
           <View className="flex-row items-center">
-            {assignedMembers.map((m, i) => (
-              <RailAvatar
-                key={m.userId}
-                name={m.fullName ?? m.email ?? "?"}
-                overlap={i > 0}
-                isDark={isDark}
-              />
+            {railAvatars.map(({ key, item: m, entering, exiting }, i) => (
+              <Reveal
+                key={key}
+                animate={entering}
+                leaving={exiting}
+                rise={0}
+                scale={0.5}
+              >
+                <RailAvatar
+                  name={m.fullName ?? m.email ?? "?"}
+                  overlap={i > 0}
+                  isDark={isDark}
+                />
+              </Reveal>
             ))}
             {workspaceMembers.length > 0 && (
               <TouchableOpacity
@@ -821,7 +865,7 @@ export function TaskDetailModal({
           </View>
         )}
       </RailRow>
-      {railPicker === "assignees" && (
+      <Fold open={railPicker === "assignees"} reduceMotion={reduced}>
         <RailPicker>
           {workspaceMembers.map((m) => {
             const selected = assignedIds.includes(m.userId);
@@ -853,7 +897,7 @@ export function TaskDetailModal({
             );
           })}
         </RailPicker>
-      )}
+      </Fold>
     </View>
   );
 
@@ -878,14 +922,14 @@ export function TaskDetailModal({
             <SectionLabel>{t("taskModal.description")}</SectionLabel>
             {task.description ? (
               <>
-                <Text
+                <ExpandingText
+                  expanded={!descriptionIsLong || descExpanded}
+                  lines={3}
+                  lineHeight={24}
                   className="text-on-surface font-body text-sm leading-6"
-                  numberOfLines={
-                    descriptionIsLong && !descExpanded ? 3 : undefined
-                  }
                 >
                   {task.description}
-                </Text>
+                </ExpandingText>
                 {descriptionIsLong && (
                   <TouchableOpacity
                     onPress={() => setDescExpanded((v) => !v)}
@@ -966,14 +1010,9 @@ export function TaskDetailModal({
 
   return (
     <>
-      <Modal
-        visible={visible}
-        transparent
-        animationType="fade"
-        onRequestClose={onClose}
-      >
+      <AppModal visible={visible} onRequestClose={onClose}>
         <Pressable
-          className="flex-1 bg-black/40 items-center justify-center p-4"
+          className="flex-1 items-center justify-center p-4"
           onPress={onClose}
         >
           <Pressable
@@ -1067,15 +1106,17 @@ export function TaskDetailModal({
               </View>
 
               <View className="px-6 pt-3 border-b border-outline-variant flex-row gap-0.5">
+                <IndicatorShape indicator={tabIndicator} edge="bottom">
+                  <View className="flex-1 bg-primary" />
+                </IndicatorShape>
                 {detailTabs.map(([tabId, icon, label, count]) => {
                   const selected = activeTab === tabId;
                   return (
                     <TouchableOpacity
                       key={tabId}
                       accessibilityState={{ selected }}
-                      className={`min-h-10 flex-row items-center justify-center gap-1.5 px-2.5 border-b-2 ${
-                        selected ? "border-primary" : "border-transparent"
-                      }`}
+                      onLayout={tabIndicator.itemLayout(tabId)}
+                      className="min-h-10 flex-row items-center justify-center gap-1.5 px-2.5 border-b-2 border-transparent"
                       onPress={() => setActiveTab(tabId)}
                     >
                       <MaterialIcons
@@ -1612,13 +1653,29 @@ export function TaskDetailModal({
                   </>
                 ) : (
                   <>
-                    <Button
-                      label={t("taskModal.markComplete")}
-                      icon="check"
-                      fullWidth={isNarrow}
-                      loading={editTask.isPending}
-                      onPress={handleMarkComplete}
-                    />
+                    {justCompleted ? (
+                      <View
+                        accessibilityLiveRegion="polite"
+                        className={`flex-row items-center justify-center gap-2 bg-success rounded-md px-5 py-3 border border-success ${
+                          isNarrow ? "w-full" : ""
+                        }`}
+                        style={isNarrow ? undefined : { width: completeWidth }}
+                      >
+                        <PopCheck size={18} className="" />
+                        <Text className="text-white font-headline text-sm">
+                          {t("taskModal.completedDone")}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Button
+                        label={t("taskModal.markComplete")}
+                        icon="check"
+                        fullWidth={isNarrow}
+                        loading={editTask.isPending}
+                        onPress={handleMarkComplete}
+                        onLayout={(e) => setCompleteWidth(e.nativeEvent.layout.width)}
+                      />
+                    )}
                     <Button
                       variant="outline"
                       label={t("taskModal.edit")}
@@ -1645,7 +1702,7 @@ export function TaskDetailModal({
               </View>
           </Pressable>
         </Pressable>
-      </Modal>
+      </AppModal>
       <LinkCheckboxModal
         visible={noteLinkOpen}
         title={t("taskModal.linkNotesTitle")}
@@ -1766,14 +1823,9 @@ export function CreateTaskModal({
   const selectedStatus = statuses.find((s) => s.statusId === statusId);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <AppModal visible={visible} onRequestClose={onClose} dim={0.5}>
       <Pressable
-        className="flex-1 bg-black/50 items-center justify-center p-4"
+        className="flex-1 items-center justify-center p-4"
         onPress={onClose}
       >
         <Pressable
@@ -2019,7 +2071,7 @@ export function CreateTaskModal({
           </View>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -2166,6 +2218,9 @@ function TaskCommentsThread({
     [comments],
   );
 
+  const reduced = useReducedMotion();
+  const shown = usePresenceList(list, (c) => c.commentId);
+
   function saveEdit(commentId: string) {
     const content = editDraft.trim();
     if (!content) return;
@@ -2192,7 +2247,7 @@ function TaskCommentsThread({
     <View>
       {isLoading ? (
         <Text className="text-on-surface-variant font-body text-sm">…</Text>
-      ) : list.length === 0 ? (
+      ) : shown.length === 0 ? (
         <View className="items-center py-6 gap-2">
           <MaterialIcons
             name="chat-bubble-outline"
@@ -2204,13 +2259,21 @@ function TaskCommentsThread({
           </Text>
         </View>
       ) : (
-        <View className="gap-3">
-          {list.map((c) => {
+        // New comments unfold at the top, deleted ones fold away; the gap folds with them.
+        <View style={{ marginTop: -12 }}>
+          {shown.map(({ key, item: c, entering, exiting }) => {
             const mine = c.authorId === currentUser?.userId;
             const isEditing = editingId === c.commentId;
             const edited = c.updatedAt !== c.createdAt;
             return (
-              <View key={c.commentId} className="flex-row items-start gap-3">
+              <Fold
+                key={key}
+                open={!exiting}
+                appear={entering}
+                gap={12}
+                reduceMotion={reduced}
+              >
+              <View className="flex-row items-start gap-3">
                 <Avatar fullName={c.authorName || "?"} size="sm" />
                 <View className="flex-1 bg-surface-container-low rounded-xl px-4 py-3 border border-outline-variant">
                   <View className="flex-row items-center gap-2 mb-1">
@@ -2298,6 +2361,7 @@ function TaskCommentsThread({
                   )}
                 </View>
               </View>
+              </Fold>
             );
           })}
         </View>

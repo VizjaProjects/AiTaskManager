@@ -1,6 +1,5 @@
 import { useRef, useState } from "react";
 import {
-  Modal,
   Platform,
   Pressable,
   Text,
@@ -13,6 +12,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { Avatar } from "../atoms/Avatar";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
 import { useT, useLanguageStore, LANGUAGES } from "@/lib/i18n";
+import { AppModal } from "./AppModal";
 
 type AnchorRect = {
   x: number;
@@ -120,22 +120,20 @@ export function UserMenu() {
         </TouchableOpacity>
       </View>
 
-      <Modal
+      <AppModal
         visible={open}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
         onRequestClose={() => setOpen(false)}
+        dim={isDesktop ? 0.04 : 0.16}
+        origin={
+          anchor
+            ? { x: anchor.x + anchor.width / 2, y: anchor.y + anchor.height }
+            : null
+        }
       >
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={t("menu.closeUserMenu")}
           className="flex-1"
-          style={{
-            backgroundColor: isDesktop
-              ? "rgba(0,0,0,0.04)"
-              : "rgba(0,0,0,0.16)",
-          }}
           onPress={() => setOpen(false)}
         >
           <View
@@ -245,7 +243,7 @@ export function UserMenu() {
             </Pressable>
           </View>
         </Pressable>
-      </Modal>
+      </AppModal>
     </>
   );
 }

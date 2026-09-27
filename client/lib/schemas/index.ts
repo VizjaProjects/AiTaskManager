@@ -10,13 +10,35 @@ function m(key: string) {
   return { error: () => tr(key) };
 }
 
+/** Password rules shared by the zod schema and the live checklist in PasswordRules. */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_PATTERNS = {
+  lower: /[a-z]/,
+  upper: /[A-Z]/,
+  digit: /[0-9]/,
+  special: /[^A-Za-z0-9]/,
+};
+
+export function passwordChecks(password: string) {
+  return {
+    length: password.length >= PASSWORD_MIN_LENGTH,
+    case: PASSWORD_PATTERNS.lower.test(password) && PASSWORD_PATTERNS.upper.test(password),
+    digit: PASSWORD_PATTERNS.digit.test(password),
+    special: PASSWORD_PATTERNS.special.test(password),
+  };
+}
+
+export function isPasswordValid(password: string) {
+  return Object.values(passwordChecks(password)).every(Boolean);
+}
+
 const passwordSchema = z
   .string()
-  .min(8, m("valid.passwordMin"))
-  .regex(/[a-z]/, m("valid.passwordLower"))
-  .regex(/[A-Z]/, m("valid.passwordUpper"))
-  .regex(/[0-9]/, m("valid.passwordDigit"))
-  .regex(/[^A-Za-z0-9]/, m("valid.passwordSpecial"));
+  .min(PASSWORD_MIN_LENGTH, m("valid.passwordMin"))
+  .regex(PASSWORD_PATTERNS.lower, m("valid.passwordLower"))
+  .regex(PASSWORD_PATTERNS.upper, m("valid.passwordUpper"))
+  .regex(PASSWORD_PATTERNS.digit, m("valid.passwordDigit"))
+  .regex(PASSWORD_PATTERNS.special, m("valid.passwordSpecial"));
 
 export const loginSchema = z.object({
   email: z.string().email(m("valid.emailInvalid")),

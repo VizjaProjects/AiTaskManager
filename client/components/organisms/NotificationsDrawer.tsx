@@ -3,7 +3,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Modal,
   Pressable,
   useWindowDimensions,
 } from "react-native";
@@ -13,6 +12,7 @@ import { Card, EmptyState } from "../atoms";
 import { useTasks, useEvents, useAiProposals } from "@/lib/hooks";
 import { isOverdue, isDueToday, formatDateTime } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 interface Notification {
   id: string;
@@ -112,15 +112,10 @@ export function NotificationsDrawer({
   const notifications = useNotificationItems();
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
+    <AppModal visible={visible} onRequestClose={onClose} from="right">
       <View className="flex-1 flex-row">
-        {/* Backdrop */}
-        <Pressable className="flex-1 bg-black/40" onPress={onClose} />
+        {/* Backdrop (the dim comes from AppModal) */}
+        <Pressable className="flex-1" onPress={onClose} />
 
         {/* Drawer panel — right side */}
         <View
@@ -180,6 +175,6 @@ export function NotificationsDrawer({
           )}
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

@@ -6,9 +6,11 @@ import {
   Platform,
   Linking,
 } from "react-native";
+import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { NavItem } from "../molecules/NavItem";
+import { IndicatorShape, useSlidingIndicator } from "../molecules/SlidingIndicator";
 import { WorkspaceSwitcher } from "../molecules/WorkspaceSwitcher";
 import { OrdovitaLogo } from "../atoms/OrdovitaLogo";
 import { useAuthStore, useThemeStore } from "@/lib/stores";
@@ -32,6 +34,9 @@ function openHangfireDashboard() {
   }
   Linking.openURL(url);
 }
+
+// Highlighted item of the last sidebar shown (shared across screens).
+let lastNavKey: string | null = null;
 
 const NAV_ITEMS: Array<{
   icon: keyof typeof MaterialIcons.glyphMap;
@@ -106,6 +111,84 @@ export function SideNavBar() {
     return matches.some((m) => pathname.startsWith(m) || pathname.includes(m));
   }
 
+  const isUser = user?.role === Role.USER;
+  const navEntries: Array<{
+    key: string;
+    icon: keyof typeof MaterialIcons.glyphMap;
+    label: string;
+    badge?: string;
+    active: boolean;
+    onPress: () => void;
+  }> = [
+    ...mainNavItems.map((item) => ({
+      key: item.path,
+      icon: item.icon,
+      label: t(item.label),
+      badge: item.badge ? t(item.badge) : undefined,
+      active: isActive(item.match ?? [item.path.replace("/(app)", "")]),
+      onPress: () => router.push(item.path as never),
+    })),
+    ...(isAdmin
+      ? [
+          {
+            key: "admin-surveys",
+            icon: "poll" as const,
+            label: t("nav.surveysAdmin"),
+            active: pathname.includes("admin-survey"),
+            onPress: () => router.push("/(app)/admin-surveys" as never),
+          },
+          {
+            key: "admin-plans",
+            icon: "workspaces" as const,
+            label: t("nav.plansAdmin"),
+            active: pathname.includes("admin-plans"),
+            onPress: () => router.push("/(app)/admin-plans" as never),
+          },
+          {
+            key: "admin-users",
+            icon: "group" as const,
+            label: t("nav.usersAdmin"),
+            active: pathname.includes("admin-users"),
+            onPress: () => router.push("/(app)/admin-users" as never),
+          },
+          {
+            key: "hangfire",
+            icon: "schedule" as const,
+            label: t("nav.backgroundJobs"),
+            active: false,
+            onPress: openHangfireDashboard,
+          },
+        ]
+      : []),
+    ...(isUser
+      ? [
+          {
+            key: "surveys",
+            icon: "assignment" as const,
+            label: t("nav.surveys"),
+            active:
+              pathname.includes("/surveys") ||
+              pathname.includes("/survey-onboarding") ||
+              pathname.includes("/my-responses"),
+            onPress: () => router.push("/(app)/surveys" as never),
+          },
+        ]
+      : []),
+  ];
+  const activeNavKey = navEntries.find((e) => e.active)?.key ?? null;
+
+  // Every screen has its own sidebar, so a freshly mounted one starts where the
+  // previous screen's highlight was and slides to its own item.
+  const [navShown, setNavShown] = useState(() => lastNavKey ?? activeNavKey);
+  useEffect(() => {
+    const id = setTimeout(() => {
+      setNavShown(activeNavKey);
+      lastNavKey = activeNavKey;
+    }, 60);
+    return () => clearTimeout(id);
+  }, [activeNavKey]);
+  const navIndicator = useSlidingIndicator(navShown);
+
   async function handleLogout() {
     await logout();
     router.replace("/(auth)/login");
@@ -129,62 +212,21 @@ export function SideNavBar() {
 
         <ScrollView showsVerticalScrollIndicator={false} className="flex-1">
           <View className="gap-px px-1">
-            {mainNavItems.map((item) => (
+            <IndicatorShape indicator={navIndicator}>
+              <View className="flex-1 rounded-md bg-active" />
+            </IndicatorShape>
+            {navEntries.map((e) => (
               <NavItem
-                key={item.path}
-                icon={item.icon}
-                label={t(item.label)}
-                badge={item.badge ? t(item.badge) : undefined}
-                active={isActive(
-                  item.match ?? [item.path.replace("/(app)", "")],
-                )}
-                onPress={() => router.push(item.path as never)}
+                key={e.key}
+                icon={e.icon}
+                label={e.label}
+                badge={e.badge}
+                active={e.active}
+                sharedHighlight
+                onLayout={navIndicator.itemLayout(e.key)}
+                onPress={e.onPress}
               />
             ))}
-            {user?.role === Role.ADMIN && (
-              <NavItem
-                icon="poll"
-                label={t("nav.surveysAdmin")}
-                active={pathname.includes("admin-survey")}
-                onPress={() => router.push("/(app)/admin-surveys" as never)}
-              />
-            )}
-            {user?.role === Role.ADMIN && (
-              <NavItem
-                icon="workspaces"
-                label={t("nav.plansAdmin")}
-                active={pathname.includes("admin-plans")}
-                onPress={() => router.push("/(app)/admin-plans" as never)}
-              />
-            )}
-            {user?.role === Role.ADMIN && (
-              <NavItem
-                icon="group"
-                label={t("nav.usersAdmin")}
-                active={pathname.includes("admin-users")}
-                onPress={() => router.push("/(app)/admin-users" as never)}
-              />
-            )}
-            {user?.role === Role.ADMIN && (
-              <NavItem
-                icon="schedule"
-                label={t("nav.backgroundJobs")}
-                active={false}
-                onPress={openHangfireDashboard}
-              />
-            )}
-            {user?.role === Role.USER && (
-              <NavItem
-                icon="assignment"
-                label={t("nav.surveys")}
-                active={
-                  pathname.includes("/surveys") ||
-                  pathname.includes("/survey-onboarding") ||
-                  pathname.includes("/my-responses")
-                }
-                onPress={() => router.push("/(app)/surveys" as never)}
-              />
-            )}
           </View>
         </ScrollView>
       </View>

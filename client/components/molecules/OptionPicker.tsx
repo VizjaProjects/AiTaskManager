@@ -3,13 +3,13 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Modal,
   ScrollView,
   TextInput,
   Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -74,8 +74,8 @@ export function OptionPicker({
         <Text className="text-error font-body text-xs mt-1">{error}</Text>
       ) : null}
 
-      <Modal visible={open} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 items-center justify-center p-4">
+      <AppModal visible={open} dim={0.5}>
+        <View className="flex-1 items-center justify-center p-4">
           <View className="bg-surface-container-lowest rounded-2xl w-full max-w-md max-h-[80%] overflow-hidden border border-outline-variant">
             <View className="flex-row items-center justify-between px-5 py-4 border-b border-outline-variant">
               <Text className="text-on-surface font-headline text-title-lg">
@@ -141,7 +141,7 @@ export function OptionPicker({
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </View>
   );
 }

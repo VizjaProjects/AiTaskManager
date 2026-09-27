@@ -4,7 +4,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Modal,
   Platform,
   useWindowDimensions,
 } from "react-native";
@@ -47,6 +46,14 @@ import {
 } from "@/lib/utils/calendarPrint";
 import { useQueryClient } from "@tanstack/react-query";
 import { useT, useLocale } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { LandPulse } from "@/components/molecules/LandPulse";
+import { SceneShift, type SceneFrom } from "@/components/molecules/SceneShift";
+import {
+  IndicatorShape,
+  useSlidingIndicator,
+} from "@/components/molecules/SlidingIndicator";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 const WEEK_DAY_KEYS = [
   "cal.wdMon",
@@ -254,8 +261,8 @@ function CreateEventModal({
   }
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
+    <AppModal visible={visible} dim={0.5}>
+      <View className="flex-1 items-center justify-center p-6">
         <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
           <View className="flex-row items-center justify-between">
             <Text className="font-headline text-on-surface text-lg">
@@ -369,7 +376,7 @@ function CreateEventModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -508,8 +515,8 @@ function EditCalendarEventModal({
 
   return (
     <>
-      <Modal visible={visible} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 items-center justify-center p-6">
+      <AppModal visible={visible} dim={0.5}>
+        <View className="flex-1 items-center justify-center p-6">
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4 max-h-[90%]">
             <View className="flex-row items-center justify-between">
               <Text className="font-headline text-on-surface text-lg">
@@ -687,7 +694,7 @@ function EditCalendarEventModal({
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
       <LinkCheckboxModal
         visible={noteLinkOpen}
         title={t("cal.linkNotesTitle")}
@@ -751,6 +758,51 @@ export default function CalendarScreen() {
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const isMobile = width < 768;
   const [selectedDate, setSelectedDate] = useState(new Date());
+  // `?date=YYYY-MM-DD`: e.g. the receipt of an accepted AI proposal opens its week.
+  useEffect(() => {
+    const m = typeof params.date === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(params.date) : null;
+    if (m) setSelectedDate(new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  }, [params.date]);
+
+  // A pulse around events that just landed: created, moved/resized, or opened
+  // from an AI receipt (`?highlight=` event id or the id of its task).
+  const reducedMotion = useReducedMotion();
+  const [pulses, setPulses] = useState<Record<string, { key: number; delay: number }>>({});
+  const seenEvents = useRef<Map<string, string> | null>(null);
+  const pulseIds = useCallback((ids: string[], delay = 0) => {
+    const key = Date.now();
+    setPulses((p) => ({ ...p, ...Object.fromEntries(ids.map((id) => [id, { key, delay }])) }));
+    // Cleared so the pulse doesn't replay when the event remounts (another week and back).
+    setTimeout(() => {
+      setPulses((p) => {
+        const next = { ...p };
+        for (const id of ids) if (next[id]?.key === key) delete next[id];
+        return next;
+      });
+    }, 1600 + delay);
+  }, []);
+  useEffect(() => {
+    if (!events) return;
+    const next = new Map(events.map((e) => [e.eventId, `${e.startDateTime}|${e.endDateTime}`]));
+    const prev = seenEvents.current;
+    seenEvents.current = next;
+    if (!prev) return;
+    const changed = events
+      .filter((e) => prev.get(e.eventId) !== next.get(e.eventId))
+      .map((e) => e.eventId);
+    // Many at once means a workspace switch or first load, not something the user placed.
+    if (changed.length && changed.length <= 3) pulseIds(changed);
+  }, [events, pulseIds]);
+  const highlightDone = useRef<string | null>(null);
+  useEffect(() => {
+    const id = typeof params.highlight === "string" ? params.highlight : null;
+    if (!id || !events || highlightDone.current === id) return;
+    const evt = events.find((e) => e.eventId === id || e.taskId === id);
+    if (!evt) return;
+    highlightDone.current = id;
+    // After the grid has slid to the requested date.
+    pulseIds([evt.eventId], 350);
+  }, [params.highlight, events, pulseIds]);
   const [viewType, setViewType] = useState<ViewType>("week");
   const [mobileView, setMobileView] = useState<"day" | "3day">("day");
   const [showCreate, setShowCreate] = useState(false);
@@ -1924,8 +1976,32 @@ export default function CalendarScreen() {
                       </>
                     );
 
+                    // Outside the event block, which clips its content.
+                    const pulse = pulses[evt.eventId];
+                    const pulseEl = pulse ? (
+                      <View
+                        key={`pulse-${evt.eventId}-${pulse.key}`}
+                        pointerEvents="none"
+                        style={{
+                          position: "absolute",
+                          top: pos.top,
+                          height: pos.height,
+                          left: `${leftPct}%`,
+                          width: `${colWidth}%`,
+                          zIndex: 11,
+                        }}
+                      >
+                        <LandPulse
+                          color={color}
+                          radius={6}
+                          still={reducedMotion}
+                          delay={pulse.delay}
+                        />
+                      </View>
+                    ) : null;
+
                     if (Platform.OS === "web" && !isMobile) {
-                      return (
+                      return [
                         <View
                           key={evt.eventId}
                           {...({ dataSet: eventDataSet } as object)}
@@ -1933,11 +2009,13 @@ export default function CalendarScreen() {
                           style={eventStyle as any}
                         >
                           {eventBody}
-                        </View>
-                      );
+                        </View>,
+                        pulseEl,
+                      ];
                     }
 
-                    return (
+                    return [
+                      pulseEl,
                       <TouchableOpacity
                         key={evt.eventId}
                         onPress={() => {
@@ -1954,8 +2032,8 @@ export default function CalendarScreen() {
                         style={eventStyle as any}
                       >
                         {eventBody}
-                      </TouchableOpacity>
-                    );
+                      </TouchableOpacity>,
+                    ];
                   })}
                 </View>
               );
@@ -2152,6 +2230,45 @@ export default function CalendarScreen() {
     </View>
   );
 
+  // Prev/next slides the grid in from the side of travel; switching the view
+  // grows or settles it around the selected day.
+  const viewTypePill = useSlidingIndicator(viewType);
+  const mobileViewPill = useSlidingIndicator(mobileView);
+  const sceneView = isMobile ? mobileView : viewType;
+  const sceneStart =
+    !isMobile && viewType === "month"
+      ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+      : displayDays[0];
+  const sceneKey = `${sceneView}:${sceneStart.toDateString()}`;
+  const committedScene = useRef({ view: sceneView, start: sceneStart.getTime() });
+  useEffect(() => {
+    committedScene.current = { view: sceneView, start: sceneStart.getTime() };
+  });
+  const sceneFrom = useMemo((): SceneFrom => {
+    const prev = committedScene.current;
+    if (prev.view === sceneView) {
+      return { dx: sceneStart.getTime() > prev.start ? 32 : -32 };
+    }
+    const depth = { day: 0, "3day": 1, week: 1, month: 2 } as const;
+    const zoomIn = depth[sceneView] < depth[prev.view];
+    const col = (selectedDate.getDay() + 6) % 7;
+    const rows = Math.max(1, Math.ceil(monthDays.length / 7));
+    const row = Math.max(
+      0,
+      Math.floor(monthDays.findIndex((d) => isSameDay(d.date, selectedDate)) / 7),
+    );
+    // Anchored on the selected day's place in the week / month layout.
+    return {
+      scale: zoomIn ? 0.94 : 1.05,
+      originX: `${(((col + 0.5) / 7) * 100).toFixed(1)}%`,
+      originY:
+        sceneView === "month" || prev.view === "month"
+          ? `${(((row + 0.5) / rows) * 100).toFixed(1)}%`
+          : "50%",
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sceneKey]);
+
   const headerTitle = isMobile
     ? selectedDate.toLocaleDateString(locale, {
         weekday: "short",
@@ -2210,16 +2327,15 @@ export default function CalendarScreen() {
             </View>
             <View className="flex-row items-center justify-between gap-2">
               <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
+                <IndicatorShape indicator={mobileViewPill}>
+                  <View className="flex-1 rounded-full" style={{ backgroundColor: accentColor }} />
+                </IndicatorShape>
                 {(["day", "3day"] as const).map((v) => (
                   <TouchableOpacity
                     key={v}
+                    onLayout={mobileViewPill.itemLayout(v)}
                     onPress={() => setMobileView(v)}
                     className="px-4 py-1.5 rounded-full"
-                    style={
-                      mobileView === v
-                        ? { backgroundColor: accentColor }
-                        : undefined
-                    }
                   >
                     <Text
                       className={`text-xs font-label ${
@@ -2270,16 +2386,15 @@ export default function CalendarScreen() {
                 </Text>
               </TouchableOpacity>
               <View className="flex-row bg-surface-container-low rounded-full p-0.5 border border-outline-variant">
+                <IndicatorShape indicator={viewTypePill}>
+                  <View className="flex-1 rounded-full" style={{ backgroundColor: accentColor }} />
+                </IndicatorShape>
                 {(["day", "week", "month"] as ViewType[]).map((v) => (
                   <TouchableOpacity
                     key={v}
+                    onLayout={viewTypePill.itemLayout(v)}
                     onPress={() => handleViewTypeChange(v)}
                     className="px-3 py-1.5 rounded-full"
-                    style={
-                      viewType === v
-                        ? { backgroundColor: accentColor }
-                        : undefined
-                    }
                   >
                     <Text
                       className={`text-xs font-label capitalize ${
@@ -2330,9 +2445,9 @@ export default function CalendarScreen() {
           </View>
         )}
 
-        <View className="flex-1">
+        <SceneShift sceneKey={sceneKey} from={sceneFrom} style={{ flex: 1 }}>
           {!isMobile && viewType === "month" ? monthGrid : weekTimeGrid}
-        </View>
+        </SceneShift>
       </View>
 
       <CreateEventModal
@@ -2353,8 +2468,8 @@ export default function CalendarScreen() {
         />
       )}
 
-      <Modal visible={printOpen} transparent animationType="fade">
-        <View className="flex-1 bg-black/50 items-center justify-center p-6">
+      <AppModal visible={printOpen} dim={0.5}>
+        <View className="flex-1 items-center justify-center p-6">
           <View className="bg-surface-container-lowest rounded-2xl p-6 w-full max-w-md gap-4">
             <View className="flex-row items-center justify-between">
               <Text className="font-headline text-on-surface text-lg">
@@ -2425,7 +2540,7 @@ export default function CalendarScreen() {
             </View>
           </View>
         </View>
-      </Modal>
+      </AppModal>
     </PageLayout>
   );
 }

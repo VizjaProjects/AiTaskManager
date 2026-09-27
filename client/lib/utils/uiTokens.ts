@@ -76,3 +76,57 @@ export function getUiTokens(isDark: boolean): UiTokens {
 
 /** Back-compat light-mode alias. Prefer getUiTokens(isDark) in new code. */
 export const UI = LIGHT;
+
+/**
+ * Brand palette used by the landing page and login. Mirrors the
+ * `--color-brand-*` variables in global.css, for props that can't take a class
+ * (icon colors, placeholder text, shadows).
+ */
+export interface BrandTokens {
+  paper: string;
+  surface: string;
+  ink: string;
+  muted: string;
+  field: string;
+  accent: string;
+  onAccent: string;
+  accentText: string;
+  error: string;
+  proposal: string;
+  proposalEdge: string;
+  shadow: string;
+}
+
+const BRAND_LIGHT: BrandTokens = {
+  paper: "#f3f5f2",
+  surface: "#ffffff",
+  ink: "#1c2321",
+  muted: "#56605c",
+  field: "#7f8a85",
+  accent: "#006b58",
+  onAccent: "#ffffff",
+  accentText: "#006b58",
+  error: "#b3261e",
+  proposal: "#fbf1df",
+  proposalEdge: "#b7770d",
+  shadow: "0 40px 80px -48px rgba(28,35,33,0.35)",
+};
+
+const BRAND_DARK: BrandTokens = {
+  paper: "#101513",
+  surface: "#18201d",
+  ink: "#e7ece9",
+  muted: "#a3aeaa",
+  field: "#6f7c77",
+  accent: "#4cb99a",
+  onAccent: "#0b1210",
+  accentText: "#5cc4a6",
+  error: "#f2867a",
+  proposal: "#2a2216",
+  proposalEdge: "#c98a22",
+  shadow: "0 40px 80px -48px rgba(0,0,0,0.8)",
+};
+
+export function getBrandTokens(isDark: boolean): BrandTokens {
+  return isDark ? BRAND_DARK : BRAND_LIGHT;
+}

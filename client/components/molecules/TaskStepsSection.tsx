@@ -1,5 +1,4 @@
 import {
-  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +24,12 @@ import {
 } from "@/lib/hooks";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
+import { ProgressBar } from "@/components/atoms/ProgressBar";
+import { StepCheckbox, StrikeText } from "@/components/atoms/StepCheckbox";
+import { Fold } from "@/components/molecules/Fold";
+import { usePresenceList } from "@/lib/utils/usePresenceList";
+import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
 const NO_OUTLINE =
   Platform.OS === "web" ? ({ outlineWidth: 0 } as const) : undefined;
@@ -46,9 +51,9 @@ function AssigneePicker({
 }: AssigneePickerProps) {
   const t = useT();
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <AppModal visible={visible} onRequestClose={onClose}>
       <Pressable
-        className="flex-1 bg-black/40 items-center justify-center px-5"
+        className="flex-1 items-center justify-center px-5"
         onPress={onClose}
       >
         <Pressable
@@ -111,7 +116,7 @@ function AssigneePicker({
           </ScrollView>
         </Pressable>
       </Pressable>
-    </Modal>
+    </AppModal>
   );
 }
 
@@ -163,6 +168,8 @@ export function TaskStepsSection({
   const completedCount = steps.filter((step) => step.completed).length;
   const progress = steps.length === 0 ? 0 : (completedCount / steps.length) * 100;
   const selectedAssigneeStep = steps.find((step) => step.stepId === assigneeStepId);
+  const reduced = useReducedMotion();
+  const shownSteps = usePresenceList(steps, (s) => s.stepId, 420, task.taskId);
 
   function addStep() {
     const title = newTitle.trim();
@@ -218,35 +225,32 @@ export function TaskStepsSection({
       </View>
 
       {steps.length > 0 ? (
-        <View className="h-1.5 rounded-full bg-surface-container overflow-hidden">
-          <View
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${progress}%` }}
-          />
-        </View>
+        <ProgressBar value={progress} />
       ) : null}
 
-      <View className="gap-1.5">
-        {steps.map((step, index) => {
+      {/* Added steps unfold, deleted ones fold away; the 6px gap folds with them. */}
+      <View style={{ marginTop: -6 }}>
+        {shownSteps.map(({ key, item: step, entering, exiting }) => {
+          const index = steps.indexOf(step);
           const member = members.find((candidate) => candidate.userId === step.assignedUserId);
           const isEditing = editingStepId === step.stepId;
           return (
+            <Fold key={key} open={!exiting} appear={entering} gap={6} reduceMotion={reduced}>
             <View
-              key={step.stepId}
               className={`min-h-11 flex-row flex-wrap items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
                 actionStepId === step.stepId
                   ? "border-outline bg-surface-container-low"
                   : "border-transparent bg-surface-container-low/60"
               }`}
             >
-              <TouchableOpacity
+              <StepCheckbox
+                checked={step.completed}
+                size={28}
+                radius={6}
                 accessibilityLabel={
                   step.completed ? t("taskSteps.markOpen") : t("taskSteps.markDone")
                 }
                 disabled={!allowCompletion || completeStep.isPending}
-                className={`w-7 h-7 rounded-md border items-center justify-center ${
-                  step.completed ? "bg-primary border-primary" : "border-outline"
-                }`}
                 onPress={() =>
                   completeStep.mutate({
                     taskId: task.taskId,
@@ -254,11 +258,7 @@ export function TaskStepsSection({
                     completed: !step.completed,
                   })
                 }
-              >
-                {step.completed ? (
-                  <MaterialIcons name="check" size={16} color="#ffffff" />
-                ) : null}
-              </TouchableOpacity>
+              />
 
               {isEditing ? (
                 <TextInput
@@ -271,12 +271,13 @@ export function TaskStepsSection({
                   onSubmitEditing={() => saveEditing(step)}
                 />
               ) : (
-                <Text
-                  className="flex-1 text-on-surface font-body text-sm"
-                  style={step.completed ? { textDecorationLine: "line-through", opacity: 0.6 } : undefined}
+                <StrikeText
+                  done={step.completed}
+                  className="text-on-surface font-body text-sm"
+                  lineHeight={20}
                 >
                   {step.title}
-                </Text>
+                </StrikeText>
               )}
 
               <MemberAvatar member={member} />
@@ -354,6 +355,7 @@ export function TaskStepsSection({
                 </View>
               ) : null}
             </View>
+            </Fold>
           );
         })}
       </View>

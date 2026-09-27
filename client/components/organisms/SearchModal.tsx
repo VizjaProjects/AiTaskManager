@@ -3,7 +3,6 @@ import {
   Text,
   ScrollView,
   TouchableOpacity,
-  Modal,
   Pressable,
   useWindowDimensions,
   Platform,
@@ -19,6 +18,7 @@ import { useThemeStore } from "@/lib/stores";
 import type { Category } from "@/lib/types";
 import type { TextInput } from "react-native";
 import { useT } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 interface SearchModalProps {
   visible: boolean;
@@ -78,13 +78,8 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
   };
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 bg-black/40">
+    <AppModal visible={visible} onRequestClose={onClose}>
+      <View className="flex-1">
         <Pressable className="flex-1" onPress={onClose} />
 
         {/* Search panel — centered */}
@@ -220,6 +215,6 @@ export function SearchModal({ visible, onClose }: SearchModalProps) {
           </ScrollView>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }

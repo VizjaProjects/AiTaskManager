@@ -4,7 +4,6 @@ import {
   Alert,
   Platform,
   TouchableOpacity,
-  Modal,
   TextInput,
   ScrollView,
 } from "react-native";
@@ -23,6 +22,7 @@ import {
 import { useWorkspaceStore, useAuthStore } from "@/lib/stores";
 import type { WorkspaceVisibility } from "@/lib/types";
 import { useT, useLocale, tr } from "@/lib/i18n";
+import { AppModal } from "@/components/molecules/AppModal";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -68,13 +68,8 @@ function DeleteWorkspaceModal({
   ];
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <View className="flex-1 bg-black/50 items-center justify-center p-6">
+    <AppModal visible={visible} onRequestClose={onClose} dim={0.5}>
+      <View className="flex-1 items-center justify-center p-6">
         <View
           className="bg-surface-container-lowest rounded-2xl w-full max-w-md border border-outline-variant overflow-hidden"
           style={{
@@ -172,7 +167,7 @@ function DeleteWorkspaceModal({
           </View>
         </View>
       </View>
-    </Modal>
+    </AppModal>
   );
 }
 

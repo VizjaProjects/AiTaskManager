@@ -13,6 +13,7 @@ import {
   Inter_700Bold,
   Inter_900Black,
 } from "@expo-google-fonts/inter";
+import { PlayfairDisplay_400Regular } from "@expo-google-fonts/playfair-display";
 import * as SplashScreen from "expo-splash-screen";
 import { useAuthStore, useWorkspaceStore } from "@/lib/stores";
 import { useThemeStore } from "@/lib/stores";
@@ -86,7 +87,8 @@ function AuthGate() {
       pathname.startsWith("/login") ||
       pathname.startsWith("/register") ||
       pathname.startsWith("/forgot-password") ||
-      pathname.startsWith("/setup-password");
+      pathname.startsWith("/setup-password") ||
+      pathname.startsWith("/verify-email");
     const isPublicPage =
       pathname === "/" ||
       pathname.startsWith("/privacy-policy") ||
@@ -201,6 +203,8 @@ export default function RootLayout() {
     Inter_600SemiBold,
     Inter_700Bold,
     Inter_900Black,
+    // Registered under the CSS family name so `font-display` / tailwind `display` resolve to it.
+    "Playfair Display": PlayfairDisplay_400Regular,
   });
 
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, View } from "react-native";
+import { TouchableOpacity, Text, View, type LayoutChangeEvent } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useThemeStore } from "@/lib/stores";
 
@@ -8,9 +8,20 @@ interface NavItemProps {
   active?: boolean;
   badge?: string;
   onPress?: () => void;
+  onLayout?: (e: LayoutChangeEvent) => void;
+  /** The parent draws a sliding highlight, so don't paint our own. */
+  sharedHighlight?: boolean;
 }
 
-export function NavItem({ icon, label, active, badge, onPress }: NavItemProps) {
+export function NavItem({
+  icon,
+  label,
+  active,
+  badge,
+  onPress,
+  onLayout,
+  sharedHighlight,
+}: NavItemProps) {
   const isDark = useThemeStore((s) => s.mode) === "dark";
   const activeIcon = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
   const inactiveIcon = isDark ? "rgba(255,255,255,0.5)" : "#6b6965";
@@ -19,8 +30,9 @@ export function NavItem({ icon, label, active, badge, onPress }: NavItemProps) {
     <TouchableOpacity
       activeOpacity={0.85}
       onPress={onPress}
+      onLayout={onLayout}
       className={`flex-row items-center gap-2.5 px-3.5 py-2 rounded-md ${
-        active ? "bg-active" : ""
+        active && !sharedHighlight ? "bg-active" : ""
       }`}
     >
       <MaterialIcons
