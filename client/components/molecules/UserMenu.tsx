@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import {
   Platform,
   Pressable,
+  StyleSheet,
   Text,
   TouchableOpacity,
   useWindowDimensions,
@@ -130,12 +131,14 @@ export function UserMenu() {
             : null
         }
       >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t("menu.closeUserMenu")}
-          className="flex-1"
-          onPress={() => setOpen(false)}
-        >
+        <View className="flex-1">
+          {/* Sibling, not parent, of the menu: a button can't contain the menu's buttons. */}
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t("menu.closeUserMenu")}
+            style={StyleSheet.absoluteFill}
+            onPress={() => setOpen(false)}
+          />
           <View
             pointerEvents="box-none"
             style={{
@@ -242,7 +245,7 @@ export function UserMenu() {
               </View>
             </Pressable>
           </View>
-        </Pressable>
+        </View>
       </AppModal>
     </>
   );

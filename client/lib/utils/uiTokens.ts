@@ -26,6 +26,15 @@ export interface UiTokens {
   selectedBorder: string;
   textMuted: string;
   textSecondary: string;
+  /** on-surface */
+  text: string;
+  /** Quiet icons (meta rows, toolbar chevrons). */
+  iconMuted: string;
+  accent: string;
+  /** Icon/text on bg-action. */
+  onAction: string;
+  critical: string;
+  warning: string;
   shadow: ShadowToken;
 }
 
@@ -40,6 +49,12 @@ const LIGHT: UiTokens = {
   selectedBorder: "rgba(91,78,224,0.28)", // accent edge
   textMuted: "#9b9791", // text-tertiary
   textSecondary: "#6b6965", // on-surface-variant
+  text: "#1a1a18", // on-surface
+  iconMuted: "#9b9791", // text-tertiary
+  accent: "#5b4ee0",
+  onAction: "#ffffff", // on-action
+  critical: "#c0392b",
+  warning: "#b7770d",
   shadow: {
     shadowColor: "#101828",
     shadowOffset: { width: 0, height: 4 },
@@ -60,6 +75,12 @@ const DARK: UiTokens = {
   selectedBorder: "rgba(155,140,255,0.38)", // dark accent edge
   textMuted: "rgba(255,255,255,0.28)", // text-tertiary (dark)
   textSecondary: "rgba(255,255,255,0.50)", // on-surface-variant (dark)
+  text: "rgba(255,255,255,0.88)", // on-surface (dark)
+  iconMuted: "rgba(255,255,255,0.45)",
+  accent: "#9b8cff",
+  onAction: "#111111", // on-action (dark)
+  critical: "#e07a6f",
+  warning: "#d6a23e",
   shadow: {
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 4 },

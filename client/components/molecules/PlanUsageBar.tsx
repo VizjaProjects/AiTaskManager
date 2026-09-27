@@ -36,8 +36,7 @@ export function PlanUsageBar({
   const reached = safeLimit > 0 && used >= safeLimit;
   const near = safeLimit > 0 && used / safeLimit >= 0.8;
 
-  const accent = isDark ? "#9b8cff" : "#5b4ee0";
-  const fillColor = reached ? "#C0392B" : near ? "#B7770D" : accent;
+  const fillColor = reached ? ui.critical : near ? ui.warning : ui.accent;
 
   const width = useRef(new Animated.Value(pct)).current;
   const blend = useRef(new Animated.Value(1)).current;
@@ -79,7 +78,7 @@ export function PlanUsageBar({
         </Text>
         <Text
           className={`font-headline ${compact ? "text-xs" : "text-body-md"}`}
-          style={{ color: reached ? "#C0392B" : ui.textSecondary }}
+          style={{ color: reached ? ui.critical : ui.textSecondary }}
         >
           {used}/{safeLimit}
         </Text>

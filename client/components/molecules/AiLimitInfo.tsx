@@ -1,11 +1,21 @@
-import { useState } from "react";
-import { View, Text, TouchableOpacity, Pressable } from "react-native";
+import { useRef, useState } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Pressable,
+  useWindowDimensions,
+} from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useUserPlan } from "@/lib/hooks";
 import { PlanUsageBar } from "./PlanUsageBar";
+import { AppModal } from "./AppModal";
 import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useThemeStore } from "@/lib/stores";
 import { useT } from "@/lib/i18n";
+
+const PANEL_WIDTH = 288;
+const GAP = 8;
 
 /**
  * A subtle info affordance for the AI composer. Tapping it reveals a small
@@ -16,6 +26,9 @@ export function AiLimitInfo() {
   const t = useT();
   const isDark = useThemeStore((s) => s.mode === "dark");
   const ui = getUiTokens(isDark);
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const triggerRef = useRef<View>(null);
+  const [anchor, setAnchor] = useState<{ x: number; y: number; width: number } | null>(null);
   const [open, setOpen] = useState(false);
   const { data: plan } = useUserPlan();
 
@@ -23,74 +36,84 @@ export function AiLimitInfo() {
 
   const remaining = Math.max(plan.aiTaskLimit - plan.aiTaskUsage, 0);
 
-  return (
-    <View className="relative">
-      <TouchableOpacity
-        onPress={() => setOpen((v) => !v)}
-        hitSlop={8}
-        activeOpacity={0.7}
-        className="flex-row items-center gap-1.5 px-2.5 h-10 rounded-xl border border-outline-variant bg-surface-container-lowest"
-      >
-        <MaterialIcons name="bolt" size={16} color={ui.textSecondary} />
-        <Text
-          className="font-headline text-xs"
-          style={{ color: remaining === 0 ? "#C0392B" : ui.textSecondary }}
-        >
-          {remaining} left
-        </Text>
-        <MaterialIcons name="info-outline" size={14} color={ui.textMuted} />
-      </TouchableOpacity>
+  function openPopover() {
+    triggerRef.current?.measureInWindow((x, y, width) => {
+      setAnchor({ x, y, width });
+      setOpen(true);
+    });
+  }
 
-      {open && (
-        <>
-          <Pressable
-            onPress={() => setOpen(false)}
-            style={{
-              position: "absolute",
-              top: -1000,
-              left: -1000,
-              right: -1000,
-              bottom: -1000,
-            }}
-          />
-          <View
-            className="absolute bottom-12 left-0 w-72 rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 gap-3"
-            style={{
-              shadowColor: "#101828",
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: isDark ? 0.4 : 0.12,
-              shadowRadius: 24,
-              elevation: 8,
-              zIndex: 50,
-            }}
+  return (
+    <>
+      <View ref={triggerRef} collapsable={false}>
+        <TouchableOpacity
+          onPress={openPopover}
+          hitSlop={8}
+          activeOpacity={0.7}
+          className="flex-row items-center gap-1.5 px-2.5 h-10 rounded-xl border border-outline-variant bg-surface-container-lowest"
+        >
+          <MaterialIcons name="bolt" size={16} color={ui.textSecondary} />
+          <Text
+            className="font-headline text-xs"
+            style={{ color: remaining === 0 ? ui.critical : ui.textSecondary }}
           >
-            <View className="flex-row items-center justify-between">
-              <Text className="text-on-surface font-headline text-body-md">
-                {t("aiLimit.title")}
-              </Text>
-              <View className="px-2.5 py-0.5 rounded-full bg-accent/10">
-                <Text className="font-label text-[10px] uppercase tracking-widest text-accent">
-                  {plan.planName}
-                </Text>
-              </View>
+            {t("aiLimit.left", { count: remaining })}
+          </Text>
+          <MaterialIcons name="info-outline" size={14} color={ui.textMuted} />
+        </TouchableOpacity>
+      </View>
+
+      <AppModal
+        visible={open}
+        onRequestClose={() => setOpen(false)}
+        dim={0.08}
+        origin={anchor ? { x: anchor.x + anchor.width / 2, y: anchor.y } : null}
+      >
+        <Pressable className="flex-1" onPress={() => setOpen(false)}>
+          {anchor ? (
+            <View
+              style={{
+                position: "absolute",
+                bottom: windowHeight - anchor.y + GAP,
+                left: Math.min(Math.max(8, anchor.x), windowWidth - PANEL_WIDTH - 8),
+              }}
+              pointerEvents="box-none"
+            >
+              <Pressable onPress={(e) => e.stopPropagation()}>
+                <View
+                  className="rounded-2xl bg-surface-container-lowest border border-outline-variant p-4 gap-3"
+                  style={{ width: PANEL_WIDTH, ...ui.shadow }}
+                >
+                  <View className="flex-row items-center justify-between">
+                    <Text className="text-on-surface font-headline text-body-md">
+                      {t("aiLimit.title")}
+                    </Text>
+                    <View className="px-2.5 py-0.5 rounded-full bg-accent/10">
+                      <Text className="font-label text-[10px] uppercase tracking-widest text-accent">
+                        {plan.planName}
+                      </Text>
+                    </View>
+                  </View>
+                  <PlanUsageBar
+                    icon="auto-awesome"
+                    label={t("aiLimit.callsToday")}
+                    used={plan.aiTaskUsage}
+                    limit={plan.aiTaskLimit}
+                    compact
+                  />
+                  <Text className="font-body text-xs" style={{ color: ui.textMuted }}>
+                    {remaining === 0
+                      ? t("aiLimit.reached")
+                      : remaining === 1
+                        ? t("aiLimit.remainingOne")
+                        : t("aiLimit.remaining", { count: remaining })}
+                  </Text>
+                </View>
+              </Pressable>
             </View>
-            <PlanUsageBar
-              icon="auto-awesome"
-              label={t("aiLimit.callsToday")}
-              used={plan.aiTaskUsage}
-              limit={plan.aiTaskLimit}
-              compact
-            />
-            <Text className="font-body text-xs" style={{ color: ui.textMuted }}>
-              {remaining === 0
-                ? t("aiLimit.reached")
-                : remaining === 1
-                  ? t("aiLimit.remainingOne")
-                  : t("aiLimit.remaining", { count: remaining })}
-            </Text>
-          </View>
-        </>
-      )}
-    </View>
+          ) : null}
+        </Pressable>
+      </AppModal>
+    </>
   );
 }

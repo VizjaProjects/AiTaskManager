@@ -52,6 +52,7 @@ import {
   resolveTaskDueDateTimeForSave,
 } from "@/lib/utils";
 import { useThemeStore } from "@/lib/stores";
+import { getUiTokens } from "@/lib/utils/uiTokens";
 import { useWorkspaceStore } from "@/lib/stores/workspace";
 import { getInitials } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
@@ -170,26 +171,17 @@ function KanbanTaskCard({
     n.linkedTaskIds?.includes(task.taskId),
   );
   const isDark = useThemeStore((s) => s.mode) === "dark";
+  const ui = getUiTokens(isDark);
   const pColor = (isDark ? PRIORITY_COLORS_DARK : PRIORITY_COLORS)[
     task.priority
   ];
   const overdue = isOverdue(task.dueDateTime);
   const today = isDueToday(task.dueDateTime);
-  const dueColor = overdue
-    ? isDark
-      ? "#e07a6f"
-      : "#c0392b"
-    : today
-      ? isDark
-        ? "#d6a23e"
-        : "#b7770d"
-      : isDark
-        ? "rgba(255,255,255,0.45)"
-        : "#9b9791";
+  const dueColor = overdue ? ui.critical : today ? ui.warning : ui.iconMuted;
   const isCritical =
     task.priority === TaskPriority.CRITICAL ||
     task.priority === TaskPriority.HIGH;
-  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
+  const accentColor = ui.accent;
 
   function toggleMember(userId: string) {
     const current = task.assignedUserIds ?? [];
@@ -269,7 +261,7 @@ function KanbanTaskCard({
             ) : null}
             {task.estimatedDuration > 0 ? (
               <View className="flex-row items-center gap-1">
-                <MaterialIcons name="schedule" size={13} color="#9b9791" />
+                <MaterialIcons name="schedule" size={13} color={ui.iconMuted} />
                 <Text className="text-text-tertiary font-body text-[11px]">
                   {formatDuration(task.estimatedDuration)}
                 </Text>
@@ -277,7 +269,7 @@ function KanbanTaskCard({
             ) : null}
             {linkedNotes.length > 0 ? (
               <View className="flex-row items-center gap-1">
-                <MaterialIcons name="sticky-note-2" size={13} color="#9b9791" />
+                <MaterialIcons name="sticky-note-2" size={13} color={ui.iconMuted} />
                 <Text className="text-text-tertiary font-body text-[11px]">
                   {linkedNotes.length}
                 </Text>
@@ -287,7 +279,7 @@ function KanbanTaskCard({
               <MaterialIcons
                 name="auto-awesome"
                 size={13}
-                color={isDark ? "#9b8cff" : "#5b4ee0"}
+                color={ui.accent}
               />
             ) : null}
           </View>
@@ -300,7 +292,7 @@ function KanbanTaskCard({
           >
             {assignees.length === 0 ? (
               <View className="w-6 h-6 rounded-full items-center justify-center border border-dashed border-outline">
-                <MaterialIcons name="person-add" size={13} color="#9b9791" />
+                <MaterialIcons name="person-add" size={13} color={ui.iconMuted} />
               </View>
             ) : (
               <>
@@ -348,7 +340,7 @@ function KanbanTaskCard({
                 onPress={() => setAssignOpen(false)}
                 className="p-1"
               >
-                <MaterialIcons name="close" size={20} color="#9b9791" />
+                <MaterialIcons name="close" size={20} color={ui.iconMuted} />
               </TouchableOpacity>
             </View>
             {members.length === 0 ? (
@@ -382,7 +374,7 @@ function KanbanTaskCard({
                       <MaterialIcons
                         name={checked ? "check-box" : "check-box-outline-blank"}
                         size={20}
-                        color={checked ? accentColor : "#9b9791"}
+                        color={checked ? accentColor : ui.iconMuted}
                       />
                     </TouchableOpacity>
                   );
@@ -485,8 +477,9 @@ export default function TasksScreen() {
   const editTask = useEditTask();
   const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
-  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
-  const mutedIcon = isDark ? "rgba(255,255,255,0.45)" : "#9b9791";
+  const ui = getUiTokens(isDark);
+  const accentColor = ui.accent;
+  const mutedIcon = ui.iconMuted;
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(() =>
     Platform.OS === "web" && Dimensions.get("window").width >= 1024
@@ -974,7 +967,7 @@ export default function TasksScreen() {
             <MaterialIcons
               name="add"
               size={18}
-              color={isDark ? "#121212" : "#fff"}
+              color={ui.onAction}
             />
             <Text className="text-on-primary font-headline text-sm">
               {t("tasks.newTask")}
@@ -1689,7 +1682,7 @@ export default function TasksScreen() {
                             <MaterialIcons
                               name="chevron-left"
                               size={16}
-                              color="#9b9791"
+                              color={ui.iconMuted}
                             />
                           </TouchableOpacity>
                         )}
@@ -1701,7 +1694,7 @@ export default function TasksScreen() {
                             <MaterialIcons
                               name="chevron-right"
                               size={16}
-                              color="#9b9791"
+                              color={ui.iconMuted}
                             />
                           </TouchableOpacity>
                         )}
@@ -1733,7 +1726,7 @@ export default function TasksScreen() {
                           <MaterialIcons
                             name="sort"
                             size={16}
-                            color={colSort !== "default" ? "#5b4ee0" : "#9b9791"}
+                            color={colSort !== "default" ? ui.accent : ui.iconMuted}
                           />
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -1743,7 +1736,7 @@ export default function TasksScreen() {
                           }}
                           className="p-1 rounded-md hover:bg-surface-container-low"
                         >
-                          <MaterialIcons name="add" size={18} color="#9b9791" />
+                          <MaterialIcons name="add" size={18} color={ui.iconMuted} />
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -1819,7 +1812,7 @@ export default function TasksScreen() {
                     }}
                     className="mt-2 flex-row items-center justify-center gap-1.5 py-2 rounded-lg border border-dashed border-outline-variant hover:border-outline hover:bg-surface-container-low/60"
                   >
-                    <MaterialIcons name="add" size={15} color="#9b9791" />
+                    <MaterialIcons name="add" size={15} color={ui.iconMuted} />
                     <Text className="text-text-tertiary font-label text-[11px]">
                       {t("tasks.newTask")}
                     </Text>

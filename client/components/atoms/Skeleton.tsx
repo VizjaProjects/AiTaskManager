@@ -1,6 +1,5 @@
-import { View } from "react-native";
+import { Animated, Platform, StyleSheet, View } from "react-native";
 import { useEffect, useRef } from "react";
-import { Animated } from "react-native";
 
 interface SkeletonProps {
   width?: number | string;
@@ -23,12 +22,12 @@ export function Skeleton({
         Animated.timing(opacity, {
           toValue: 0.7,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
         Animated.timing(opacity, {
           toValue: 0.3,
           duration: 800,
-          useNativeDriver: true,
+          useNativeDriver: Platform.OS !== "web",
         }),
       ]),
     );
@@ -37,17 +36,15 @@ export function Skeleton({
   }, [opacity]);
 
   return (
-    <Animated.View
-      className={`bg-surface-container-high ${className ?? ""}`}
-      style={[
-        {
-          width: width as number,
-          height,
-          borderRadius,
-          opacity,
-        },
-      ]}
-    />
+    // NativeWind ignores className on Animated.View, so size and colour sit on plain Views.
+    <View
+      className={className}
+      style={{ width: width as number, height, borderRadius, overflow: "hidden" }}
+    >
+      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity }]}>
+        <View className="flex-1 bg-surface-container-high" />
+      </Animated.View>
+    </View>
   );
 }
 

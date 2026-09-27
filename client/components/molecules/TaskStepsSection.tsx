@@ -28,6 +28,7 @@ import { AppModal } from "@/components/molecules/AppModal";
 import { ProgressBar } from "@/components/atoms/ProgressBar";
 import { StepCheckbox, StrikeText } from "@/components/atoms/StepCheckbox";
 import { Fold } from "@/components/molecules/Fold";
+import { BoardFlip } from "@/components/molecules/BoardFlip";
 import { usePresenceList } from "@/lib/utils/usePresenceList";
 import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 
@@ -170,6 +171,7 @@ export function TaskStepsSection({
   const selectedAssigneeStep = steps.find((step) => step.stepId === assigneeStepId);
   const reduced = useReducedMotion();
   const shownSteps = usePresenceList(steps, (s) => s.stepId, 420, task.taskId);
+  const stepOrderKey = steps.map((s) => s.stepId).join(",");
 
   function addStep() {
     const title = newTitle.trim();
@@ -228,14 +230,16 @@ export function TaskStepsSection({
         <ProgressBar value={progress} />
       ) : null}
 
-      {/* Added steps unfold, deleted ones fold away; the 6px gap folds with them. */}
+      {/* Added steps unfold, deleted ones fold away; the 6px gap folds with them. Moved ones glide. */}
+      <BoardFlip flipKey={stepOrderKey} reduced={reduced} clipped={false}>
       <View style={{ marginTop: -6 }}>
         {shownSteps.map(({ key, item: step, entering, exiting }) => {
           const index = steps.indexOf(step);
           const member = members.find((candidate) => candidate.userId === step.assignedUserId);
           const isEditing = editingStepId === step.stepId;
           return (
-            <Fold key={key} open={!exiting} appear={entering} gap={6} reduceMotion={reduced}>
+            <View key={key} {...({ dataSet: { flipId: key } } as object)}>
+            <Fold open={!exiting} appear={entering} gap={6} reduceMotion={reduced}>
             <View
               className={`min-h-11 flex-row flex-wrap items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
                 actionStepId === step.stepId
@@ -356,9 +360,11 @@ export function TaskStepsSection({
               ) : null}
             </View>
             </Fold>
+            </View>
           );
         })}
       </View>
+      </BoardFlip>
 
       {steps.length === 0 && !editable ? (
         <Text className="text-text-tertiary font-body text-sm">

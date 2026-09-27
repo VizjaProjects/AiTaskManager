@@ -7,6 +7,8 @@ import { useReducedMotion } from "@/lib/utils/useReducedMotion";
 import { TaskPriority } from "@/lib/types";
 import type { TaskStep } from "@/lib/types";
 import { useT } from "@/lib/i18n";
+import { useThemeStore } from "@/lib/stores";
+import { getUiTokens } from "@/lib/utils/uiTokens";
 
 interface AiProposedCardProps {
   title: string;
@@ -42,6 +44,7 @@ export function AiProposedCard({
 }: AiProposedCardProps) {
   const t = useT();
   const reduced = useReducedMotion();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const accepted = !!receipt;
   const isEvent = type === "event";
   const orderedSteps = [...steps].sort((a, b) => a.position - b.position);
@@ -61,7 +64,7 @@ export function AiProposedCard({
             <MaterialIcons
               name={isEvent ? "event" : "task-alt"}
               size={14}
-              color="#9b9791"
+              color={ui.iconMuted}
             />
             <Text className="text-[11px] font-label uppercase tracking-wide text-on-surface-variant">
               {isEvent ? t("aiTask.proposedEvent") : t("aiTask.proposedTask")}
@@ -91,7 +94,7 @@ export function AiProposedCard({
               <View className="gap-2">
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center gap-1.5">
-                    <MaterialIcons name="checklist" size={14} color="#9b9791" />
+                    <MaterialIcons name="checklist" size={14} color={ui.iconMuted} />
                     <Text className="text-on-surface-variant font-label text-xs">
                       {t("taskSteps.title")}
                     </Text>
@@ -129,7 +132,7 @@ export function AiProposedCard({
               <View className="flex-row flex-wrap items-center gap-4">
                 {duration && (
                   <View className="flex-row items-center gap-1.5">
-                    <MaterialIcons name="schedule" size={14} color="#9b9791" />
+                    <MaterialIcons name="schedule" size={14} color={ui.iconMuted} />
                     <Text className="text-on-surface-variant font-body text-xs">
                       {duration}
                     </Text>
@@ -137,7 +140,7 @@ export function AiProposedCard({
                 )}
                 {dueDate && (
                   <View className="flex-row items-center gap-1.5">
-                    <MaterialIcons name="calendar-today" size={14} color="#9b9791" />
+                    <MaterialIcons name="calendar-today" size={14} color={ui.iconMuted} />
                     <Text className="text-on-surface-variant font-body text-xs">
                       {dueDate}
                     </Text>
@@ -176,7 +179,7 @@ export function AiProposedCard({
             disabled={loading}
             className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl border border-outline-variant bg-surface-container-lowest"
           >
-            <MaterialIcons name="close" size={16} color="#C0392B" />
+            <MaterialIcons name="close" size={16} color={ui.critical} />
             <Text className="text-on-surface font-headline text-sm">
               {t("aiTask.reject")}
             </Text>
@@ -188,7 +191,7 @@ export function AiProposedCard({
               disabled={loading}
               className="w-11 h-11 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest"
             >
-              <MaterialIcons name="edit" size={18} color="#9b9791" />
+              <MaterialIcons name="edit" size={18} color={ui.iconMuted} />
             </TouchableOpacity>
           )}
 
@@ -197,7 +200,7 @@ export function AiProposedCard({
             disabled={loading}
             className="flex-1 flex-row items-center justify-center gap-1.5 py-2.5 rounded-xl bg-action"
           >
-            <MaterialIcons name="check" size={16} color="#f0f0f0" />
+            <MaterialIcons name="check" size={16} color={ui.onAction} />
             <Text className="text-on-action font-headline text-sm">
               {loading ? "..." : t("aiTask.accept")}
             </Text>

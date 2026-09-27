@@ -54,6 +54,7 @@ import {
   useSlidingIndicator,
 } from "@/components/molecules/SlidingIndicator";
 import { useReducedMotion } from "@/lib/utils/useReducedMotion";
+import { getUiTokens } from "@/lib/utils/uiTokens";
 
 const WEEK_DAY_KEYS = [
   "cal.wdMon",
@@ -102,10 +103,16 @@ function formatCalendarTitle(
   if (viewType === "week") {
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
-    const sameMonth = weekStart.getMonth() === weekEnd.getMonth();
     const sameYear = weekStart.getFullYear() === weekEnd.getFullYear();
-    if (sameMonth && sameYear) {
-      return `${weekStart.toLocaleDateString(locale, { month: "long", day: "numeric" })} – ${weekEnd.toLocaleDateString(locale, { day: "numeric", year: "numeric" })}`;
+    const range = new Intl.DateTimeFormat(locale, {
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }) as Intl.DateTimeFormat & {
+      formatRange?: (a: Date, b: Date) => string;
+    };
+    if (typeof range.formatRange === "function") {
+      return range.formatRange(weekStart, weekEnd);
     }
     const startStr = weekStart.toLocaleDateString(locale, {
       month: "short",
@@ -164,7 +171,7 @@ function EventColorPicker({
   const t = useT();
   const isDark = useThemeStore((s) => s.mode) === "dark";
   // Pierścień musi kontrastować z tłem modala, nie z próbką — stąd on-surface.
-  const ring = isDark ? "rgba(255,255,255,0.88)" : "#1a1a18";
+  const ring = getUiTokens(isDark).text;
   return (
     <View className="gap-2">
       <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest">
@@ -207,6 +214,7 @@ function CreateEventModal({
   initialEndMin?: string;
 }) {
   const t = useT();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const locale = useLocale();
   const createEvent = useCreateEvent();
   const [title, setTitle] = useState("");
@@ -269,7 +277,7 @@ function CreateEventModal({
               {t("cal.newEvent")}
             </Text>
             <TouchableOpacity onPress={onClose}>
-              <MaterialIcons name="close" size={24} color="#6b6965" />
+              <MaterialIcons name="close" size={24} color={ui.textSecondary} />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -299,7 +307,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#6b6965"
+                  placeholderTextColor={ui.textSecondary}
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
@@ -310,7 +318,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#6b6965"
+                  placeholderTextColor={ui.textSecondary}
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
               </View>
@@ -327,7 +335,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="HH"
-                  placeholderTextColor="#6b6965"
+                  placeholderTextColor={ui.textSecondary}
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
                 <Text className="text-on-surface font-headline text-lg">:</Text>
@@ -338,7 +346,7 @@ function CreateEventModal({
                   }
                   maxLength={2}
                   placeholder="MM"
-                  placeholderTextColor="#6b6965"
+                  placeholderTextColor={ui.textSecondary}
                   className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                 />
               </View>
@@ -351,7 +359,7 @@ function CreateEventModal({
             <MaterialIcons
               name={allDay ? "check-box" : "check-box-outline-blank"}
               size={22}
-              color="#5b4ee0"
+              color={ui.accent}
             />
             <Text className="text-on-surface font-body text-sm">
               {t("cal.allDay")}
@@ -398,6 +406,7 @@ function EditCalendarEventModal({
   onClose: () => void;
 }) {
   const t = useT();
+  const ui = getUiTokens(useThemeStore((s) => s.mode === "dark"));
   const router = useRouter();
   const editEvent = useEditEvent();
   const deleteEvent = useDeleteEvent();
@@ -523,7 +532,7 @@ function EditCalendarEventModal({
                 {t("cal.editEvent")}
               </Text>
               <TouchableOpacity onPress={onClose}>
-                <MaterialIcons name="close" size={24} color="#6b6965" />
+                <MaterialIcons name="close" size={24} color={ui.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -557,7 +566,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="HH"
-                      placeholderTextColor="#6b6965"
+                      placeholderTextColor={ui.textSecondary}
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                     <Text className="text-on-surface font-headline text-lg">
@@ -570,7 +579,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="MM"
-                      placeholderTextColor="#6b6965"
+                      placeholderTextColor={ui.textSecondary}
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                   </View>
@@ -587,7 +596,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="HH"
-                      placeholderTextColor="#6b6965"
+                      placeholderTextColor={ui.textSecondary}
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                     <Text className="text-on-surface font-headline text-lg">
@@ -600,7 +609,7 @@ function EditCalendarEventModal({
                       }
                       maxLength={2}
                       placeholder="MM"
-                      placeholderTextColor="#6b6965"
+                      placeholderTextColor={ui.textSecondary}
                       className="bg-surface-container-low rounded-xl h-12 w-16 text-center text-on-surface font-body text-base"
                     />
                   </View>
@@ -613,7 +622,7 @@ function EditCalendarEventModal({
                 <MaterialIcons
                   name={allDay ? "check-box" : "check-box-outline-blank"}
                   size={22}
-                  color="#5b4ee0"
+                  color={ui.accent}
                 />
                 <Text className="text-on-surface font-body text-sm">
                   {t("cal.allDay")}
@@ -631,7 +640,7 @@ function EditCalendarEventModal({
                     onPress={openNoteLinkModal}
                     className="flex-row items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low border border-outline-variant"
                   >
-                    <MaterialIcons name="link" size={14} color="#9b9791" />
+                    <MaterialIcons name="link" size={14} color={ui.iconMuted} />
                     <Text className="text-on-surface-variant font-label text-xs">
                       {t("taskModal.link")}
                     </Text>
@@ -649,7 +658,7 @@ function EditCalendarEventModal({
                         <MaterialIcons
                           name="sticky-note-2"
                           size={14}
-                          color="#9b9791"
+                          color={ui.iconMuted}
                         />
                         <Text
                           className="text-on-surface font-body text-xs"
@@ -660,7 +669,7 @@ function EditCalendarEventModal({
                         <MaterialIcons
                           name="arrow-forward"
                           size={12}
-                          color="#9b9791"
+                          color={ui.iconMuted}
                         />
                       </TouchableOpacity>
                     ))}
@@ -752,8 +761,9 @@ export default function CalendarScreen() {
   }, [params.create]);
 
   const isDark = themeMode === "dark";
-  const gridBorderColor = isDark ? "#464560" : "#c7c4d8";
-  const gridLineColor = isDark ? "#313448" : "#e0dff0";
+  const ui = getUiTokens(isDark);
+  const gridBorderColor = ui.borderHover;
+  const gridLineColor = ui.border;
   const { width } = useWindowDimensions();
   const isDesktop = Platform.OS === "web" && width >= 1024;
   const isMobile = width < 768;
@@ -808,6 +818,11 @@ export default function CalendarScreen() {
   const [showCreate, setShowCreate] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
   openEventEditRef.current = setEditingEvent;
+  // Stays mounted after close so the modal can animate out; a new session remounts it with fresh fields.
+  const [editShown, setEditShown] = useState<{ event: CalendarEvent; session: number } | null>(null);
+  if (editingEvent && editShown?.event !== editingEvent) {
+    setEditShown({ event: editingEvent, session: (editShown?.session ?? 0) + 1 });
+  }
   const [dragSel, setDragSel] = useState<DragSelection | null>(null);
   const [createStartH, setCreateStartH] = useState("09");
   const [createStartM, setCreateStartM] = useState("00");
@@ -1105,7 +1120,7 @@ export default function CalendarScreen() {
       return {
         id: readDataAttr(eventEl, "event-id") ?? "",
         title: readDataAttr(eventEl, "event-title") ?? "",
-        color: readDataAttr(eventEl, "event-color") ?? "#5b4ee0",
+        color: readDataAttr(eventEl, "event-color") ?? DEFAULT_EVENT_COLOR,
         duration: parseFloat(readDataAttr(eventEl, "event-duration") ?? "1"),
       };
     }
@@ -1411,8 +1426,8 @@ export default function CalendarScreen() {
     setSelectedDate(d);
   }, [selectedDate, viewType, isMobile]);
 
-  const accentColor = isDark ? "#9b8cff" : "#5b4ee0";
-  const cellBorder = isDark ? "#2a2a2a" : "#e5e7eb";
+  const accentColor = ui.accent;
+  const cellBorder = ui.border;
 
   const handlePrint = useCallback(() => {
     const html = buildCalendarPrintHtml({
@@ -1483,9 +1498,7 @@ export default function CalendarScreen() {
                   borderLeftWidth: i > 0 ? 1 : 0,
                   borderLeftColor: cellBorder,
                   backgroundColor: isSelected
-                    ? isDark
-                      ? "#222228"
-                      : "#f9fafb"
+                    ? ui.surfaceHover
                     : "transparent",
                 }}
               >
@@ -1532,12 +1545,21 @@ export default function CalendarScreen() {
                       >
                         {evt.title}
                       </Text>
+                      {pulses[evt.eventId] ? (
+                        <LandPulse
+                          key={pulses[evt.eventId].key}
+                          color={resolveEventColor(evt)}
+                          radius={999}
+                          still={reducedMotion}
+                          delay={pulses[evt.eventId].delay}
+                        />
+                      ) : null}
                     </TouchableOpacity>
                   );
                 })}
                 {dayEvents.length > 3 && (
                   <Text className="text-[9px] text-on-surface-variant pl-1 mt-0.5">
-                    +{dayEvents.length - 3} more
+                    {t("cal.moreEvents", { count: dayEvents.length - 3 })}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -1565,7 +1587,7 @@ export default function CalendarScreen() {
               setSelectedDate(d);
             }}
           >
-            <MaterialIcons name="chevron-left" size={20} color="#6b6965" />
+            <MaterialIcons name="chevron-left" size={20} color={ui.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => {
@@ -1574,7 +1596,7 @@ export default function CalendarScreen() {
               setSelectedDate(d);
             }}
           >
-            <MaterialIcons name="chevron-right" size={20} color="#6b6965" />
+            <MaterialIcons name="chevron-right" size={20} color={ui.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -1618,31 +1640,6 @@ export default function CalendarScreen() {
               </TouchableOpacity>
             );
           })}
-        </View>
-      ))}
-    </View>
-  );
-
-  const priorityFilters = (
-    <View className="bg-surface-container-lowest rounded-2xl p-4 shadow-card">
-      <Text className="text-on-surface-variant font-label text-xs uppercase tracking-widest mb-3">
-        {t("cal.priorities")}
-      </Text>
-      {[
-        { label: t("cal.prioCritical"), color: "#C0392B" },
-        { label: t("cal.prioHigh"), color: "#B7770D" },
-        { label: t("cal.prioStandard"), color: "#3b82f6" },
-        { label: t("cal.prioLow"), color: "#2E7D52" },
-      ].map((p) => (
-        <View key={p.label} className="flex-row items-center gap-2 py-1.5">
-          <View
-            className="w-3 h-3 rounded-full"
-            style={{ backgroundColor: p.color }}
-          />
-          <Text className="text-on-surface font-body text-xs flex-1">
-            {p.label}
-          </Text>
-          <MaterialIcons name="check-box" size={18} color="#5b4ee0" />
         </View>
       ))}
     </View>
@@ -1782,6 +1779,15 @@ export default function CalendarScreen() {
                       >
                         {evt.title}
                       </Text>
+                      {pulses[evt.eventId] ? (
+                        <LandPulse
+                          key={pulses[evt.eventId].key}
+                          color={color}
+                          radius={4}
+                          still={reducedMotion}
+                          delay={pulses[evt.eventId].delay}
+                        />
+                      ) : null}
                     </TouchableOpacity>
                   );
                 })}
@@ -2174,9 +2180,9 @@ export default function CalendarScreen() {
                   width: `${100 / displayDays.length}%`,
                   top: hourToTop(dragSel.startHour),
                   height: (dragSel.endHour - dragSel.startHour) * HOUR_HEIGHT,
-                  backgroundColor: "rgba(91, 78, 224, 0.12)",
+                  backgroundColor: ui.selectedBg,
                   borderWidth: 1,
-                  borderColor: "#5b4ee0",
+                  borderColor: ui.accent,
                   borderRadius: 4,
                   borderStyle: "dashed",
                   zIndex: 1,
@@ -2291,7 +2297,7 @@ export default function CalendarScreen() {
                   <MaterialIcons
                     name="chevron-left"
                     size={22}
-                    color="#9b9791"
+                    color={ui.iconMuted}
                   />
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -2301,7 +2307,7 @@ export default function CalendarScreen() {
                   <MaterialIcons
                     name="chevron-right"
                     size={22}
-                    color="#9b9791"
+                    color={ui.iconMuted}
                   />
                 </TouchableOpacity>
               </View>
@@ -2366,13 +2372,13 @@ export default function CalendarScreen() {
                 onPress={prevPeriod}
                 className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
-                <MaterialIcons name="chevron-left" size={22} color="#9b9791" />
+                <MaterialIcons name="chevron-left" size={22} color={ui.iconMuted} />
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={nextPeriod}
                 className="w-9 h-9 items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest"
               >
-                <MaterialIcons name="chevron-right" size={22} color="#9b9791" />
+                <MaterialIcons name="chevron-right" size={22} color={ui.iconMuted} />
               </TouchableOpacity>
               <Text className="text-on-surface font-headline text-title-lg ml-1">
                 {headerTitle}
@@ -2420,7 +2426,7 @@ export default function CalendarScreen() {
                   onPress={() => setPrintOpen(true)}
                   className="w-10 h-10 items-center justify-center rounded-xl border border-outline-variant bg-surface-container-lowest"
                 >
-                  <MaterialIcons name="print" size={20} color="#9b9791" />
+                  <MaterialIcons name="print" size={20} color={ui.iconMuted} />
                 </TouchableOpacity>
               )}
               <TouchableOpacity
@@ -2460,9 +2466,10 @@ export default function CalendarScreen() {
         initialEndMin={createEndM}
       />
 
-      {editingEvent && (
+      {editShown && (
         <EditCalendarEventModal
-          event={editingEvent}
+          key={editShown.session}
+          event={editShown.event}
           visible={!!editingEvent}
           onClose={() => setEditingEvent(null)}
         />
@@ -2476,7 +2483,7 @@ export default function CalendarScreen() {
                 {t("cal.printTitle")}
               </Text>
               <TouchableOpacity onPress={() => setPrintOpen(false)}>
-                <MaterialIcons name="close" size={24} color="#6b6965" />
+                <MaterialIcons name="close" size={24} color={ui.textSecondary} />
               </TouchableOpacity>
             </View>
             <Text className="text-on-surface-variant font-body text-sm">
@@ -2517,7 +2524,7 @@ export default function CalendarScreen() {
                         active ? "radio-button-checked" : "radio-button-unchecked"
                       }
                       size={20}
-                      color={active ? accentColor : "#9b9791"}
+                      color={active ? accentColor : ui.iconMuted}
                     />
                     <Text
                       className={`font-body text-sm ${

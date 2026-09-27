@@ -1314,7 +1314,7 @@ export function NotesScreen() {
       >
         {isLoading ? (
           <Text className="text-on-surface-variant font-body text-sm py-6 text-center">
-            Ładowanie…
+            {t("common.loading")}
           </Text>
         ) : (
           <BoardFlip flipKey={tilesFlipKey} reduced={reducedMotion} clipped={false}>
